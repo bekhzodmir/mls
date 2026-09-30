@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+/*
+ * Binor design tokens (§20.5–20.6 of the master document).
+ *
+ * - Calm, professional, minimal. Violet/purple is an accent, not a wallpaper:
+ *   use `brand` for primary actions and focus, never as a full-screen gradient.
+ * - Semantic colours carry meaning (success / warning / danger / info) and are
+ *   always paired with an icon or text; state is never conveyed by colour alone.
+ * - Spacing follows Tailwind's 4px scale (4/8pt grid).
+ * - Radius scale is exactly 8 / 12 / 16 / 24 px -> rounded-sm / md / lg / xl.
+ * - Type scale: display, h1, h2, body, small, caption -> text-display … text-caption.
+ * - Surfaces are CSS variables so light and dark themes share one set of utilities.
+ */
+
+:root {
+  --bg: oklch(0.985 0.003 293);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.967 0.007 293);
+  --surface-sunken: oklch(0.945 0.01 293);
+  --border: oklch(0.905 0.012 293);
+  --border-strong: oklch(0.82 0.02 293);
+  --fg: oklch(0.21 0.025 293);
+  --fg-muted: oklch(0.44 0.025 293);
+  --fg-subtle: oklch(0.53 0.02 293);
+
+  --primary: var(--color-violet-600);
+  --primary-hover: var(--color-violet-700);
+  --primary-fg: oklch(1 0 0);
+  --primary-soft: var(--color-violet-50);
+  --primary-soft-fg: var(--color-violet-800);
+  --ring: var(--color-violet-600);
+
+  --success-bg: var(--color-emerald-50);
+  --success-fg: var(--color-emerald-800);
+  --success-border: var(--color-emerald-200);
+  --warning-bg: var(--color-amber-50);
+  --warning-fg: var(--color-amber-900);
+  --warning-border: var(--color-amber-200);
+  --danger-bg: var(--color-red-50);
+  --danger-fg: var(--color-red-800);
+  --danger-border: var(--color-red-200);
+  --info-bg: var(--color-sky-50);
+  --info-fg: var(--color-sky-900);
+  --info-border: var(--color-sky-200);
+  --neutral-bg: var(--surface-muted);
+  --neutral-fg: var(--fg-muted);
+  --neutral-border: var(--border);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.165 0.02 293);
+    --surface: oklch(0.205 0.022 293);
+    --surface-muted: oklch(0.245 0.024 293);
+    --surface-sunken: oklch(0.185 0.02 293);
+    --border: oklch(0.31 0.025 293);
+    --border-strong: oklch(0.4 0.03 293);
+    --fg: oklch(0.965 0.005 293);
+    --fg-muted: oklch(0.8 0.015 293);
+    --fg-subtle: oklch(0.7 0.018 293);
+
+    --primary: var(--color-violet-500);
+    --primary-hover: var(--color-violet-400);
+    --primary-fg: oklch(1 0 0);
+    --primary-soft: oklch(0.3 0.08 293);
+    --primary-soft-fg: var(--color-violet-100);
+    --ring: var(--color-violet-400);
+
+    --success-bg: oklch(0.28 0.05 160);
+    --success-fg: var(--color-emerald-200);
+    --success-border: oklch(0.4 0.07 160);
+    --warning-bg: oklch(0.3 0.06 80);
+    --warning-fg: var(--color-amber-200);
+    --warning-border: oklch(0.45 0.09 80);
+    --danger-bg: oklch(0.3 0.08 25);
+    --danger-fg: var(--color-red-200);
+    --danger-border: oklch(0.45 0.12 25);
+    --info-bg: oklch(0.3 0.05 235);
+    --info-fg: var(--color-sky-200);
+    --info-border: oklch(0.45 0.08 235);
+
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-ring: var(--ring);
+
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-success-border: var(--success-border);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-border: var(--warning-border);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-border: var(--danger-border);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-info-border: var(--info-border);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-fg: var(--neutral-fg);
+  --color-neutral-border: var(--neutral-border);
+}
+
+@theme {
+  /* Brand accent: violet core with a purple/fuchsia highlight for marketing. */
+  --color-brand-50: var(--color-violet-50);
+  --color-brand-100: var(--color-violet-100);
+  --color-brand-200: var(--color-violet-200);
+  --color-brand-300: var(--color-violet-300);
+  --color-brand-400: var(--color-violet-400);
+  --color-brand-500: var(--color-violet-500);
+  --color-brand-600: var(--color-violet-600);
+  --color-brand-700: var(--color-violet-700);
+  --color-brand-800: var(--color-violet-800);
+  --color-brand-900: var(--color-violet-900);
+  --color-brand-950: var(--color-violet-950);
+  --color-accent-400: var(--color-fuchsia-400);
+  --color-accent-500: var(--color-fuchsia-500);
+  --color-accent-600: var(--color-fuchsia-600);
+
+  /* Radius scale 8 / 12 / 16 / 24 (§20.6). */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Type scale (§20.6): Display, H1, H2, Body, Small, Caption. */
+  --text-display: 2.25rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 700;
+  --text-h1: 1.625rem;
+  --text-h1--line-height: 1.2;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 700;
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.3;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 600;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.45;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.35;
+
+  --shadow-card: 0 1px 2px oklch(0.2 0.03 293 / 0.06), 0 1px 3px oklch(0.2 0.03 293 / 0.04);
+  --shadow-float: 0 8px 24px oklch(0.2 0.05 293 / 0.14), 0 2px 6px oklch(0.2 0.05 293 / 0.08);
+}
+
+/* Touch targets: minimum 44x44, preferred 48x48 (§20.2). */
+@utility touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+@utility touch-target-lg {
+  min-height: 3rem;
+  min-width: 3rem;
+}
+
+/* Room for the fixed bottom navigation plus the iOS home indicator. */
+@utility pb-bottom-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-violet-200);
+    color: var(--color-violet-950);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
