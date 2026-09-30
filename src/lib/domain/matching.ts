@@ -121,7 +121,24 @@ const ACTIVE_LISTING_STATUSES = new Set<Listing["status"]>([
   "contract_signed",
 ]);
 
-export function candidateFromListing(listing: Listing, property: Property): MatchCandidate {
+/**
+ * The physical attributes the engine compares. The address is not among them,
+ * so a partner-safe property view (address withheld) is a valid input.
+ */
+export type MatchableProperty = Pick<
+  Property,
+  | "propertyType"
+  | "city"
+  | "district"
+  | "rooms"
+  | "areaTotal"
+  | "floor"
+  | "floorsTotal"
+  | "buildingKind"
+  | "renovation"
+>;
+
+export function candidateFromListing(listing: Listing, property: MatchableProperty): MatchCandidate {
   return {
     target: { kind: "listing", id: listing.id },
     dealType: listing.dealType,

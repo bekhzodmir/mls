@@ -23,8 +23,9 @@ export function format(
   template: string,
   values: Record<string, string | number>,
 ): string {
+  // Own keys only: `in` would also match inherited names such as {constructor}.
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in values ? String(values[key]) : match,
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match,
   );
 }
 
@@ -39,6 +40,7 @@ export function plural(
 ): string {
   const rule = new Intl.PluralRules(locale === "ru" ? "ru-RU" : "uz-Latn-UZ").select(count);
   if (rule === "one") return forms.one;
-  if (rule === "few") return forms.few ?? forms.many;
+  // Russian fractions ("other": 1,5; 0,5) take the genitive singular, i.e. the few form: «1,5 дня».
+  if (rule === "few" || (rule === "other" && locale === "ru")) return forms.few ?? forms.many;
   return forms.many;
 }

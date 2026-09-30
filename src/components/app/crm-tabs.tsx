@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import shell from "@/i18n/messages/shell";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/routes";
 import { isActive } from "./nav-config";
 
 const tabs = [
@@ -28,7 +29,7 @@ export function CrmTabs({ locale }: { locale: Locale }) {
           return (
             <li key={tab.key}>
               <Link
-                href={`/${locale}/app${tab.href}`}
+                href={appPath(locale, tab.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "-mb-px inline-flex h-11 items-center border-b-2 px-3 text-small font-medium whitespace-nowrap transition-colors",

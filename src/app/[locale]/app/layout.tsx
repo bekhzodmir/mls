@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app/app-shell";
 import { getLocale } from "@/i18n/server";
+import { countUnreadNotifications } from "@/lib/data/repository";
 
 export const metadata: Metadata = {
   title: { template: "%s · Binor", default: "Binor" },
@@ -10,8 +11,7 @@ export const metadata: Metadata = {
 
 export default async function WorkspaceLayout({ children }: LayoutProps<"/[locale]/app">) {
   const locale = await getLocale();
-  // TODO(workspace-today): replace with the repository's unread notification count.
-  const unreadCount = 0;
+  const unreadCount = await countUnreadNotifications();
 
   return (
     <AppShell locale={locale} unreadCount={unreadCount}>

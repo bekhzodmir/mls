@@ -447,7 +447,14 @@ export interface TelegramListing {
   parsed: ParsedListingFields;
   parserVersion: string;
   /** Suggested duplicates with reasons; merge is always a human decision. */
-  duplicateCandidates: { listingId: ID; reasons: DuplicateSignal[] }[];
+  duplicateCandidates: {
+    listingId: ID;
+    reasons: DuplicateSignal[];
+    /** Attributes known on both sides that disagree, e.g. a different floor (§34.5). */
+    conflicts?: DedupConflict[];
+    /** Dedup engine score 0..100, kept for ordering and audit; never shown without the reasons. */
+    score?: number;
+  }[];
   status: TelegramListingStatus;
   linkedClientIds: ID[];
 }
@@ -461,6 +468,9 @@ export type DuplicateSignal =
   | "same_floor"
   | "similar_text"
   | "same_media";
+
+/** Attributes known on both records that disagree, reported next to the signals (§34.5). */
+export type DedupConflict = "deal_type" | "district" | "rooms" | "area" | "floor";
 
 /* ------------------------------------------------------------- matching */
 

@@ -16,39 +16,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/**
- * Workspace route map. Every link in the chrome points at one of these paths,
- * all relative to `/{locale}/app`.
+/*
+ * Navigation for the workspace chrome. Paths are relative to `/{locale}/app`;
+ * build full URLs with `appHref` / `appPath` from `@/lib/routes`, which stays
+ * free of these icon imports.
  */
-export const appRoutes = {
-  today: "",
-  search: "/search",
-  notifications: "/notifications",
-  tasks: "/tasks",
-  more: "/more",
-  leads: "/leads",
-  clients: "/clients",
-  requirementsNew: "/requirements/new",
-  properties: "/properties",
-  propertiesNew: "/properties/new",
-  matches: "/matches",
-  radar: "/radar",
-  mls: "/mls",
-  cooperation: "/mls/cooperation",
-  viewings: "/viewings",
-  viewingsNew: "/viewings/new",
-  deals: "/deals",
-  leadsNew: "/leads/new",
-  clientsNew: "/clients/new",
-  tasksNew: "/tasks/new",
-} as const;
-
-export type AppRoute = keyof typeof appRoutes;
-
-export function appHref(locale: string, route: AppRoute | string): string {
-  const path = route in appRoutes ? appRoutes[route as AppRoute] : route;
-  return `/${locale}/app${path}`;
-}
 
 /** Bottom navigation (§9.1): Главная | CRM | Поиск | MLS | Ещё. */
 export const bottomNav: {

@@ -138,8 +138,19 @@ export default defineMessages({
       property_type: "тип объекта",
       rooms: "комнаты",
       area: "площадь",
-      floor: "этаж и дом",
+      floor: "этаж/дом",
       extras: "доп. параметры",
+    },
+    /** What a requirement can mark as must-have (§35.4 step 3); "floor" is the floor only. */
+    requirementCriterion: {
+      location: "район",
+      price: "бюджет",
+      property_type: "тип объекта",
+      rooms: "комнаты",
+      area: "площадь",
+      floor: "этаж",
+      building_kind: "тип дома",
+      renovation: "ремонт",
     },
     hardFilter: {
       deal_type: "Другой тип сделки",
@@ -237,6 +248,11 @@ export default defineMessages({
       document_processing: "Обработка документов",
       marketing: "Маркетинг",
     },
+    consentChannel: {
+      written: "Письменно",
+      electronic: "Электронно",
+      verbal_recorded: "Устно, с записью",
+    },
     splitPreset: { "50/50": "50/50", "70/30": "70/30", "80/20": "80/20", custom: "Свои условия" },
     commissionBasis: {
       gross_commission: "От общей комиссии",
@@ -283,6 +299,14 @@ export default defineMessages({
       same_floor: "тот же этаж",
       similar_text: "похожий текст",
       same_media: "совпадают фото",
+    },
+    /** Values that disagree between two possible duplicates: «Отличается: этаж». */
+    dedupConflict: {
+      deal_type: "тип сделки",
+      district: "район",
+      rooms: "комнаты",
+      area: "площадь",
+      floor: "этаж",
     },
     taskStatus: { open: "Открыта", done: "Выполнена", snoozed: "Отложена" },
     unknown: "Неизвестно",
@@ -419,8 +443,18 @@ export default defineMessages({
       property_type: "ob’yekt turi",
       rooms: "xonalar",
       area: "maydon",
-      floor: "qavat va bino",
+      floor: "qavat/bino",
       extras: "qo‘shimcha parametrlar",
+    },
+    requirementCriterion: {
+      location: "tuman",
+      price: "byudjet",
+      property_type: "ob’yekt turi",
+      rooms: "xonalar",
+      area: "maydon",
+      floor: "qavat",
+      building_kind: "bino turi",
+      renovation: "ta’mir",
     },
     hardFilter: {
       deal_type: "Boshqa bitim turi",
@@ -518,6 +552,11 @@ export default defineMessages({
       document_processing: "Hujjatlarni qayta ishlash",
       marketing: "Marketing",
     },
+    consentChannel: {
+      written: "Yozma",
+      electronic: "Elektron",
+      verbal_recorded: "Og‘zaki, yozib olingan",
+    },
     splitPreset: { "50/50": "50/50", "70/30": "70/30", "80/20": "80/20", custom: "Boshqa shartlar" },
     commissionBasis: {
       gross_commission: "Umumiy komissiyadan",
@@ -564,6 +603,13 @@ export default defineMessages({
       same_floor: "bir xil qavat",
       similar_text: "o‘xshash matn",
       same_media: "rasmlar mos",
+    },
+    dedupConflict: {
+      deal_type: "bitim turi",
+      district: "tuman",
+      rooms: "xonalar",
+      area: "maydon",
+      floor: "qavat",
     },
     taskStatus: { open: "Ochiq", done: "Bajarildi", snoozed: "Kechiktirildi" },
     unknown: "Noma’lum",

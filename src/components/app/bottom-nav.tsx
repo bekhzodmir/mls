@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import shell from "@/i18n/messages/shell";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/routes";
 import { bottomNav, isActive } from "./nav-config";
 
 /** Fixed thumb-zone navigation for phones (§20.2). Hidden on large screens. */
@@ -27,7 +28,7 @@ export function BottomNav({ locale }: { locale: Locale }) {
           return (
             <li key={item.key}>
               <Link
-                href={`/${locale}/app${item.href}`}
+                href={appPath(locale, item.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-16 flex-col items-center justify-center gap-1 text-caption font-medium transition-colors",

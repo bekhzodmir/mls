@@ -2,26 +2,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Bell, FlaskConical, Search } from "lucide-react";
 import { LocaleSwitch } from "@/components/locale-switch";
+import { BinorMark } from "@/components/ui/brand-mark";
 import type { Locale } from "@/i18n/config";
 import { format } from "@/i18n/define-messages";
 import shell from "@/i18n/messages/shell";
+import { appHref } from "@/lib/routes";
 import { BottomNav } from "./bottom-nav";
 import { QuickCreate } from "./quick-create";
 import { Sidebar } from "./sidebar";
-
-export function BinorMark({ className }: { className?: string }) {
-  return (
-    <span className={className}>
-      <span
-        aria-hidden
-        className="mr-2 inline-flex size-8 items-center justify-center rounded-md bg-gradient-to-br from-brand-600 to-accent-500 text-small font-bold text-white"
-      >
-        B
-      </span>
-      <span className="text-body font-bold tracking-tight">Binor</span>
-    </span>
-  );
-}
 
 /**
  * Mobile-first workspace chrome: top bar, content, bottom navigation and the
@@ -37,10 +25,9 @@ export function AppShell({
   children: ReactNode;
 }) {
   const t = shell[locale];
-  const base = `/${locale}/app`;
-
+  
   return (
-    <div className="flex min-h-dvh flex-col bg-bg lg:flex-row">
+    <div className="group/shell flex min-h-dvh flex-col bg-bg lg:flex-row">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2"
@@ -49,7 +36,7 @@ export function AppShell({
       </a>
 
       <aside className="hidden w-64 shrink-0 flex-col gap-4 border-r border-border bg-surface px-3 py-4 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:overflow-y-auto">
-        <Link href={base} aria-label={t.topbar.home} className="flex h-11 items-center px-2">
+        <Link href={appHref(locale, "today")} aria-label={t.topbar.home} className="flex h-11 items-center px-2">
           <BinorMark />
         </Link>
         <QuickCreate locale={locale} />
@@ -62,18 +49,18 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur lg:hidden">
           <div className="mx-auto flex h-14 max-w-3xl items-center gap-1 px-4">
-            <Link href={base} aria-label={t.topbar.home} className="mr-auto flex h-11 items-center">
+            <Link href={appHref(locale, "today")} aria-label={t.topbar.home} className="mr-auto flex h-11 items-center">
               <BinorMark />
             </Link>
             <Link
-              href={`${base}/search`}
+              href={appHref(locale, "search")}
               className="inline-flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-surface-muted"
             >
               <Search aria-hidden className="size-5" />
               <span className="sr-only">{t.topbar.search}</span>
             </Link>
             <Link
-              href={`${base}/notifications`}
+              href={appHref(locale, "notifications")}
               className="relative inline-flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-surface-muted"
             >
               <Bell aria-hidden className="size-5" />
@@ -107,7 +94,9 @@ export function AppShell({
         </main>
       </div>
 
-      <div className="lg:hidden">
+      {/* The phone "+" would cover the right end of a sticky action bar, so it
+          steps aside while any `data-sticky-actions` bar is on the page. */}
+      <div className="lg:hidden group-has-[[data-sticky-actions]]/shell:hidden">
         <QuickCreate locale={locale} />
       </div>
       <BottomNav locale={locale} />

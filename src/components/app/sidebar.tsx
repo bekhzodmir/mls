@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import shell from "@/i18n/messages/shell";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/routes";
 import { isActive, sidebarNav } from "./nav-config";
 
 /** Desktop navigation (≥1024px). Same destinations as the bottom bar, flattened. */
@@ -25,7 +26,7 @@ export function Sidebar({ locale }: { locale: Locale }) {
           return (
             <li key={item.key}>
               <Link
-                href={`/${locale}/app${item.href}`}
+                href={appPath(locale, item.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-11 items-center gap-3 rounded-md px-3 text-small font-medium transition-colors",

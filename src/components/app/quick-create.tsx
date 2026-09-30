@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import shell from "@/i18n/messages/shell";
-import { appHref, type AppRoute } from "./nav-config";
+import { appHref, type AppRoute } from "@/lib/routes";
 
 const items: { key: "lead" | "client" | "requirement" | "property" | "viewing" | "task"; route: AppRoute; icon: LucideIcon }[] = [
   { key: "lead", route: "leadsNew", icon: MessageSquarePlus },

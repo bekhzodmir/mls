@@ -2,13 +2,18 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export function Avatar({ name, className }: { name: string; className?: string }) {
-  const initials = name
+/** Up to two initials from the words that contain letters: «Гуля (Instagram)» → «ГI». */
+export function initials(name: string): string {
+  return name
     .split(/\s+/)
-    .filter(Boolean)
+    .map((part) => part.match(/\p{L}/u)?.[0])
+    .filter((letter): letter is string => Boolean(letter))
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
+    .map((letter) => letter.toLocaleUpperCase())
     .join("");
+}
+
+export function Avatar({ name, className }: { name: string; className?: string }) {
   return (
     <span
       aria-hidden
@@ -17,7 +22,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
         className,
       )}
     >
-      {initials}
+      {initials(name)}
     </span>
   );
 }

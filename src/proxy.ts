@@ -38,7 +38,8 @@ export function negotiate(header: string | null): Locale {
       const [tag, ...params] = part.trim().toLowerCase().split(";");
       const q = params.find((p) => p.trim().startsWith("q="));
       const quality = q ? Number.parseFloat(q.trim().slice(2)) : 1;
-      return { tag, quality: Number.isFinite(quality) ? quality : 0 };
+      // RFC 9110 allows whitespace before ";" ("uz ;q=0.8"), so trim the tag too.
+      return { tag: tag.trim(), quality: Number.isFinite(quality) ? quality : 0 };
     })
     .filter((entry) => entry.tag && entry.quality > 0)
     .sort((a, b) => b.quality - a.quality);

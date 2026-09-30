@@ -3,7 +3,17 @@ import { defineMessages } from "../define-messages";
 /** Sentences that explain a match (§12.4): reasons, never a bare score. */
 export default defineMessages({
   ru: {
-    summary: "Подходит по: {list}",
+    /** The list uses `summaryCriterion` (dative in Russian): «Подходит по району, бюджету и комнатам». */
+    summary: "Подходит по {list}",
+    summaryCriterion: {
+      location: "району",
+      price: "бюджету",
+      property_type: "типу объекта",
+      rooms: "комнатам",
+      area: "площади",
+      floor: "этажу/дому",
+      extras: "доп. параметрам",
+    },
     summaryNone: "Совпадение неполное — проверьте детали",
     reason: {
       price_over: "На {amount} дороже бюджета",
@@ -36,7 +46,16 @@ export default defineMessages({
     agePublished: "Опубликован {n} дн. назад",
   },
   uz: {
-    summary: "Mos keladi: {list}",
+    summary: "{list} bo‘yicha mos keladi",
+    summaryCriterion: {
+      location: "tuman",
+      price: "byudjet",
+      property_type: "ob’yekt turi",
+      rooms: "xonalar",
+      area: "maydon",
+      floor: "qavat/bino",
+      extras: "qo‘shimcha parametrlar",
+    },
     summaryNone: "Moslik to‘liq emas — tafsilotlarni tekshiring",
     reason: {
       price_over: "Byudjetdan {amount} qimmatroq",

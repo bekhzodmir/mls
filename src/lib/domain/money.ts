@@ -112,15 +112,19 @@ export function formatMoney(
   return value.currency === "USD" ? `${sign}$${number}` : `${sign}${number} ${suffix}`;
 }
 
-/** "$70 000 – $95 000", "до $95 000", "от $70 000". */
+/**
+ * "$70 000 – $95 000", "до $95 000", "от $70 000". The one-sided phrasings are
+ * templates with an `{amount}` placeholder, because the word order differs:
+ * «до $95 000» in Russian, «$95 000 gacha» in Uzbek.
+ */
 export function formatMoneyRange(
   locale: Locale,
   range: { min?: Money; max?: Money },
-  words: { from: string; to: string },
+  templates: { from: string; to: string },
 ): string | undefined {
   const { min, max } = range;
   if (min && max) return `${formatMoney(locale, min)} – ${formatMoney(locale, max)}`;
-  if (max) return `${words.to} ${formatMoney(locale, max)}`;
-  if (min) return `${words.from} ${formatMoney(locale, min)}`;
+  if (max) return templates.to.replace("{amount}", formatMoney(locale, max));
+  if (min) return templates.from.replace("{amount}", formatMoney(locale, min));
   return undefined;
 }

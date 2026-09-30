@@ -13,11 +13,16 @@ function list(locale: Locale, items: string[]): string {
   return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
 }
 
-/** "Подходит по: району, бюджету и комнатам" — the one-line match summary. */
+/**
+ * «Подходит по району, бюджету и комнатам» / «Tuman, byudjet va xonalar
+ * bo‘yicha mos keladi» — the one-line match summary. The criteria come from
+ * `matching.summaryCriterion` (dative case in Russian), not the nominative
+ * `domain.criterion` labels.
+ */
 export function summarizeMatch(locale: Locale, reasons: MatchReason[]): string {
   const t = matching[locale];
-  const criteria = matchedCriteria(reasons).map((c) => domain[locale].criterion[c]);
-  return criteria.length > 0 ? format(t.summary, { list: list(locale, criteria) }) : t.summaryNone;
+  const criteria = matchedCriteria(reasons).map((c) => t.summaryCriterion[c]);
+  return criteria.length > 0 ? capitalize(format(t.summary, { list: list(locale, criteria) })) : t.summaryNone;
 }
 
 /** Human sentence for one reason, or null when there is nothing worth saying. */
