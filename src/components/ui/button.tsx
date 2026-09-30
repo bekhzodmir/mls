@@ -20,9 +20,17 @@ const sizes: Record<Size, string> = {
   icon: "size-11 justify-center",
 };
 
+/**
+ * A display utility of the caller's own ("hidden lg:inline-flex") replaces the
+ * default `inline-flex`. Both would otherwise sit on the element and the one
+ * later in the generated CSS wins: `hidden` loses to `inline-flex`.
+ */
+const ownDisplay = /(?:^|\s)(?:hidden|flex|inline-flex|block|inline-block|grid)(?:\s|$)/;
+
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", className?: string) {
   return cn(
-    "inline-flex shrink-0 items-center justify-center rounded-md transition-colors",
+    !ownDisplay.test(className ?? "") && "inline-flex",
+    "shrink-0 items-center justify-center rounded-md transition-colors",
     "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
     variants[variant],
     sizes[size],

@@ -188,7 +188,7 @@ export function NewClientForm({
         {errorFor(ids.name) ? <FieldError>{errorFor(ids.name)}</FieldError> : null}
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <PhoneField id={ids.phone} locale={locale} value={phone} onChange={setPhone} showErrors={submitted} />
         <div className="space-y-1.5">
           <FieldLabel htmlFor={ids.telegram} optional={t.optional}>
@@ -227,7 +227,7 @@ export function NewClientForm({
         ) : null}
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <FieldLabel htmlFor={ids.source}>{t.source}</FieldLabel>
           <select
@@ -285,7 +285,7 @@ export function NewClientForm({
               return (
                 <div
                   key={party.key}
-                  className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-[1fr_10rem_1fr_auto] sm:items-end"
+                  className="grid grid-cols-1 gap-3 rounded-md border border-border p-3 sm:grid-cols-[1fr_10rem_1fr_auto] sm:items-end"
                 >
                   <div className="space-y-1.5">
                     <FieldLabel htmlFor={nameId}>

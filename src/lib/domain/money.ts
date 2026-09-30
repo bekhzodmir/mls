@@ -1,5 +1,6 @@
 import type { Currency, Money } from "./types";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatCompactNumber, formatNumber } from "@/i18n/format";
 
 /**
  * Exact money arithmetic on integer minor units (§34.1). Both USD and UZS use
@@ -102,11 +103,9 @@ export function formatMoney(
 ): string {
   const major = Math.abs(toMajor(value));
   const hasFraction = value.amountMinor % MINOR_FACTOR !== 0;
-  const number = new Intl.NumberFormat(intlLocale[locale], {
-    notation: options.compact ? "compact" : "standard",
-    maximumFractionDigits: options.compact ? 1 : hasFraction ? MINOR_DIGITS : 0,
-    minimumFractionDigits: 0,
-  }).format(major);
+  const number = options.compact
+    ? formatCompactNumber(locale, major)
+    : formatNumber(locale, major, { maximumFractionDigits: hasFraction ? MINOR_DIGITS : 0, minimumFractionDigits: 0 });
   const sign = value.amountMinor < 0 ? "−" : options.signed && value.amountMinor > 0 ? "+" : "";
   const suffix = currencySuffix[locale][value.currency];
   return value.currency === "USD" ? `${sign}$${number}` : `${sign}${number} ${suffix}`;

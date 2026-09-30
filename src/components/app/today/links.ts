@@ -10,6 +10,8 @@ import { appPath } from "@/lib/routes";
 const entityPaths: Record<EntityRef["kind"], string> = {
   lead: "/leads",
   client: "/clients",
+  requirement: "/requirements",
+  match: "/matches",
   // Property screens are keyed by the listing id (Property ≠ Listing).
   listing: "/properties",
   deal: "/deals",

@@ -159,7 +159,7 @@ export default async function LeadPage({ params }: PageProps<"/[locale]/app/lead
         </StickyActionBar>
       ) : null}
 
-      <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-6">
           <CrmSection id="message" title={t.detail.message} description={t.detail.messageHint}>
             <figure className="space-y-2">

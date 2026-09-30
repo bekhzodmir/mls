@@ -7,10 +7,12 @@ import { defineMessages } from "../define-messages";
  */
 export default defineMessages({
   ru: {
-    meta: { title: "Новый запрос клиента" },
+    meta: { title: "Новый запрос клиента", editTitle: "Изменить запрос клиента" },
     header: {
       title: "Запрос клиента",
       subtitle: "Опишите одной фразой — Binor разберёт параметры, а вы их подтвердите.",
+      editTitle: "Изменить запрос",
+      editSubtitle: "Версия {version}. Поправьте фразу или поля — подбор пересчитается сразу.",
     },
     context: {
       client: "Клиент",
@@ -25,6 +27,7 @@ export default defineMessages({
       existing:
         "У клиента уже есть активный запрос: {summary}. Если пожелания изменились, возможно, лучше обновить его, а не заводить второй.",
       openExisting: "Открыть действующий запрос",
+      requirementNotFound: "Запрос из ссылки не найден или недоступен — открыт новый запрос.",
     },
     text: {
       label: "Запрос своими словами",
@@ -168,14 +171,21 @@ export default defineMessages({
       openClient: "Открыть профиль клиента",
       toClients: "К списку клиентов",
       edit: "Продолжить редактирование",
+      submitEdit: "Сохранить изменения",
+      savedEditTitle: "Изменения записаны — демо",
+      savedEdit:
+        "Изменения не отправлены на сервер: это демонстрационный режим. В рабочей версии запрос получит версию {version}, а прежняя останется в истории.",
+      openRequirement: "Открыть запрос",
     },
     stickyLabel: "Результат поиска",
   },
   uz: {
-    meta: { title: "Yangi mijoz so‘rovi" },
+    meta: { title: "Yangi mijoz so‘rovi", editTitle: "Mijoz so‘rovini tahrirlash" },
     header: {
       title: "Mijoz so‘rovi",
       subtitle: "Bitta jumla bilan yozing — Binor parametrlarni ajratadi, siz esa ularni tasdiqlaysiz.",
+      editTitle: "So‘rovni tahrirlash",
+      editSubtitle: "{version}-versiya. Jumlani yoki maydonlarni to‘g‘rilang — tanlov darhol qayta hisoblanadi.",
     },
     context: {
       client: "Mijoz",
@@ -190,6 +200,7 @@ export default defineMessages({
       existing:
         "Mijozda allaqachon faol so‘rov bor: {summary}. Agar istaklar o‘zgargan bo‘lsa, ikkinchisini ochgandan ko‘ra uni yangilash yaxshiroq bo‘lishi mumkin.",
       openExisting: "Amaldagi so‘rovni ochish",
+      requirementNotFound: "Havoladagi so‘rov topilmadi yoki unga kirish yo‘q — yangi so‘rov ochildi.",
     },
     text: {
       label: "So‘rov o‘z so‘zlaringiz bilan",
@@ -338,6 +349,11 @@ export default defineMessages({
       openClient: "Mijoz profilini ochish",
       toClients: "Mijozlar ro‘yxatiga",
       edit: "Tahrirlashni davom ettirish",
+      submitEdit: "O‘zgarishlarni saqlash",
+      savedEditTitle: "O‘zgarishlar yozildi — demo",
+      savedEdit:
+        "O‘zgarishlar serverga yuborilmadi: bu namoyish rejimi. Ishchi versiyada so‘rov {version}-versiyani oladi, avvalgisi esa tarixda qoladi.",
+      openRequirement: "So‘rovni ochish",
     },
     stickyLabel: "Qidiruv natijasi",
   },

@@ -112,7 +112,7 @@ export default async function CooperationListPage({ searchParams }: PageProps<"/
           />
         )
       ) : (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {visible.map((view) => (
             <li key={view.request.id}>
               <CooperationCard locale={locale} view={view} viewerId={viewer.agent.id} now={at} />

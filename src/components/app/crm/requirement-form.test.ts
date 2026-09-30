@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { now } from "@/lib/clock";
-import { listListings, listTelegramListings } from "@/lib/data/repository";
+import { listListings, listRequirements, listTelegramListings } from "@/lib/data/repository";
 import { findMatches } from "@/lib/domain/matching";
 import { parseRequirementText } from "@/lib/domain/requirement-parser";
+import type { Requirement } from "@/lib/domain/types";
 import { editorCandidates, type EditorCandidate } from "./editor-candidates";
 import {
   buildDraft,
@@ -10,6 +11,7 @@ import {
   emptyFormValues,
   filledCriteria,
   formValuesFromDraft,
+  formValuesFromRequirement,
   isAutoApplied,
   mergeFormValues,
   minorToInput,
@@ -107,6 +109,22 @@ describe("from the parsed sentence", () => {
   });
 });
 
+/** What the form edits; ids, status, version and timestamps belong to the record. */
+const editableKeys = [
+  "dealType",
+  "propertyTypes",
+  "districts",
+  "rooms",
+  "area",
+  "budget",
+  "floor",
+  "buildingKind",
+  "renovation",
+  "mortgage",
+  "extras",
+  "hardCriteria",
+] as const satisfies readonly (keyof Requirement)[];
+
 describe("buildDraft", () => {
   it("reports invalid numbers and reversed ranges without building", () => {
     const values = mergeFormValues(emptyFormValues(), {
@@ -128,6 +146,24 @@ describe("buildDraft", () => {
     expect(build.base?.floor).toBeUndefined();
     expect(build.base?.naturalLanguageInput).toBeUndefined();
     expect(withDealType(build.base!, "rent").dealType).toBe("rent");
+  });
+
+  it("round-trips every stored requirement through the edit form", async () => {
+    const views = await listRequirements();
+    expect(views.length).toBeGreaterThan(0);
+    for (const { requirement } of views) {
+      const build = buildDraft(formValuesFromRequirement(requirement), requirement.hardCriteria, {
+        ...context,
+        id: requirement.id,
+        clientId: requirement.clientId,
+        agentId: requirement.agentId,
+        organizationId: requirement.organizationId,
+        text: requirement.naturalLanguageInput ?? "",
+      });
+      expect(build.blockers, requirement.id).toEqual([]);
+      const rebuilt = withDealType(build.base!, build.dealType!);
+      for (const key of editableKeys) expect(rebuilt[key], `${requirement.id}.${key}`).toEqual(requirement[key]);
+    }
   });
 
   it("lists missing criteria that make the search wider", () => {

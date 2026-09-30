@@ -2,6 +2,7 @@ import { Lock, Quote, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "@/i18n/define-messages";
 import { intlLocale, type Locale } from "@/i18n/config";
+import { formatList } from "@/i18n/format";
 import requirementDetail from "@/i18n/messages/requirement-detail";
 import type { Requirement } from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
@@ -51,7 +52,7 @@ export function RequirementCriteriaList({
       {unset.length > 0 ? (
         <p className="text-caption text-fg-muted">
           {format(t.unset, {
-            list: new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(
+            list: formatList(locale, 
               unset.map((key) => t.label[key].toLocaleLowerCase(intlLocale[locale])),
             ),
           })}

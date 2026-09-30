@@ -46,7 +46,7 @@ import { Notice } from "@/components/ui/notice";
 import { cn } from "@/lib/cn";
 import { intlLocale, type Locale } from "@/i18n/config";
 import { format } from "@/i18n/define-messages";
-import { formatDate, formatDateTime } from "@/i18n/format";
+import { formatDate, formatDateTime, formatList } from "@/i18n/format";
 import clients from "@/i18n/messages/clients";
 import domain from "@/i18n/messages/domain";
 import leads from "@/i18n/messages/leads";
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/app/clie
 }
 
 function list(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 function timelineText(locale: Locale, event: TimelineEvent): string {
@@ -198,7 +198,7 @@ export default async function ClientPage({ params }: PageProps<"/[locale]/app/cl
           </div>
         </div>
 
-        <dl className="grid gap-3 text-small sm:grid-cols-2">
+        <dl className="grid grid-cols-1 gap-3 text-small sm:grid-cols-2">
           <div>
             <dt className="text-fg-muted">{t.profile.phones}</dt>
             <dd className="font-medium text-fg">

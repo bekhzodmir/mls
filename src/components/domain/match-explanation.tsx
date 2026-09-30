@@ -1,6 +1,7 @@
 import { CircleCheck, CircleHelp, CircleMinus } from "lucide-react";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatList } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import matching from "@/i18n/messages/matching";
 import { districtName } from "@/lib/domain/geo";
@@ -10,7 +11,7 @@ import type { MatchReason } from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
 
 function list(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 /**

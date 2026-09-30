@@ -5,11 +5,11 @@ import { useId, useState } from "react";
 import { ExternalLink, GitMerge, Link2, ShieldOff, UserPlus, Undo2, Users } from "lucide-react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
 import { format } from "@/i18n/define-messages";
 import domain from "@/i18n/messages/domain";
 import leads from "@/i18n/messages/leads";
-import { formatDate } from "@/i18n/format";
+import { formatDate, formatList } from "@/i18n/format";
 import { cn } from "@/lib/cn";
 import { appPath } from "@/lib/routes";
 import type { DuplicateHit, DuplicateReason } from "./duplicates";
@@ -18,7 +18,7 @@ export type DuplicateDecision = "link" | "merge" | "separate";
 
 function reasonList(locale: Locale, reasons: DuplicateReason[]): string {
   const t = leads[locale].duplicate.reasons;
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(reasons.map((reason) => t[reason]));
+  return formatList(locale, reasons.map((reason) => t[reason]));
 }
 
 /**

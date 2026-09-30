@@ -209,12 +209,22 @@ export function PartiesSection({
             detail={orgLine(party.agent)}
           />
         ))}
-        <li className="py-3">
-          <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle">{t.owner}</p>
-          <p className="mt-1 text-small text-fg-muted">
-            {ownerKnown ? t.ownerHidden : format(t.ownerPartner, { agent: view.listing.agent.name })}
-          </p>
-        </li>
+        {view.owner ? (
+          <PartyRow
+            locale={locale}
+            name={view.owner.name}
+            role={t.owner}
+            phone={view.owner.phone}
+            detail={t.ownerRestricted}
+          />
+        ) : (
+          <li className="py-3">
+            <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle">{t.owner}</p>
+            <p className="mt-1 text-small text-fg-muted">
+              {ownerKnown ? t.ownerNotLinked : format(t.ownerPartner, { agent: view.listing.agent.name })}
+            </p>
+          </li>
+        )}
       </ul>
     </DealSection>
   );

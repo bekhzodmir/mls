@@ -8,6 +8,7 @@ import { format } from "@/i18n/define-messages";
 import type mls from "@/i18n/messages/mls";
 import { cn } from "@/lib/cn";
 import { advancedCount, matchesMls, mlsHref, parseMlsParams, type MlsFacet, type MlsParams } from "./mls-params";
+import { inputClasses } from "@/components/ui/field";
 
 type FilterLabels = (typeof mls)["ru"]["filters"];
 
@@ -38,9 +39,6 @@ function toValues(params: MlsParams): Record<string, string> {
   }
   return values;
 }
-
-const fieldClass =
-  "h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg placeholder:text-fg-subtle focus-visible:border-primary";
 
 /**
  * MLS search form (§15.2): quick filters up front, the rest under
@@ -100,7 +98,7 @@ export function MlsFilterForm({
             value={values.q ?? ""}
             onChange={(event) => set("q")(event.target.value)}
             placeholder={labels.searchPlaceholder}
-            className={cn(fieldClass, "pl-9")}
+            className={cn(inputClasses, "pl-9")}
           />
         </div>
       </div>
@@ -114,7 +112,7 @@ export function MlsFilterForm({
         onChange={set("dealType")}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SelectField
           id={id("propertyType")}
           name="propertyType"
@@ -161,7 +159,7 @@ export function MlsFilterForm({
             name="currency"
             value={values.currency ?? "USD"}
             onChange={(event) => set("currency")(event.target.value)}
-            className={fieldClass}
+            className={inputClasses}
           >
             {options.currency.map((option) => (
               <option key={option.value} value={option.value}>
@@ -241,7 +239,7 @@ export function MlsFilterForm({
               integer
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <SelectField
               id={id("renovation")}
               name="renovation"
@@ -363,7 +361,7 @@ function SelectField({
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={fieldClass}
+        className={inputClasses}
       >
         <option value="">{anyLabel}</option>
         {options.map((option) => (
@@ -403,7 +401,7 @@ function NumberField({
         autoComplete="off"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={cn(fieldClass, "tabular")}
+        className={cn(inputClasses, "tabular")}
       />
     </div>
   );

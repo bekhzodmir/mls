@@ -149,8 +149,8 @@ export default defineMessages({
         partner: "Партнёр по сделке",
       },
       owner: "Собственник",
-      ownerHidden:
-        "Контакты собственника не показываются в сделке. Они в карточке объекта — для агента объекта и сотрудников агентства по правам доступа.",
+      ownerRestricted: "Ограниченный доступ: видят агент объекта и его агентство.",
+      ownerNotLinked: "Собственник не привязан к объекту — добавьте его в карточке объекта.",
       ownerPartner: "С собственником работает агент объекта {agent}: контакты — после согласия и по правам.",
       organization: "Агентство: {name}",
       noOrganization: "Индивидуальный риэлтор",
@@ -463,8 +463,8 @@ export default defineMessages({
         partner: "Bitim bo‘yicha hamkor",
       },
       owner: "Mulkdor",
-      ownerHidden:
-        "Mulkdor kontaktlari bitimda ko‘rsatilmaydi. Ular ob’yekt kartasida — ob’yekt agenti va agentlik xodimlari uchun, kirish huquqiga ko‘ra.",
+      ownerRestricted: "Cheklangan kirish: ob’yekt agenti va uning agentligi ko‘radi.",
+      ownerNotLinked: "Mulkdor ob’yektga bog‘lanmagan — uni ob’yekt kartasida qo‘shing.",
       ownerPartner: "Mulkdor bilan ob’yekt agenti {agent} ishlaydi: kontaktlar — rozilikdan keyin va huquqqa ko‘ra.",
       organization: "Agentlik: {name}",
       noOrganization: "Individual rieltor",

@@ -23,6 +23,7 @@ import type { TelegramListingStatus } from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
 import { DemoNote } from "./card-actions";
 import type { RadarMessages } from "./labels";
+import { textareaClasses } from "@/components/ui/field";
 
 type Panel = "more" | "link" | "duplicate" | "report" | "subscribe" | "done" | null;
 
@@ -213,7 +214,7 @@ export function PostActions({
                 <textarea
                   id={`${baseId}-reason`}
                   rows={3}
-                  className="w-full rounded-md border border-border bg-surface p-3 text-small text-fg focus-visible:border-primary"
+                  className={textareaClasses}
                 />
               </div>
               <div className="flex gap-2">

@@ -7,6 +7,7 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { intlLocale, type Locale } from "@/i18n/config";
+import { compareText, formatList } from "@/i18n/format";
 import { format, plural } from "@/i18n/define-messages";
 import domain from "@/i18n/messages/domain";
 import editor from "@/i18n/messages/requirement-editor";
@@ -81,6 +82,14 @@ export interface ActiveRequirementHint {
   summary: string;
 }
 
+/** A stored requirement opened for editing (`?requirementId=`). */
+export interface EditedRequirement {
+  id: string;
+  version: number;
+  values: RequirementFormValues;
+  hardCriteria: RequirementCriterion[];
+}
+
 /**
  * Requirement Editor (§14.4, §22.4, §35.4 steps 1–4, §36.3).
  *
@@ -103,6 +112,7 @@ export function RequirementEditor({
   clientOptions,
   lead,
   activeRequirements,
+  editing,
 }: {
   locale: Locale;
   candidates: EditorCandidate[];
@@ -116,6 +126,8 @@ export function RequirementEditor({
   lead?: { id: string; name?: string };
   /** Active requirements per client id, to warn before creating a second one. */
   activeRequirements: Record<string, ActiveRequirementHint>;
+  /** Edit mode: the form starts from the stored values, all counted as the agent's own. */
+  editing?: EditedRequirement;
 }) {
   const t = editor[locale];
   const d = domain[locale];
@@ -127,9 +139,9 @@ export function RequirementEditor({
   const deferredText = useDeferredValue(text);
   const draft = useMemo(() => parseRequirementText(deferredText), [deferredText]);
   const parsed = useMemo(() => formValuesFromDraft(draft), [draft]);
-  const [overrides, setOverrides] = useState<Partial<RequirementFormValues>>({});
+  const [overrides, setOverrides] = useState<Partial<RequirementFormValues>>(editing?.values ?? {});
   const values = mergeFormValues(parsed, overrides);
-  const [hard, setHard] = useState<RequirementCriterion[]>([]);
+  const [hard, setHard] = useState<RequirementCriterion[]>(editing?.hardCriteria ?? []);
   const [includeTelegram, setIncludeTelegram] = useState(true);
   const [clientId, setClientId] = useState(client?.id ?? "");
   const [showResults, setShowResults] = useState(false);
@@ -139,7 +151,7 @@ export function RequirementEditor({
 
   const at = now();
   const build = buildDraft(values, hard, {
-    id: "draft",
+    id: editing?.id ?? "draft",
     clientId: clientId || "draft",
     agentId,
     organizationId,
@@ -268,7 +280,9 @@ export function RequirementEditor({
 
   const saveClient =
     clientOptions.find((option) => option.id === clientId) ?? (client?.id === clientId ? client : undefined);
-  const existing = clientId ? activeRequirements[clientId] : undefined;
+  const active = clientId ? activeRequirements[clientId] : undefined;
+  // Editing the active requirement itself is not "a second one".
+  const existing = active && active.id !== editing?.id ? active : undefined;
   const saveErrors: string[] = [];
   if (!clientId) saveErrors.push(t.save.errorClient);
   if (blocked && blockedText) saveErrors.push(blockedText);
@@ -341,7 +355,7 @@ export function RequirementEditor({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="min-w-0 space-y-6">
           {/* 1. The sentence ------------------------------------------------ */}
           <section aria-labelledby={`${id}-text-label`} className="space-y-2">
@@ -470,7 +484,7 @@ export function RequirementEditor({
                 </CriterionHeader>
                 <div className="flex flex-wrap gap-2">
                   {[...districtIds]
-                    .sort((a, b) => districtName(a, locale).localeCompare(districtName(b, locale), intlLocale[locale]))
+                    .sort((a, b) => compareText(locale, districtName(a, locale), districtName(b, locale)))
                     .map((district) => (
                       <ToggleChip
                         key={district}
@@ -732,7 +746,7 @@ export function RequirementEditor({
           {missing.length > 0 ? (
             <Notice kind="info" title={t.quality.title}>
               {format(t.quality.text, {
-                list: new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(
+                list: formatList(locale, 
                   missing.map((criterion) => domain[locale].requirementCriterion[criterion]),
                 ),
               })}
@@ -783,8 +797,8 @@ export function RequirementEditor({
             </h2>
             {saveState === "saved" && build.base && build.dealType ? (
               <div role="status" className="space-y-3">
-                <Notice kind="info" title={t.save.savedTitle}>
-                  <p>{t.save.saved}</p>
+                <Notice kind="info" title={editing ? t.save.savedEditTitle : t.save.savedTitle}>
+                  <p>{editing ? format(t.save.savedEdit, { version: editing.version + 1 }) : t.save.saved}</p>
                 </Notice>
                 <div className="space-y-1 text-small text-fg">
                   {saveClient ? <p className="font-semibold">{saveClient.name}</p> : null}
@@ -797,7 +811,7 @@ export function RequirementEditor({
                   <p className="text-fg-muted">
                     {build.hardCriteria.length > 0
                       ? format(t.save.hardList, {
-                          list: new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(
+                          list: formatList(locale, 
                             build.hardCriteria.map((criterion) => domain[locale].requirementCriterion[criterion]),
                           ),
                         })
@@ -805,10 +819,18 @@ export function RequirementEditor({
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {editing ? (
+                    <Link
+                      href={appPath(locale, `/requirements/${encodeURIComponent(editing.id)}`)}
+                      className={buttonClasses("primary")}
+                    >
+                      {t.save.openRequirement}
+                    </Link>
+                  ) : null}
                   {clientId ? (
                     <Link
                       href={appPath(locale, `/clients/${encodeURIComponent(clientId)}`)}
-                      className={buttonClasses("primary")}
+                      className={buttonClasses(editing ? "secondary" : "primary")}
                     >
                       {t.save.openClient}
                     </Link>
@@ -906,7 +928,7 @@ export function RequirementEditor({
                   }}
                 >
                   <Save aria-hidden className="size-5" />
-                  {t.save.submit}
+                  {editing ? t.save.submitEdit : t.save.submit}
                 </Button>
               </>
             )}

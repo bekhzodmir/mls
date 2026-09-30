@@ -96,7 +96,7 @@ export default async function HowItWorksPage() {
       </section>
 
       <Section id="principles" muted title={t.principles.title}>
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {principles.map(({ key, icon: Icon, title, text }) => (
             <li key={key} className="rounded-lg border border-border bg-surface p-5 shadow-card">
               <IconTile>

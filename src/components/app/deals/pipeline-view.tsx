@@ -154,7 +154,7 @@ export function DealStageList({ locale, groups }: { locale: Locale; groups: read
               <span>{domain[locale].dealStage[group.stage]}</span>
               <span className="text-small font-normal text-fg-muted">{dealCountText(locale, group.views.length)}</span>
             </h2>
-            <ul className="grid gap-3 lg:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {group.views.map((view) => (
                 <li key={view.deal.id}>
                   <DealCard locale={locale} view={view} />

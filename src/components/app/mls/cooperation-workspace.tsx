@@ -20,16 +20,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
-import { formatDateTime } from "@/i18n/format";
-import { intlLocale, type Locale } from "@/i18n/config";
+import { formatDateTime, formatList } from "@/i18n/format";
+import type { Locale } from "@/i18n/config";
 import { now } from "@/lib/clock";
 import {
   acceptTerms,
   acceptedTerms,
   awaitingResponseFrom,
+  canOpenDispute,
   cancelRequest,
   declineRequest,
   latestVersion,
+  openDispute,
   proposeTerms,
   type CooperationError,
   type CooperationResult,
@@ -51,6 +53,7 @@ import { CooperationStatusBadge } from "./cooperation-status";
 import { ExampleSplit } from "./example-split";
 import { TermsEditor, type TermsEditorLabels } from "./terms-editor";
 import { TermsSummary } from "./terms-summary";
+import { textareaClasses } from "@/components/ui/field";
 
 type Mode = "accept" | "decline" | "counter" | "cancel" | "dispute" | null;
 
@@ -68,8 +71,8 @@ export interface WorkspaceLabels {
  * current terms with both roles, the full version history with what each
  * version changed, and accept / decline / counter-propose / withdraw /
  * dispute. Every change goes through `proposeTerms`, `acceptTerms`,
- * `declineRequest` or `cancelRequest` and lives in local demo state — the
- * screen says so and never pretends a partner was notified.
+ * `declineRequest`, `cancelRequest` or `openDispute` and lives in local demo
+ * state — the screen says so and never pretends a partner was notified.
  */
 export function CooperationWorkspace({
   locale,
@@ -118,7 +121,7 @@ export function CooperationWorkspace({
   const viewerSide = sideOf(request, viewerId);
   const changed = request !== initial;
   const times = { ...versionTimes, ...localTimes };
-  const list = (items: string[]) => new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  const list = (items: string[]) => formatList(locale, items);
 
   function start(next: Exclude<Mode, null>) {
     setMode(next);
@@ -213,11 +216,15 @@ export function CooperationWorkspace({
         <CalendarPlus aria-hidden className="size-4 shrink-0" />
         <span className="truncate">{c.actions.schedule}</span>
       </Link>,
-      <Button key="dispute" variant="ghost" className="shrink-0" onClick={() => start("dispute")}>
-        <Scale aria-hidden className="size-4 shrink-0" />
-        {c.dispute.open}
-      </Button>,
     );
+    if (canOpenDispute(request.status)) {
+      barButtons.push(
+        <Button key="dispute" variant="ghost" className="shrink-0" onClick={() => start("dispute")}>
+          <Scale aria-hidden className="size-4 shrink-0" />
+          {c.dispute.open}
+        </Button>,
+      );
+    }
   }
 
   return (
@@ -365,7 +372,7 @@ export function CooperationWorkspace({
                   rows={3}
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  className="w-full rounded-md border border-border bg-surface p-3 text-small text-fg focus-visible:border-primary"
+                  className={textareaClasses}
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -418,8 +425,7 @@ export function CooperationWorkspace({
               className="space-y-3"
               onSubmit={(event) => {
                 event.preventDefault();
-                setMode(null);
-                setMessage({ kind: "ok", text: c.dispute.done });
+                apply(openDispute(request, viewerId, at(), reason), () => c.dispute.done);
               }}
             >
               <div className="space-y-1">
@@ -431,7 +437,7 @@ export function CooperationWorkspace({
                   rows={3}
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  className="w-full rounded-md border border-border bg-surface p-3 text-small text-fg focus-visible:border-primary"
+                  className={textareaClasses}
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -448,12 +454,6 @@ export function CooperationWorkspace({
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          {request.status !== "accepted" && request.status !== "draft" && mode !== "dispute" ? (
-            <Button variant="ghost" onClick={() => start("dispute")}>
-              <Scale aria-hidden className="size-4" />
-              {c.dispute.open}
-            </Button>
-          ) : null}
           {changed ? (
             <Button variant="ghost" onClick={reset}>
               <RotateCcw aria-hidden className="size-4" />

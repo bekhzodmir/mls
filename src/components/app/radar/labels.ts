@@ -1,5 +1,5 @@
 import { format } from "@/i18n/define-messages";
-import { formatNumber } from "@/i18n/format";
+import { formatList, formatNumber } from "@/i18n/format";
 import { intlLocale, type Locale } from "@/i18n/config";
 import domain from "@/i18n/messages/domain";
 import mls from "@/i18n/messages/mls";
@@ -142,7 +142,7 @@ export function subscriptionText(locale: Locale, facts: PostFacts): string | und
   if (facts.rooms !== undefined && roomsRelevant(facts.propertyType))
     parts.push(format(t.value.rooms, { n: facts.rooms }));
   if (parts.length === 0) return undefined;
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(parts);
+  return formatList(locale, parts);
 }
 
 /* ---------------------------------------------------------- duplicates */

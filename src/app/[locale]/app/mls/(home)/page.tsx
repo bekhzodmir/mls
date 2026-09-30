@@ -22,6 +22,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { format, plural } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
+import { compareText } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import mls from "@/i18n/messages/mls";
 import { getLocale } from "@/i18n/server";
@@ -45,7 +46,7 @@ function filterOptions(locale: Locale, views: ListingView[]): MlsFilterOptions {
     propertyType: propertyTypes.map((value) => ({ value, label: d.propertyType[value] })),
     district: [...districtIds]
       .map((value) => ({ value, label: districtName(value, locale) }))
-      .sort((a, b) => a.label.localeCompare(b.label, locale)),
+      .sort((a, b) => compareText(locale, a.label, b.label)),
     rooms: roomChoices.map((value) => ({
       value: String(value),
       label: value === 4 ? format(t.roomsPlus, { n: 4 }) : String(value),
@@ -163,7 +164,7 @@ export default async function MlsPage({ searchParams }: PageProps<"/[locale]/app
   return (
     <div className="space-y-4">
       {header}
-      <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
         <div className="rounded-lg border border-border bg-surface p-4 lg:sticky lg:top-6">
           <MlsFilterForm
             locale={locale}
@@ -184,7 +185,7 @@ export default async function MlsPage({ searchParams }: PageProps<"/[locale]/app
           {results.length === 0 ? (
             <NoListings locale={locale} params={params} total={base.length} />
           ) : (
-            <ul className="grid gap-4 xl:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {results.map((view) => (
                 <li key={view.listing.id}>
                   <MlsListingCard

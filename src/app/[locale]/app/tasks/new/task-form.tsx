@@ -12,6 +12,7 @@ import { formatDateTime } from "@/i18n/format";
 import tasks from "@/i18n/messages/tasks";
 import type { Task } from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
+import { inputClasses } from "@/components/ui/field";
 
 export interface ClientOption {
   id: string;
@@ -32,9 +33,6 @@ type Field = "title" | "date" | "time";
 function tashkentIso(date: string, time: string): string {
   return new Date(`${date}T${time}:00+05:00`).toISOString();
 }
-
-const inputClass =
-  "h-12 w-full rounded-md border bg-surface px-3 text-body text-fg placeholder:text-fg-subtle aria-invalid:border-danger-border";
 
 /**
  * Demo "new task" form (§14.8). Nothing is sent anywhere: a valid task is
@@ -156,12 +154,12 @@ export function TaskForm({
               placeholder={t.titlePlaceholder}
               aria-invalid={errors.title ? true : undefined}
               aria-describedby={describedBy("title")}
-              className={cn(inputClass, "border-border-strong")}
+              className={inputClasses}
             />
             {fieldError("title")}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor={ids.date} className="block text-small font-semibold text-fg">
                 {t.date}
@@ -177,7 +175,7 @@ export function TaskForm({
                 onChange={(event) => setDate(event.target.value)}
                 aria-invalid={errors.date ? true : undefined}
                 aria-describedby={describedBy("date")}
-                className={cn(inputClass, "border-border-strong")}
+                className={inputClasses}
               />
               {fieldError("date")}
             </div>
@@ -196,7 +194,7 @@ export function TaskForm({
                 onChange={(event) => setTime(event.target.value)}
                 aria-invalid={errors.time ? true : undefined}
                 aria-describedby={describedBy("time", `${ids.time}-hint`)}
-                className={cn(inputClass, "border-border-strong")}
+                className={inputClasses}
               />
               <p id={`${ids.time}-hint`} className="text-caption text-fg-muted">
                 {t.timeHint}
@@ -242,7 +240,7 @@ export function TaskForm({
               name="clientId"
               value={clientId}
               onChange={(event) => setClientId(event.target.value)}
-              className={cn(inputClass, "border-border-strong")}
+              className={inputClasses}
             >
               <option value="">{t.clientNone}</option>
               {clients.map((client) => (

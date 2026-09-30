@@ -410,6 +410,8 @@ export interface DealView {
 }
 
 export interface DealDetailView extends DealView {
+  /** The property's owner, only for `owner` / `agency` access to the listing (RESTRICTED, §34.2). */
+  owner?: Owner;
   offers: OfferView[];
   viewings: ViewingView[];
   cooperation?: CooperationView;

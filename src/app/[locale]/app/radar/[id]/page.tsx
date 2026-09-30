@@ -100,7 +100,7 @@ export default async function RadarPostPage({ params }: PageProps<"/[locale]/app
         ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         <section aria-labelledby="post-raw" className="space-y-3">
           <SectionHeader id="post-raw" title={t.detail.raw} />
           <p className="text-caption text-fg-muted">{t.detail.rawHint}</p>

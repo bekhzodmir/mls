@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Building, CircleCheck, CircleMinus, Copy, Eye, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatList } from "@/i18n/format";
 import type { DedupConflict, DuplicateRecommendation } from "@/lib/domain/dedup";
 import type { DuplicateSignal } from "@/lib/domain/types";
 
@@ -29,7 +30,7 @@ export interface DuplicateListLabels {
 }
 
 function joinList(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 /**

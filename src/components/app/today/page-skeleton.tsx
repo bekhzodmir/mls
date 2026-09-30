@@ -32,7 +32,7 @@ export function PageSkeleton({
           ))}
         </div>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {Array.from({ length: cards }, (_, card) => (
           <div key={card} className="space-y-3 rounded-lg border border-border bg-surface p-4">
             <Skeleton className="h-5 w-1/3" />

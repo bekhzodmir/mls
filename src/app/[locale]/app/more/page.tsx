@@ -146,7 +146,7 @@ export default async function MorePage() {
       <section aria-labelledby="more-facts" className="space-y-3">
         <SectionHeader id="more-facts" title={t.verification.title} />
         <p className="text-small text-fg-muted">{t.verification.text}</p>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card className="overflow-hidden">
             <h3 className="px-4 pt-4 text-small font-semibold text-fg-muted">
               {t.verification.agent} · {agent.name}
@@ -209,7 +209,7 @@ export default async function MorePage() {
         <NotificationPreferences locale={locale} />
       </section>
 
-      <section aria-labelledby="more-help" className="grid gap-4 sm:grid-cols-2">
+      <section aria-labelledby="more-help" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <h2 id="more-help" className="sr-only">
           {t.support.title}
         </h2>

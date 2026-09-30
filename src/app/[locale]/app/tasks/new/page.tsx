@@ -7,6 +7,7 @@ import { now } from "@/lib/clock";
 import { listClients } from "@/lib/data/repository";
 import { tashkentDateKey } from "@/lib/domain/working-days";
 import { TaskForm } from "./task-form";
+import { compareText } from "@/i18n/format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -19,7 +20,7 @@ export default async function NewTaskPage({ searchParams }: PageProps<"/[locale]
   const { clientId } = await searchParams;
   const clients = (await listClients())
     .map(({ client }) => ({ id: client.id, name: client.name }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale));
+    .sort((a, b) => compareText(locale, a.name, b.name));
   // Only a client the viewer can see may be preselected; anything else is ignored.
   const preselected = clients.find((client) => client.id === clientId)?.id;
 

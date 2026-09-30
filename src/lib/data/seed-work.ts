@@ -776,7 +776,7 @@ export const tasks: Task[] = [
     assigneeId: "agent-01",
     status: "open",
     priority: "high",
-    related: { kind: "client", id: "cl-02" },
+    related: { kind: "requirement", id: "req-03" },
   },
   {
     id: "task-05",
@@ -897,7 +897,7 @@ export const notifications: AppNotification[] = [
     kind: "new_match",
     at: day(0, "09:05"),
     read: false,
-    related: { kind: "listing", id: "lst-16" },
+    related: { kind: "match", id: "req-03--lst-16" },
     context: "Юнусабад-4, 3 комнаты — подходит Гульнаре Сафаровой",
   },
   {
@@ -915,7 +915,7 @@ export const notifications: AppNotification[] = [
     kind: "new_match",
     at: day(-1, "12:02"),
     read: true,
-    related: { kind: "telegram", id: "tg-13" },
+    related: { kind: "match", id: "req-10--tg-13" },
     context: "Telegram: Чиланзар-14, 3 комнаты, 8,8 млн сум — подходит Zarina Abdullayeva",
   },
   {

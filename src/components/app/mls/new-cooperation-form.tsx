@@ -10,7 +10,14 @@ import { format } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
 import { now } from "@/lib/clock";
 import { latestVersion, proposeTerms, type CooperationError } from "@/lib/domain/commission";
-import type { CommissionTerms, ConfidenceBand, CooperationRequest, CooperationStatus, ID } from "@/lib/domain/types";
+import type {
+  CommissionTerms,
+  ConfidenceBand,
+  CooperationInitiatorRole,
+  CooperationRequest,
+  CooperationStatus,
+  ID,
+} from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
 import { DemoNote } from "../radar/card-actions";
 import type { CooperationMessages, CriteriaRow, TermsLabels } from "./cooperation-labels";
@@ -18,6 +25,7 @@ import { draftFromTerms, draftReady, draftRequest, responseDeadline, type TermsD
 import { RequirementCriteria } from "./requirement-criteria";
 import { TermsEditor, type TermsEditorLabels } from "./terms-editor";
 import { TermsSummary } from "./terms-summary";
+import { inputClasses } from "@/components/ui/field";
 
 export interface RequirementOption {
   id: ID;
@@ -35,7 +43,6 @@ export interface DeadlineOption {
   until: string;
 }
 
-type Role = "buyer" | "referral";
 
 const bandTone: Record<ConfidenceBand, Tone> = {
   excellent: "success",
@@ -84,7 +91,7 @@ export function NewCooperationForm({
   const baseId = useId();
   const formId = `${baseId}-form`;
   const [requirementId, setRequirementId] = useState(initialRequirementId);
-  const [role, setRole] = useState<Role>("buyer");
+  const [role, setRole] = useState<CooperationInitiatorRole>("buyer_agent");
   const [draft, setDraft] = useState<TermsDraft>(() => draftFromTerms(initialTerms));
   const [hours, setHours] = useState<number>(deadlines[0]?.hours ?? 24);
   const [sent, setSent] = useState<CooperationRequest | null>(null);
@@ -102,12 +109,11 @@ export function NewCooperationForm({
       requirementId: requirement?.id,
       fromAgentId: viewerId,
       toAgentId,
+      initiatorRole: role,
       respondBy: responseDeadline(at, hours),
       createdAt: at.toISOString(),
     });
-    const roleLine = format(t.roleLine, { role: role === "buyer" ? t.roleBuyer : t.roleReferral });
-    const note = [roleLine, draft.note.trim()].filter(Boolean).join(" ");
-    const result = proposeTerms(request, draft.terms, viewerId, at.toISOString(), note);
+    const result = proposeTerms(request, draft.terms, viewerId, at.toISOString(), draft.note);
     if (result.ok) {
       setSent(result.value);
       setError(null);
@@ -182,7 +188,7 @@ export function NewCooperationForm({
               aria-labelledby={`${baseId}-req`}
               value={requirementId}
               onChange={(event) => setRequirementId(event.target.value)}
-              className="h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg focus-visible:border-primary"
+              className={inputClasses}
             >
               <option value="">{t.requirementNone}</option>
               {requirements.map((option) => (
@@ -210,9 +216,9 @@ export function NewCooperationForm({
         <h2 id={`${baseId}-role`} className="text-h2 text-fg">
           {t.role}
         </h2>
-        <fieldset className="grid gap-2 sm:grid-cols-2">
+        <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <legend className="sr-only">{t.role}</legend>
-          {(["buyer", "referral"] as const).map((option) => (
+          {(["buyer_agent", "referral_partner"] as const).map((option) => (
             <label
               key={option}
               className={cn(
@@ -230,10 +236,10 @@ export function NewCooperationForm({
               />
               <span>
                 <span className="block text-small font-semibold text-fg">
-                  {option === "buyer" ? t.roleBuyer : t.roleReferral}
+                  {option === "buyer_agent" ? t.roleBuyer : t.roleReferral}
                 </span>
                 <span className="block text-caption text-fg-muted">
-                  {option === "buyer" ? t.roleBuyerHint : t.roleReferralHint}
+                  {option === "buyer_agent" ? t.roleBuyerHint : t.roleReferralHint}
                 </span>
               </span>
             </label>
@@ -294,7 +300,7 @@ export function NewCooperationForm({
         <h2 id={`${baseId}-preview`} className="text-h2 text-fg">
           {t.preview}
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <h3 className="flex items-center gap-2 text-small font-semibold text-fg">
               <Eye aria-hidden className="size-4 text-success-fg" />

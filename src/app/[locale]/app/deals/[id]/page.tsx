@@ -98,7 +98,7 @@ export default async function DealPage({ params }: PageProps<"/[locale]/app/deal
         agentNames={agentNames}
       >
         <DealStagePanel />
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
           <div className="space-y-4">
             <NextActionSection locale={locale} view={view} now={at} />
             <DealFinancials />

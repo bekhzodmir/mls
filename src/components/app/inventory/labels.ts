@@ -1,5 +1,6 @@
 import { format } from "@/i18n/define-messages";
 import { intlLocale, type Locale } from "@/i18n/config";
+import { formatNumber } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import properties from "@/i18n/messages/properties";
 import { districtName } from "@/lib/domain/geo";
@@ -44,7 +45,7 @@ export interface PhysicalFacts {
 }
 
 function number(locale: Locale, value: number): string {
-  return new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
+  return formatNumber(locale, value, { maximumFractionDigits: 1 });
 }
 
 /** Room counts matter for flats and houses; floors for flats, single rooms and premises; land has neither. */

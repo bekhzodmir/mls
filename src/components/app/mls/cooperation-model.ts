@@ -11,6 +11,7 @@ import {
 import { toMinor } from "@/lib/domain/money";
 import type {
   CommissionTerms,
+  CooperationInitiatorRole,
   CooperationRequest,
   CooperationStatus,
   Currency,
@@ -272,6 +273,7 @@ export function draftRequest(input: {
   requirementId?: ID;
   fromAgentId: ID;
   toAgentId: ID;
+  initiatorRole?: CooperationInitiatorRole;
   respondBy: ISODateTime;
   createdAt: ISODateTime;
 }): CooperationRequest {
@@ -287,6 +289,7 @@ export function draftRequest(input: {
     createdAt: input.createdAt,
   };
   if (input.requirementId) request.requirementId = input.requirementId;
+  if (input.initiatorRole) request.initiatorRole = input.initiatorRole;
   return request;
 }
 

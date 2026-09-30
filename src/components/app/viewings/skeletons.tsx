@@ -47,7 +47,7 @@ export function AgendaSkeleton({ locale }: { locale: Locale }) {
       {[2, 2].map((cards, day) => (
         <div key={day} className="space-y-3">
           <Skeleton className="h-6 w-56" />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {Array.from({ length: cards }, (_, index) => (
               <CardSkeleton key={index} />
             ))}
@@ -67,7 +67,7 @@ export function ViewingDetailSkeleton({ locale }: { locale: Locale }) {
       <Skeleton className="h-11 w-24" />
       <Skeleton className="h-8 w-3/4" />
       <Skeleton className="h-4 w-1/2" />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {Array.from({ length: 4 }, (_, index) => (
           <div key={index} className="space-y-3 rounded-lg border border-border bg-surface p-4">
             <Skeleton className="h-6 w-40" />

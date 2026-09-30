@@ -24,6 +24,7 @@ import {
   relevantFields,
   sameTelegramUrl,
 } from "./parse-view";
+import { inputClasses } from "@/components/ui/field";
 
 /** Duplicate candidates shown at most; the strongest come first. */
 const MAX_DUPLICATES = 5;
@@ -342,7 +343,7 @@ const CopilotResult = memo(function CopilotResult({
                         id={`${baseId}-target`}
                         value={target}
                         onChange={(event) => setTarget(event.target.value)}
-                        className="h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg"
+                        className={inputClasses}
                       >
                         <option value="">—</option>
                         {duplicates.map((entry) => (

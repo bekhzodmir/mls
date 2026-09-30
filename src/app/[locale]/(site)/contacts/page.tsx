@@ -81,7 +81,7 @@ export default async function ContactsPage() {
           <h2 id="channels-title" className="sr-only">
             {t.channelsLabel}
           </h2>
-          <ul className="grid gap-4 md:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <ContactCard
               icon={Send}
               title={t.telegram.title}
@@ -127,7 +127,7 @@ export default async function ContactsPage() {
       </section>
 
       <Section id="details" muted title={t.details.title}>
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {details.map(({ key, icon: Icon, term, value }) => (
             <div key={key} className="flex gap-4 rounded-lg border border-border bg-surface p-5 shadow-card">
               <IconTile>

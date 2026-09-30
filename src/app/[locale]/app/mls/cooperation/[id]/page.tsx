@@ -22,7 +22,7 @@ import { getViewer } from "@/lib/data/repository";
 import type { CooperationView } from "@/lib/data/views";
 import type { SplitSide } from "@/lib/domain/commission";
 import { formatUzPhone, maskUzPhone, telHref } from "@/lib/domain/phone";
-import type { Agent, Organization } from "@/lib/domain/types";
+import type { Agent, CooperationInitiatorRole, Organization } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/app/mls/cooperation/[id]">): Promise<Metadata> {
@@ -38,6 +38,7 @@ function Participant({
   organization,
   isViewer,
   shared,
+  role,
 }: {
   locale: Locale;
   side: SplitSide;
@@ -45,6 +46,8 @@ function Participant({
   organization?: Organization;
   isViewer: boolean;
   shared: boolean;
+  /** The requesting side's stated role; `null` = not stated (unknown), `undefined` = not applicable. */
+  role?: CooperationInitiatorRole | null;
 }) {
   const t = cooperation[locale];
   const d = domain[locale];
@@ -63,6 +66,12 @@ function Participant({
         <span className="text-fg-muted">{t.detail.agency}: </span>
         {organization?.name ?? t.detail.noAgency}
       </p>
+      {role !== undefined ? (
+        <p className="text-small text-fg">
+          <span className="text-fg-muted">{t.detail.initiatorRole}: </span>
+          {role ? d.initiatorRole[role] : d.unknown}
+        </p>
+      ) : null}
       <p className="text-small text-fg-muted">{d.professionalStatus[agent.professionalStatus]}</p>
       {isViewer ? null : shared ? (
         <p className="flex items-center gap-2 text-small">
@@ -165,7 +174,7 @@ export default async function CooperationPage({ params }: PageProps<"/[locale]/a
         <h2 id="coop-participants" className="text-h2 text-fg">
           {t.detail.participants}
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Participant
             locale={locale}
             side="listing"
@@ -181,11 +190,12 @@ export default async function CooperationPage({ params }: PageProps<"/[locale]/a
             organization={view.fromOrganization}
             isViewer={view.fromAgent.id === viewerId}
             shared={shared}
+            role={request.initiatorRole ?? null}
           />
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <CooperationWorkspace
           locale={locale}
           viewerId={viewerId}

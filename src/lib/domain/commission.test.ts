@@ -3,11 +3,13 @@ import {
   acceptTerms,
   acceptedTerms,
   awaitingResponseFrom,
+  canOpenDispute,
   cancelRequest,
   declineRequest,
   diffTerms,
   expireIfOverdue,
   markViewed,
+  openDispute,
   presetTerms,
   proposeTerms,
   splitAmount,
@@ -363,6 +365,59 @@ describe("declineRequest / cancelRequest / markViewed", () => {
   });
 });
 
+describe("counter-proposal deadline", () => {
+  it("moves respondBy when a proposal sets a new one", () => {
+    const sent = value(proposeTerms(draft(), presetTerms("50/50", "USD"), BUYER_AGENT, T0));
+    const later = "2026-10-05T13:00:00.000Z";
+    const result = proposeTerms(sent, presetTerms("70/30", "USD"), LISTING_AGENT, T1, undefined, later);
+    expect(result.ok && result.value.respondBy).toBe(later);
+    expect(result.ok && result.event.respondBy).toBe(later);
+    // Without one the deadline stays as it was.
+    expect(value(proposeTerms(sent, presetTerms("70/30", "USD"), LISTING_AGENT, T1)).respondBy).toBe(sent.respondBy);
+  });
+
+  it("refuses a deadline that is not after the proposal", () => {
+    const sent = value(proposeTerms(draft(), presetTerms("50/50", "USD"), BUYER_AGENT, T0));
+    for (const respondBy of [T1, T0, "not a date"]) {
+      expect(proposeTerms(sent, presetTerms("70/30", "USD"), LISTING_AGENT, T1, undefined, respondBy)).toEqual({
+        ok: false,
+        error: "invalid_time",
+      });
+    }
+  });
+});
+
+describe("openDispute", () => {
+  it("lets either party dispute accepted terms and keeps the history", () => {
+    const accepted = frozen(value(acceptTerms(negotiated(), 2, BUYER_AGENT, T2)));
+    const result = openDispute(accepted, LISTING_AGENT, T2, "  Выплата не поступила  ");
+    expect(result.ok && result.value.status).toBe("disputed");
+    expect(result.ok && result.value.versions).toBe(accepted.versions);
+    expect(result.ok && result.value.acceptedVersion).toBe(2);
+    expect(result.ok && result.event).toEqual({
+      action: "dispute_opened",
+      requestId: "coop-1",
+      actorId: LISTING_AGENT,
+      at: T2,
+      version: 2,
+      reason: "Выплата не поступила",
+    });
+    expect(openDispute(accepted, BUYER_AGENT, T2, "Условия").ok).toBe(true);
+  });
+
+  it("needs a reason, a party and accepted terms", () => {
+    const accepted = value(acceptTerms(negotiated(), 2, BUYER_AGENT, T2));
+    expect(openDispute(accepted, BUYER_AGENT, T2, "   ")).toEqual({ ok: false, error: "reason_missing" });
+    expect(openDispute(accepted, "agent-other", T2, "x")).toEqual({ ok: false, error: "not_a_party" });
+    expect(openDispute(draft(), BUYER_AGENT, T2, "x")).toEqual({ ok: false, error: "not_sent" });
+    expect(openDispute(negotiated(), BUYER_AGENT, T2, "x")).toEqual({ ok: false, error: "invalid_status" });
+    const declined = value(declineRequest(negotiated(), BUYER_AGENT, T2));
+    expect(openDispute(declined, BUYER_AGENT, T2, "x")).toEqual({ ok: false, error: "request_closed" });
+    expect(canOpenDispute("accepted")).toBe(true);
+    expect(canOpenDispute("negotiation")).toBe(false);
+  });
+});
+
 describe("expireIfOverdue", () => {
   it("expires an unanswered request after respondBy and keeps its versions", () => {
     const request = negotiated();
@@ -393,6 +448,10 @@ describe("consistency with the cooperation lifecycle", () => {
       [negotiated(), value(declineRequest(negotiated(), BUYER_AGENT, T2))],
       [draft(), value(cancelRequest(draft(), BUYER_AGENT, T0))],
       [negotiated(), expireIfOverdue(negotiated(), new Date("2026-10-03T00:00:00.000Z"))!.value],
+      [
+        value(acceptTerms(negotiated(), 2, BUYER_AGENT, T2)),
+        value(openDispute(value(acceptTerms(negotiated(), 2, BUYER_AGENT, T2)), LISTING_AGENT, T2, "Выплата")),
+      ],
     ];
     for (const [before, after] of steps) {
       expect(canTransitionCooperation(before.status, after.status)).toEqual({ ok: true });

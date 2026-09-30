@@ -127,7 +127,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/[locale]/a
       </div>
 
       {shown.length > 0 ? (
-        <ul aria-label={t.inbox.listLabel} className="grid gap-3 lg:grid-cols-2">
+        <ul aria-label={t.inbox.listLabel} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {shown.map((view) => (
             <li key={view.lead.id}>
               <LeadCard locale={locale} view={view} at={at} />

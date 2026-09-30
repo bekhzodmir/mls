@@ -6,8 +6,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
-import { formatDateTime, formatTime } from "@/i18n/format";
+import type { Locale } from "@/i18n/config";
+import { formatDateTime, formatList, formatTime } from "@/i18n/format";
 import viewings from "@/i18n/messages/viewings";
 import { DEFAULT_DURATION, DURATION_OPTIONS } from "./agenda";
 import { CheckRow, ErrorSummary, Hint, InlineError, inputClasses, Label } from "./form-parts";
@@ -106,7 +106,7 @@ export function NewViewingForm({
     return `${cooperationHref}?${query}`;
   })();
 
-  const overlapList = new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(
+  const overlapList = formatList(locale, 
     check.overlaps.map((slot) => `${formatTime(locale, slot.startsAt)} · ${slot.clientName} · ${slot.propertyLabel}`),
   );
 

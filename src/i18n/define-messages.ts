@@ -38,7 +38,9 @@ export function plural(
   count: number,
   forms: { one: string; few?: string; many: string },
 ): string {
-  const rule = new Intl.PluralRules(locale === "ru" ? "ru-RU" : "uz-Latn-UZ").select(count);
+  // CLDR Uzbek has "one" for exactly 1 and "other" otherwise. It is computed
+  // directly: Chromium ships no Uzbek plural data and would answer "other".
+  const rule = locale === "ru" ? new Intl.PluralRules("ru-RU").select(count) : count === 1 ? "one" : "other";
   if (rule === "one") return forms.one;
   // Russian fractions ("other": 1,5; 0,5) take the genitive singular, i.e. the few form: «1,5 дня».
   if (rule === "few" || (rule === "other" && locale === "ru")) return forms.few ?? forms.many;

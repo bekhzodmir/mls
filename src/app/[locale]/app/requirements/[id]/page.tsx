@@ -177,7 +177,7 @@ export default async function RequirementPage({ params, searchParams }: PageProp
         </Notice>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         <section aria-labelledby="requirement-criteria">
           <Card className="space-y-3 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -227,7 +227,7 @@ export default async function RequirementPage({ params, searchParams }: PageProp
               <p role="status" className="text-small font-semibold text-fg">
                 {format(t.shortlist.bands, bands)}
               </p>
-              <ul className="grid gap-3 lg:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {active.map((match) => (
                   <li key={match.id}>
                     <MatchCard locale={locale} match={match} />
@@ -262,7 +262,7 @@ export default async function RequirementPage({ params, searchParams }: PageProp
               </summary>
               <div className="space-y-3 border-t border-border p-4">
                 <p className="text-caption text-fg-muted">{t.shortlist.setAsideHint}</p>
-                <ul className="grid gap-3 lg:grid-cols-2">
+                <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                   {setAside.map((match) => (
                     <li key={match.id}>
                       <MatchCard locale={locale} match={match} headingLevel={4} />

@@ -45,7 +45,7 @@ export function LocaleSwitch({
               document.cookie = `${LOCALE_COOKIE}=${target}; path=/; max-age=31536000; samesite=lax`;
             }}
             className={cn(
-              "inline-flex h-10 min-w-11 items-center justify-center rounded-sm px-2 text-caption font-semibold transition-colors",
+              "inline-flex h-11 min-w-11 items-center justify-center rounded-sm px-2 text-caption font-semibold transition-colors",
               active ? "bg-primary text-primary-fg" : "text-fg-muted hover:bg-surface-muted",
             )}
           >

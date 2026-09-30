@@ -24,7 +24,7 @@ import { Avatar } from "@/components/ui/misc";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
-import { formatDate } from "@/i18n/format";
+import { formatDay } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import viewings from "@/i18n/messages/viewings";
 import { getLocale } from "@/i18n/server";
@@ -243,7 +243,7 @@ export default async function ViewingPage({ params }: PageProps<"/[locale]/app/v
       <PageHeader
         locale={locale}
         title={propertyTitle(locale, view.listing.property)}
-        subtitle={`${formatDate(locale, view.viewing.startsAt, { weekday: "long", day: "numeric", month: "long" })} · ${timeRange(locale, view.viewing.startsAt, view.viewing.durationMinutes)} · ${view.client.name}`}
+        subtitle={`${formatDay(locale, view.viewing.startsAt)} · ${timeRange(locale, view.viewing.startsAt, view.viewing.durationMinutes)} · ${view.client.name}`}
         backHref={viewingListHref(locale)}
         className="mb-0"
       >
@@ -261,7 +261,7 @@ export default async function ViewingPage({ params }: PageProps<"/[locale]/app/v
         clientHref={appPath(locale, `/clients/${encodeURIComponent(view.client.id)}`)}
       >
         <ViewingActionBar />
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
           <div className="space-y-4">
             <ViewingStatusCard />
             <PlaceSection locale={locale} view={view} cooperationHref={cooperationHref} />

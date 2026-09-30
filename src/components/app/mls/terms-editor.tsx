@@ -29,6 +29,7 @@ import {
 } from "./cooperation-model";
 import type { CooperationMessages, TermsLabels } from "./cooperation-labels";
 import { ExampleSplit } from "./example-split";
+import { inputClasses, textareaClasses } from "@/components/ui/field";
 
 export interface TermsEditorLabels {
   editor: CooperationMessages["editor"];
@@ -39,9 +40,6 @@ export interface TermsEditorLabels {
 
 const bases: CommissionTerms["basis"][] = ["gross_commission", "fixed_amount"];
 const payouts: CommissionTerms["payoutCondition"][] = ["on_deal_closing", "on_act_signed", "custom"];
-
-const fieldClass =
-  "h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg focus-visible:border-primary aria-invalid:border-danger-border";
 
 /**
  * Commission split editor (§7.4, §15.4, §35.6): presets 50/50 · 70/30 · 80/20
@@ -155,7 +153,7 @@ export function TermsEditor({
 
       <fieldset>
         <legend className="mb-1 text-caption font-medium text-fg-muted">{e.basis}</legend>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {bases.map((basis) => (
             <label
               key={basis}
@@ -178,7 +176,7 @@ export function TermsEditor({
         </div>
       </fieldset>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {terms.basis === "fixed_amount" ? (
           <div className="space-y-1">
             <label htmlFor={id("amount")} className="block text-caption font-medium text-fg-muted">
@@ -192,7 +190,7 @@ export function TermsEditor({
               onChange={(event) => onChange(withAmountText(draft, event.target.value))}
               aria-invalid={inputErrors.includes("amountText") || amountIssues.length > 0 ? true : undefined}
               aria-describedby={id("amount-issues")}
-              className={cn(fieldClass, "tabular")}
+              className={cn(inputClasses, "tabular")}
             />
             <div id={id("amount-issues")}>
               {inputErrors.includes("amountText") ? (
@@ -210,7 +208,7 @@ export function TermsEditor({
             id={id("currency")}
             value={terms.currency}
             onChange={(event) => onChange(withCurrencyChoice(draft, event.target.value as CommissionTerms["currency"]))}
-            className={fieldClass}
+            className={inputClasses}
           >
             {currencies.map((currency) => (
               <option key={currency} value={currency}>
@@ -229,7 +227,7 @@ export function TermsEditor({
             onChange={(event) =>
               onChange(withPayoutChoice(draft, event.target.value as CommissionTerms["payoutCondition"]))
             }
-            className={fieldClass}
+            className={inputClasses}
           >
             {payouts.map((payout) => (
               <option key={payout} value={payout}>
@@ -269,7 +267,7 @@ export function TermsEditor({
           value={draft.note}
           placeholder={e.notePlaceholder}
           onChange={(event) => onChange({ ...draft, note: event.target.value })}
-          className="w-full rounded-md border border-border bg-surface p-3 text-small text-fg focus-visible:border-primary"
+          className={textareaClasses}
         />
       </div>
 
@@ -309,7 +307,7 @@ function PercentField({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={invalid ? true : undefined}
         aria-describedby={`${id}-hint`}
-        className={cn(fieldClass, "text-body font-semibold tabular")}
+        className={cn(inputClasses, "text-body font-semibold tabular")}
       />
       <p id={`${id}-hint`} className={cn("text-caption", inputError ? "text-danger-fg" : "text-fg-muted")}>
         {inputError ?? hint}

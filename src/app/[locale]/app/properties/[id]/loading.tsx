@@ -19,7 +19,7 @@ export default async function PropertyLoading() {
           <Skeleton className="h-5 w-4/5" />
         </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {[0, 1].map((column) => (
           <div key={column} className="space-y-3 rounded-lg border border-border bg-surface p-4">
             <Skeleton className="h-6 w-1/3" />

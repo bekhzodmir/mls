@@ -46,7 +46,7 @@ export function BuyerRequests({
         {incoming.length === 0 ? (
           <EmptyState icon={UsersRound} title={t.partnerNone} />
         ) : (
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {incoming.map((view) => {
               const summary = view.requirement;
               if (!summary) return null;
@@ -105,7 +105,7 @@ export function BuyerRequests({
             action={<ButtonLink href={appPath(locale, "/requirements/new")}>{t.newRequirement}</ButtonLink>}
           />
         ) : (
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {own.map((view) => {
               const titleId = `own-${view.requirement.id}`;
               return (

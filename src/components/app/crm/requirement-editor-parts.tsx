@@ -6,7 +6,8 @@ import { describeReason, summarizeMatch } from "@/components/domain/match-explan
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/misc";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatList, formatNumber } from "@/i18n/format";
 import { format } from "@/i18n/define-messages";
 import domain from "@/i18n/messages/domain";
 import editor from "@/i18n/messages/requirement-editor";
@@ -28,7 +29,7 @@ import { formatArea, formatBudget, formatRooms } from "./requirement-summary";
  */
 
 function list(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 /** Human value of one parsed field, or undefined when the parser found none. */
@@ -64,7 +65,7 @@ export function parsedValueText(locale: Locale, draft: RequirementDraft, key: Dr
       if (budget.currency && (budget.min || budget.max)) return formatBudget(locale, budget);
       const amounts = [budget.amountsMinor.min, budget.amountsMinor.max]
         .filter((value): value is number => value !== undefined)
-        .map((minor) => new Intl.NumberFormat(intlLocale[locale]).format(minor / 100))
+        .map((minor) => formatNumber(locale, minor / 100))
         .join(" – ");
       return format(t.budgetNoCurrency, { amount: amounts });
     }

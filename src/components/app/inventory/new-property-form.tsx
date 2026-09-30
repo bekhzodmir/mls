@@ -34,6 +34,7 @@ import {
   type PrefillField,
   type TelegramPrefill,
 } from "./new-property";
+import { inputClasses } from "@/components/ui/field";
 
 type Labels = (typeof properties)["ru"]["new"];
 
@@ -60,9 +61,6 @@ type Stage =
   | { kind: "edit" }
   | { kind: "check"; draft: NewPropertyDraft; matches: DuplicateMatch[] }
   | { kind: "done"; result: "created" | "listing" | "linked"; id?: string };
-
-const fieldClasses =
-  "h-11 w-full rounded-md border bg-surface px-3 text-small text-fg placeholder:text-fg-subtle aria-[invalid=true]:border-danger-border";
 
 /** Error field order, as the fields appear on screen. */
 const errorOrder: FormField[] = [
@@ -249,7 +247,7 @@ export function NewPropertyForm({ locale, labels, restrictedLabel, options, init
           onChange={(event) => set(field, event.target.value)}
           aria-invalid={errors[field] ? true : undefined}
           aria-describedby={describedBy(field)}
-          className={cn(fieldClasses, "tabular border-border")}
+          className={cn(inputClasses, "tabular border-border")}
         />
         {errorLine(field)}
       </div>
@@ -439,7 +437,7 @@ export function NewPropertyForm({ locale, labels, restrictedLabel, options, init
             onChange={(event) => set("district", (event.target.value || undefined) as DistrictId | undefined)}
             aria-invalid={errors.district ? true : undefined}
             aria-describedby={describedBy("district")}
-            className={cn(fieldClasses, "border-border")}
+            className={inputClasses}
           >
             <option value="">{labels.field.chooseDistrict}</option>
             {options.districts.map((district) => (
@@ -458,7 +456,7 @@ export function NewPropertyForm({ locale, labels, restrictedLabel, options, init
             onChange={(event) => set("areaName", event.target.value)}
             aria-describedby={fieldId("areaName-hint")}
             autoComplete="off"
-            className={cn(fieldClasses, "border-border")}
+            className={inputClasses}
           />
           <p id={fieldId("areaName-hint")} className="text-caption text-fg-muted">
             {labels.field.areaNameHint}
@@ -481,7 +479,7 @@ export function NewPropertyForm({ locale, labels, restrictedLabel, options, init
             onChange={(event) => set("address", event.target.value)}
             aria-describedby={fieldId("address-hint")}
             autoComplete="off"
-            className={cn(fieldClasses, "border-border")}
+            className={inputClasses}
           />
           <p id={fieldId("address-hint")} className="text-caption text-fg-muted">
             {labels.field.addressHint}
@@ -501,7 +499,7 @@ export function NewPropertyForm({ locale, labels, restrictedLabel, options, init
             onChange={(event) => set("price", event.target.value)}
             aria-invalid={errors.price ? true : undefined}
             aria-describedby={describedBy("price", fieldId("price-hint"))}
-            className={cn(fieldClasses, "tabular border-border")}
+            className={cn(inputClasses, "tabular border-border")}
           />
           <p id={fieldId("price-hint")} className="text-caption text-fg-muted">
             {labels.field.priceHint}

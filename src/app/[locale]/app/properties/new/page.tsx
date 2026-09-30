@@ -9,6 +9,7 @@ import { ButtonAnchor, ButtonLink } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
 import { intlLocale, type Locale } from "@/i18n/config";
+import { compareText, formatList } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import properties from "@/i18n/messages/properties";
 import { getLocale } from "@/i18n/server";
@@ -57,7 +58,7 @@ function TelegramNotice({ locale, prefill }: { locale: Locale; prefill: Telegram
       {uncertain.length > 0 ? (
         <p className="pt-1">
           {format(t.fromTelegram.uncertain, {
-            list: new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(uncertain),
+            list: formatList(locale, uncertain),
           })}
         </p>
       ) : null}
@@ -108,7 +109,7 @@ export default async function NewPropertyPage({ searchParams }: PageProps<"/[loc
           dealTypes: dealTypes.map((value) => ({ value, label: d.dealType[value] })),
           districts: [...districtIds]
             .map((value) => ({ value, label: districtName(value, locale) }))
-            .sort((a, b) => a.label.localeCompare(b.label, locale)),
+            .sort((a, b) => compareText(locale, a.label, b.label)),
           signals: d.duplicateSignal,
           conflicts: d.dedupConflict,
         }}

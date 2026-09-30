@@ -15,7 +15,7 @@ import {
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { format } from "@/i18n/define-messages";
-import { formatDate, formatTime } from "@/i18n/format";
+import { formatDay, formatTime } from "@/i18n/format";
 import today from "@/i18n/messages/today";
 import { getLocale } from "@/i18n/server";
 import { now } from "@/lib/clock";
@@ -84,7 +84,7 @@ export default async function TodayPage() {
           <>
             {workplace}
             <span aria-hidden> · </span>
-            {capitalize(formatDate(locale, feed.generatedAt, { weekday: "long", day: "numeric", month: "long" }))}
+            {capitalize(formatDay(locale, feed.generatedAt))}
             <span aria-hidden> · </span>
             {format(t.updatedAt, { time: formatTime(locale, feed.generatedAt) })}
           </>
@@ -101,7 +101,7 @@ export default async function TodayPage() {
       {step ? <NextStepCard locale={locale} step={step} at={at} /> : null}
 
       {blocks.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {blocks.map((block) => (
             <TodayBlockSection key={block.key} locale={locale} block={block} at={at} />
           ))}

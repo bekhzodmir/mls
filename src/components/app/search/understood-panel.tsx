@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { ChipLink } from "@/components/ui/misc";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
-import { formatNumber } from "@/i18n/format";
+import type { Locale } from "@/i18n/config";
+import { formatList, formatNumber } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import search from "@/i18n/messages/search";
 import { districtName } from "@/lib/domain/geo";
@@ -18,7 +18,7 @@ import { choiceAmount, withCurrency, type QueryCriterion, type QueryInterpretati
 type Words = (typeof search)["ru"]["understood"];
 
 function orList(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "disjunction" }).format(items);
+  return formatList(locale, items, "disjunction");
 }
 
 function range<T>(value: Range<T>, show: (item: T) => string, t: Words): string {

@@ -109,6 +109,8 @@ export default defineMessages({
     entity: {
       lead: "Лид",
       client: "Клиент",
+      requirement: "Запрос клиента",
+      match: "Совпадение",
       listing: "Объект",
       deal: "Сделка",
       viewing: "Просмотр",
@@ -219,6 +221,8 @@ export default defineMessages({
     entity: {
       lead: "Lid",
       client: "Mijoz",
+      requirement: "Mijoz so‘rovi",
+      match: "Moslik",
       listing: "Ob’yekt",
       deal: "Bitim",
       viewing: "Ko‘rik",

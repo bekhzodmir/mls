@@ -123,7 +123,7 @@ function Group({ locale, group }: { locale: Locale; group: RequirementGroup }) {
           <ArrowRight aria-hidden className="size-4" />
         </Link>
       </header>
-      <ul className="grid gap-3 lg:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {shown.map((match) => (
           <li key={match.id}>
             <MatchCard locale={locale} match={match} />

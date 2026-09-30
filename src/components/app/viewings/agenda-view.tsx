@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ChipLink } from "@/components/ui/misc";
 import { format, plural } from "@/i18n/define-messages";
 import { intlLocale, type Locale } from "@/i18n/config";
-import { formatDate, formatTime } from "@/i18n/format";
+import { formatDay, formatList, formatTime } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import viewings from "@/i18n/messages/viewings";
 import type { ViewingView } from "@/lib/data/views";
@@ -40,7 +40,7 @@ export function timeRange(locale: Locale, startsAt: string, durationMinutes: num
 
 /** «Сегодня · среда, 30 сентября» or «пятница, 2 октября». */
 export function dayHeading(locale: Locale, day: Pick<AgendaDay, "anchorIso" | "relative">): string {
-  const date = formatDate(locale, day.anchorIso, { weekday: "long", day: "numeric", month: "long" });
+  const date = formatDay(locale, day.anchorIso);
   return day.relative ? `${viewings[locale].list.day[day.relative]} · ${date}` : capitalize(locale, date);
 }
 
@@ -58,7 +58,7 @@ export function conflictList(locale: Locale, ids: readonly ID[], all: readonly V
     .map((id) => all.find((view) => view.viewing.id === id))
     .filter((view): view is ViewingView => view !== undefined);
   if (found.length === 0) return undefined;
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(
+  return formatList(locale, 
     found.map((view) => `${formatTime(locale, view.viewing.startsAt)} · ${view.client.name}`),
   );
 }
@@ -223,7 +223,7 @@ export function AgendaDays({
             <span>{dayHeading(locale, day)}</span>
             <span className="text-small font-normal text-fg-muted">{viewingCountText(locale, day.views.length)}</span>
           </h2>
-          <ul className="grid gap-3 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {day.views.map((view) => (
               <li key={view.viewing.id}>
                 <ViewingCard locale={locale} view={view} all={all} now={now} />

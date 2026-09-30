@@ -66,7 +66,7 @@ export function DealWorkspaceSkeleton({ locale }: { locale: Locale }) {
           <Skeleton key={index} className="h-10 w-24 shrink-0" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {Array.from({ length: 6 }, (_, index) => (
           <div key={index} className="space-y-3 rounded-lg border border-border bg-surface p-4">
             <Skeleton className="h-6 w-40" />

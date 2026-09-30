@@ -59,6 +59,29 @@ describe("demo seed integrity", () => {
     expect(duplicates).toEqual([]);
   });
 
+  it("shows the owner in a deal only with owner or agency access to the listing", async () => {
+    const accesses = new Set<string>();
+    for (const deal of seed.deals) {
+      const detail = await repo.getDeal(deal.id);
+      if (!detail) continue;
+      accesses.add(detail.listing.access);
+      const restricted = detail.listing.access === "owner" || detail.listing.access === "agency";
+      if (!restricted) expect(detail.owner, deal.id).toBeUndefined();
+      else if (detail.listing.property.ownerId) expect(detail.owner?.id, deal.id).toBe(detail.listing.property.ownerId);
+    }
+    // The seed exercises both sides of the rule.
+    expect([...accesses].some((access) => access === "owner" || access === "agency")).toBe(true);
+    expect([...accesses].some((access) => access.startsWith("partner"))).toBe(true);
+  });
+
+  it("points every match link at a match the viewer can open", async () => {
+    const refs = [...seed.tasks, ...seed.notifications].flatMap((item) =>
+      item.related?.kind === "match" ? [item.related.id] : [],
+    );
+    expect(refs.length).toBeGreaterThan(0);
+    for (const id of refs) expect(await repo.getMatch(id), id).toBeDefined();
+  });
+
   it("resolves every id reference", () => {
     const orgs = ids(seed.organizations);
     const agents = ids(seed.agents);
@@ -75,9 +98,22 @@ describe("demo seed integrity", () => {
     const offers = ids(seed.offers);
     const deals = ids(seed.deals);
     const documents = new Set(seed.deals.flatMap((deal) => deal.documents.map((doc) => doc.id)));
+    // Match ids are `${requirementId}--${targetId}`; that the pair still matches is checked below.
+    const matchRefs = new Set(
+      [...seed.tasks, ...seed.notifications]
+        .map((item) => item.related)
+        .filter((related) => related?.kind === "match")
+        .map((related) => related!.id)
+        .filter((id) => {
+          const [requirementId, targetId] = id.split("--");
+          return requirements.has(requirementId) && (listings.has(targetId) || posts.has(targetId));
+        }),
+    );
     const byKind: Record<string, Set<ID>> = {
       lead: leads,
       client: clients,
+      requirement: requirements,
+      match: matchRefs,
       listing: listings,
       deal: deals,
       viewing: viewings,

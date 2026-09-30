@@ -254,6 +254,7 @@ export default defineMessages({
       verbal_recorded: "Устно, с записью",
     },
     splitPreset: { "50/50": "50/50", "70/30": "70/30", "80/20": "80/20", custom: "Свои условия" },
+    initiatorRole: { buyer_agent: "Агент клиента", referral_partner: "Направляющий партнёр" },
     commissionBasis: {
       gross_commission: "От общей комиссии",
       fixed_amount: "Фиксированная сумма",
@@ -558,6 +559,7 @@ export default defineMessages({
       verbal_recorded: "Og‘zaki, yozib olingan",
     },
     splitPreset: { "50/50": "50/50", "70/30": "70/30", "80/20": "80/20", custom: "Boshqa shartlar" },
+    initiatorRole: { buyer_agent: "Mijoz agenti", referral_partner: "Yo‘naltiruvchi hamkor" },
     commissionBasis: {
       gross_commission: "Umumiy komissiyadan",
       fixed_amount: "Qat’iy summa",

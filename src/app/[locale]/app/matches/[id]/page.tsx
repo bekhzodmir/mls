@@ -50,7 +50,7 @@ export default async function MatchPage({ params }: PageProps<"/[locale]/app/mat
         className="mb-0"
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
         <section aria-label={t.target}>
           <MatchCard locale={locale} match={match} expanded linkTitle={false} headingLevel={2} showClient />
         </section>

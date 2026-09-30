@@ -53,7 +53,7 @@ export function HomeHero({ locale }: { locale: Locale }) {
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden border-b border-border">
       <Glow />
-      <Container className="grid items-center gap-12 py-12 sm:py-16 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:py-24">
+      <Container className="grid grid-cols-1 items-center gap-12 py-12 sm:py-16 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:py-24">
         <div>
           <Badge tone="brand" icon={Users}>
             {t.eyebrow}
@@ -102,7 +102,7 @@ export function MatchingSection({ locale }: { locale: Locale }) {
 
   return (
     <Section id="matching" eyebrow={t.eyebrow} title={t.title} lead={t.lead}>
-      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <div className="space-y-6">
           <ol className="space-y-3">
             {steps.map(({ key, icon: Icon, title, text }) => (
@@ -165,7 +165,7 @@ export function RadarSection({ locale }: { locale: Locale }) {
       title={t.title}
       lead={t.lead}
     >
-      <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
         <div className="space-y-6">
           <ul className="space-y-4">
             {points.map(({ key, icon: Icon, text }) => (
@@ -199,7 +199,7 @@ export function CobrokingSection({ locale }: { locale: Locale }) {
         <span>{t.sidesNote}</span>
       </p>
 
-      <ol aria-label={t.stepsLabel} className="mt-8 grid gap-3 md:grid-cols-3">
+      <ol aria-label={t.stepsLabel} className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-3">
         {steps.map((step, index) => (
           <li key={step.title} className="flex gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
             <span
@@ -233,7 +233,7 @@ export function TrustSection({ locale }: { locale: Locale }) {
 
   return (
     <Section id="trust" muted eyebrow={t.eyebrow} title={t.title} lead={t.lead}>
-      <ol className="grid gap-4 lg:grid-cols-3">
+      <ol className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {stages.map(({ key, icon: Icon, title, visible, hidden }) => (
           <li key={key} className="flex flex-col rounded-lg border border-border bg-surface p-5 shadow-card">
             <div className="flex items-center gap-3">
@@ -285,7 +285,7 @@ export function AudienceSection({ locale }: { locale: Locale }) {
 
   return (
     <Section id="audience" eyebrow={t.eyebrow} title={t.title}>
-      <ul className="grid gap-4 md:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {groups.map(({ key, icon: Icon, title, text }) => (
           <li key={key} className="rounded-lg border border-border bg-surface p-5 shadow-card">
             <IconTile>

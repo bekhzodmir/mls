@@ -8,15 +8,7 @@ import { cn } from "@/lib/cn";
  * keeps the state. Every control is at least 44px tall and shows focus.
  */
 
-export const inputClasses = cn(
-  "h-11 w-full min-w-0 rounded-md border border-border bg-surface px-3 text-body text-fg shadow-card",
-  "placeholder:text-fg-subtle focus-visible:border-primary aria-invalid:border-danger-fg",
-);
-
-export const textareaClasses = cn(
-  "w-full min-w-0 rounded-md border border-border bg-surface px-3 py-2.5 text-body text-fg shadow-card",
-  "placeholder:text-fg-subtle focus-visible:border-primary aria-invalid:border-danger-fg",
-);
+export { inputClasses, textareaClasses } from "@/components/ui/field";
 
 export function FieldLabel({
   htmlFor,

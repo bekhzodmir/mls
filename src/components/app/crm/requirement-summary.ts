@@ -1,4 +1,5 @@
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatNumber } from "@/i18n/format";
 import { format } from "@/i18n/define-messages";
 import clients from "@/i18n/messages/clients";
 import domain from "@/i18n/messages/domain";
@@ -22,7 +23,7 @@ export type RequirementLike = Pick<
 type RangeTemplates = { exact?: string; range: string; min: string; max: string };
 
 function number(locale: Locale, value: number): string {
-  return new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
+  return formatNumber(locale, value, { maximumFractionDigits: 1 });
 }
 
 /** Formats a range with the given templates; undefined when both bounds are unset. */

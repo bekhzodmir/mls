@@ -101,6 +101,19 @@ describe.each(["ru", "uz"] as const)("CRM pages (%s)", (locale) => {
     expect(foreign).toContain(locale === "ru" ? "не найден или недоступен" : "topilmadi yoki unga kirish yo‘q");
   });
 
+  it("opens a stored requirement for editing and falls back to a new one for unknown ids", async () => {
+    state.locale = locale;
+    const edit = await render(await pages.newRequirement(), query({ clientId: "cl-02", requirementId: "req-03" }));
+    expect(edit).toContain(locale === "ru" ? "Изменить запрос" : "So‘rovni tahrirlash");
+    expect(edit).toContain(locale === "ru" ? "Сохранить изменения" : "O‘zgarishlarni saqlash");
+    // Editing the client's active requirement is not warned about as a duplicate.
+    expect(edit).not.toContain(locale === "ru" ? "уже есть активный запрос" : "allaqachon faol so‘rov bor");
+    const partner = await render(await pages.newRequirement(), query({ requirementId: "req-17" }));
+    expect(partner).toContain(locale === "ru" ? "Запрос из ссылки не найден" : "Havoladagi so‘rov topilmadi");
+    const metadata = await (await pages.newRequirement()).generateMetadata(query({ requirementId: "req-03" }) as never);
+    expect(metadata.title).toBe(locale === "ru" ? "Изменить запрос клиента" : "Mijoz so‘rovini tahrirlash");
+  });
+
   it("gives every screen a localized title", async () => {
     state.locale = locale;
     for (const load of Object.values(pages)) {

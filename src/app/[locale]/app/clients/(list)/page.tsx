@@ -111,7 +111,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/[locale]
       </div>
 
       {shown.length > 0 ? (
-        <ul aria-label={t.list.listLabel} className="grid gap-3 lg:grid-cols-2">
+        <ul aria-label={t.list.listLabel} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {shown.map((item) => (
             <li key={item.client.id}>
               <ClientCard locale={locale} item={item} at={at} />

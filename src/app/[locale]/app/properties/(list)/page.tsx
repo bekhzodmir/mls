@@ -158,7 +158,7 @@ export default async function PropertiesPage({ searchParams }: PageProps<"/[loca
       ) : params.view === "districts" ? (
         <DistrictGroups locale={locale} views={views} />
       ) : (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {views.map((view) => (
             <li key={view.listing.id}>
               <PropertyCard locale={locale} view={view} headingLevel={2} />

@@ -1,6 +1,7 @@
 import type { PropertyListParams } from "@/components/app/inventory/filters";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { formatList, formatNumber } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import requirementDetail from "@/i18n/messages/requirement-detail";
 import { districtName } from "@/lib/domain/geo";
@@ -56,11 +57,11 @@ export interface RequirementCriteria {
 }
 
 function list(locale: Locale, items: string[], type: "conjunction" | "disjunction" = "disjunction"): string {
-  return new Intl.ListFormat(intlLocale[locale], { type }).format(items);
+  return formatList(locale, items, type);
 }
 
 function numberText(locale: Locale, value: number): string {
-  return new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
+  return formatNumber(locale, value, { maximumFractionDigits: 1 });
 }
 
 interface RangeTemplates {

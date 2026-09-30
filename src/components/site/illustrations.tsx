@@ -154,7 +154,7 @@ export function MatchExample({ locale, className }: { locale: Locale; className?
         <span className="text-caption text-fg-subtle">{site[locale].illustration}</span>
       </figcaption>
 
-      <div className="relative mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="relative mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ExampleCard icon={Building2} role={t.objectRole} title={t.objectTitle} detail={`${district} · ${floor}`} value={price} />
         <span
           aria-hidden

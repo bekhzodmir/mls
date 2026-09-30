@@ -27,7 +27,7 @@ export async function CrmListSkeleton({ withSearch = false }: { withSearch?: boo
           <Skeleton key={index} className="h-11 w-24 shrink-0 rounded-full" />
         ))}
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {Array.from({ length: 4 }, (_, index) => (
           <div key={index} className="space-y-3 rounded-lg border border-border bg-surface p-4">
             <div className="flex items-center gap-3">

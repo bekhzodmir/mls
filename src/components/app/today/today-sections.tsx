@@ -44,7 +44,7 @@ export function blockListHref(locale: Locale, key: TodayBlockKey): string {
     case "todayTasks":
       return listHref(locale, "/tasks", { status: "today" });
     case "viewings":
-      return listHref(locale, "/viewings");
+      return listHref(locale, "/viewings", { range: "today" });
     case "contracts":
       return listHref(locale, "/properties", { scope: "mine" });
     case "matches":

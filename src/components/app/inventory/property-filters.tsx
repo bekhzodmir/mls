@@ -5,7 +5,7 @@ import { ChipLink } from "@/components/ui/misc";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
-import { formatNumber } from "@/i18n/format";
+import { compareText, formatNumber } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import properties from "@/i18n/messages/properties";
 import { districtName } from "@/lib/domain/geo";
@@ -38,6 +38,7 @@ import {
   type PropertyListParams,
   type PropertyListView,
 } from "./filters";
+import { inputClasses } from "@/components/ui/field";
 
 /**
  * Property search controls (§15.2, §36.4): scope, quick chips (deal, type,
@@ -45,9 +46,6 @@ import {
  * — text, status, freshness and source as three separate dimensions. Every
  * state is a URL; the removable chips below say exactly what narrows the list.
  */
-
-export const fieldClasses =
-  "h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg placeholder:text-fg-subtle";
 
 function ChipGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
@@ -166,10 +164,10 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] sm:items-end">
         <Field id="filter-district" label={t.district} className="col-span-2 sm:col-span-1">
-          <select id="filter-district" name="district" defaultValue={params.district ?? ""} className={fieldClasses}>
+          <select id="filter-district" name="district" defaultValue={params.district ?? ""} className={inputClasses}>
             <option value="">{t.anyDistrict}</option>
             {[...districtIds]
-              .sort((a, b) => districtName(a, locale).localeCompare(districtName(b, locale), locale))
+              .sort((a, b) => compareText(locale, districtName(a, locale), districtName(b, locale)))
               .map((id) => (
                 <option key={id} value={id}>
                   {districtName(id, locale)}
@@ -186,11 +184,11 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
             placeholder={t.pricePlaceholder}
             defaultValue={params.priceMax ?? ""}
             aria-describedby="filter-currency-hint"
-            className={cn(fieldClasses, "tabular")}
+            className={cn(inputClasses, "tabular")}
           />
         </Field>
         <Field id="filter-currency" label={t.currency}>
-          <select id="filter-currency" name="currency" defaultValue={params.currency ?? ""} className={fieldClasses}>
+          <select id="filter-currency" name="currency" defaultValue={params.currency ?? ""} className={inputClasses}>
             <option value="">{t.anyCurrency}</option>
             {currencies.map((currency) => (
               <option key={currency} value={currency}>
@@ -214,7 +212,7 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
         </summary>
         <div className="space-y-3 border-t border-border p-3">
           <p className="text-caption text-fg-muted">{t.advancedHint}</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field id="filter-q" label={t.query}>
               <input
                 id="filter-q"
@@ -223,11 +221,11 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
                 autoComplete="off"
                 placeholder={t.queryPlaceholder}
                 defaultValue={params.q ?? ""}
-                className={fieldClasses}
+                className={inputClasses}
               />
             </Field>
             <Field id="filter-status" label={t.status}>
-              <select id="filter-status" name="status" defaultValue={params.status ?? ""} className={fieldClasses}>
+              <select id="filter-status" name="status" defaultValue={params.status ?? ""} className={inputClasses}>
                 <option value="">{t.anyStatus}</option>
                 {listingStatuses.map((status) => (
                   <option key={status} value={status}>
@@ -237,7 +235,7 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
               </select>
             </Field>
             <Field id="filter-freshness" label={t.freshness}>
-              <select id="filter-freshness" name="freshness" defaultValue={params.freshness ?? ""} className={fieldClasses}>
+              <select id="filter-freshness" name="freshness" defaultValue={params.freshness ?? ""} className={inputClasses}>
                 <option value="">{t.anyFreshness}</option>
                 {freshnessStates.map((state) => (
                   <option key={state} value={state}>
@@ -247,7 +245,7 @@ export function FilterForm({ locale, params }: { locale: Locale; params: Propert
               </select>
             </Field>
             <Field id="filter-source" label={t.source}>
-              <select id="filter-source" name="source" defaultValue={params.source ?? ""} className={fieldClasses}>
+              <select id="filter-source" name="source" defaultValue={params.source ?? ""} className={inputClasses}>
                 <option value="">{t.anySource}</option>
                 {sourceKinds.map((source) => (
                   <option key={source} value={source}>

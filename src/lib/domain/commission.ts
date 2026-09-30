@@ -275,8 +275,10 @@ export type CooperationError =
   | "not_latest_version"
   /** The action is not allowed in the current status (e.g. viewing twice). */
   | "invalid_status"
-  /** `atIso` is not a valid ISO-8601 instant. */
-  | "invalid_time";
+  /** `atIso` is not a valid ISO-8601 instant, or a new `respondBy` is not after it. */
+  | "invalid_time"
+  /** A dispute needs the disagreement stated in words. */
+  | "reason_missing";
 
 /** What happened, for the caller's audit log and notifications (§17.6, §39.3). */
 export interface CooperationEvent {
@@ -286,7 +288,8 @@ export interface CooperationEvent {
     | "terms_accepted"
     | "request_declined"
     | "request_cancelled"
-    | "request_expired";
+    | "request_expired"
+    | "dispute_opened";
   requestId: ID;
   /** Absent for `request_expired`, which is a system event. */
   actorId?: ID;
@@ -294,6 +297,8 @@ export interface CooperationEvent {
   version?: number;
   /** Fields changed compared with the previous version (proposals only). */
   changed?: (keyof CommissionTerms)[];
+  /** A proposal that moved the response deadline. */
+  respondBy?: ISODateTime;
   reason?: string;
 }
 
@@ -340,6 +345,8 @@ function isValidInstant(iso: string): boolean {
  * Appends a new terms version (version = last + 1). The first proposal sends
  * the request (draft → sent); later ones move it to negotiation. Earlier
  * versions are kept untouched; contacts stay masked until acceptance.
+ * `respondBy` sets a new answer deadline, e.g. so a counter-proposal gives
+ * the other side time to answer; it must lie after `atIso`.
  */
 export function proposeTerms(
   request: CooperationRequest,
@@ -347,8 +354,12 @@ export function proposeTerms(
   byAgentId: ID,
   atIso: ISODateTime,
   note?: string,
+  respondBy?: ISODateTime,
 ): CooperationResult {
   if (!isValidInstant(atIso)) return { ok: false, error: "invalid_time" };
+  if (respondBy !== undefined && !(isValidInstant(respondBy) && Date.parse(respondBy) > Date.parse(atIso))) {
+    return { ok: false, error: "invalid_time" };
+  }
   if (request.status !== "draft") {
     const closed = closedError(request.status);
     if (closed) return { ok: false, error: closed };
@@ -377,17 +388,24 @@ export function proposeTerms(
   if (trimmedNote) version.note = trimmedNote;
 
   const status: CooperationStatus = request.status === "draft" ? "sent" : "negotiation";
+  const event: CooperationEvent = {
+    action: "terms_proposed",
+    requestId: request.id,
+    actorId: byAgentId,
+    at: atIso,
+    version: version.version,
+    changed,
+  };
+  if (respondBy !== undefined) event.respondBy = respondBy;
   return {
     ok: true,
-    value: { ...request, status, versions: [...request.versions, version] },
-    event: {
-      action: "terms_proposed",
-      requestId: request.id,
-      actorId: byAgentId,
-      at: atIso,
-      version: version.version,
-      changed,
+    value: {
+      ...request,
+      status,
+      versions: [...request.versions, version],
+      respondBy: respondBy ?? request.respondBy,
     },
+    event,
   };
 }
 
@@ -492,6 +510,48 @@ export function cancelRequest(
   };
   if (reason?.trim()) event.reason = reason.trim();
   return { ok: true, value: { ...request, status: "cancelled" }, event };
+}
+
+/**
+ * Only accepted terms can be disputed (`cooperationTransitions`, §35.6
+ * step 8): before acceptance the parties decline or withdraw instead.
+ */
+export function canOpenDispute(status: CooperationStatus): boolean {
+  return status === "accepted";
+}
+
+/**
+ * Either party records a disagreement about accepted terms (§11.5, §15.3):
+ * the request becomes "disputed" and its history — versions, acceptance,
+ * events — stays as it is, so both sides see one record. Binor is not an
+ * arbiter: the status decides nothing about who is right. The reason is
+ * required and goes into the event for the audit log.
+ */
+export function openDispute(
+  request: CooperationRequest,
+  byAgentId: ID,
+  atIso: ISODateTime,
+  reason: string,
+): CooperationResult {
+  if (!isValidInstant(atIso)) return { ok: false, error: "invalid_time" };
+  if (request.status === "draft") return { ok: false, error: "not_sent" };
+  if (OPEN_STATUSES.has(request.status)) return { ok: false, error: "invalid_status" };
+  if (!canOpenDispute(request.status)) return { ok: false, error: "request_closed" };
+  if (!isParty(request, byAgentId)) return { ok: false, error: "not_a_party" };
+  const trimmed = reason.trim();
+  if (!trimmed) return { ok: false, error: "reason_missing" };
+  return {
+    ok: true,
+    value: { ...request, status: "disputed" },
+    event: {
+      action: "dispute_opened",
+      requestId: request.id,
+      actorId: byAgentId,
+      at: atIso,
+      version: request.acceptedVersion,
+      reason: trimmed,
+    },
+  };
 }
 
 /**

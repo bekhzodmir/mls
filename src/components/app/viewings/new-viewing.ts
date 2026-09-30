@@ -1,5 +1,6 @@
 import { propertyTitle } from "@/components/app/inventory/labels";
 import type { Locale } from "@/i18n/config";
+import { compareText } from "@/i18n/format";
 import type { ListingAccess, ListingView } from "@/lib/data/views";
 import { formatMoney } from "@/lib/domain/money";
 import type { ID, ISODateTime, ListingStatus } from "@/lib/domain/types";
@@ -68,7 +69,7 @@ export function sortListingOptions(options: readonly ListingOption[], locale: Lo
   return [...options].sort(
     (a, b) =>
       GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) ||
-      a.label.localeCompare(b.label, locale) ||
+      compareText(locale, a.label, b.label) ||
       a.id.localeCompare(b.id),
   );
 }

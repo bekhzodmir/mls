@@ -639,6 +639,13 @@ function relatedName(task: Task): string | undefined {
       return leadsById.get(related.id)?.name;
     case "client":
       return clientsById.get(related.id)?.name;
+    case "requirement":
+    case "match": {
+      // A match id starts with its requirement id: `${requirementId}--${targetId}`.
+      const requirementId = related.kind === "match" ? related.id.split("--")[0] : related.id;
+      const requirement = requirementsById.get(requirementId);
+      return requirement ? clientsById.get(requirement.clientId)?.name : undefined;
+    }
     case "deal": {
       const deal = dealsById.get(related.id);
       return deal ? clientsById.get(deal.clientId)?.name : undefined;
@@ -858,11 +865,14 @@ export async function getClient(id: ID): Promise<ClientDetailView | undefined> {
   const viewings = viewingViews(at, (viewing) => viewing.clientId === id);
   const dealIds = new Set(deals.map((view) => view.deal.id));
   const viewingIds = new Set(viewings.map((view) => view.viewing.id));
+  const requirementIds = new Set(requirements.map((requirement) => requirement.id));
   const tasks = taskViews(at, (task) => {
     const related = task.related;
     if (!related) return false;
     return (
       (related.kind === "client" && related.id === id) ||
+      (related.kind === "requirement" && requirementIds.has(related.id)) ||
+      (related.kind === "match" && requirementIds.has(related.id.split("--")[0])) ||
       (related.kind === "lead" && related.id === client.leadId) ||
       (related.kind === "deal" && dealIds.has(related.id)) ||
       (related.kind === "viewing" && viewingIds.has(related.id))
@@ -1133,6 +1143,10 @@ export async function getDeal(id: ID): Promise<DealDetailView | undefined> {
   };
   const cooperation = cooperationRequest ? toCooperationView(cooperationRequest, at) : undefined;
   if (cooperation) detail.cooperation = cooperation;
+  // `propertyView` already drops ownerId for partners; the access check keeps the rule explicit.
+  const ownerId = seesRestricted(base.listing.access) ? base.listing.property.ownerId : undefined;
+  const owner = ownerId ? ownersById.get(ownerId) : undefined;
+  if (owner) detail.owner = owner;
   return copy(detail);
 }
 

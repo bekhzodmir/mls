@@ -54,7 +54,7 @@ export function ParsedFieldList({
           <div
             key={key}
             className={cn(
-              "grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4",
+              "grid grid-cols-1 gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4",
               highlightUnknown && !usable && "-mx-2 rounded-md bg-warning-bg px-2 text-warning-fg",
             )}
           >

@@ -41,7 +41,7 @@ export default async function AboutPage() {
       <PageIntro eyebrow={t.intro.eyebrow} title={t.intro.title} lead={t.intro.lead} />
 
       <Section id="mission" title={t.mission.title}>
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
           <p className="border-l-4 border-primary pl-5 text-h2 font-medium text-pretty text-fg">{t.mission.text}</p>
           <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
             <h3 className="text-body font-semibold text-fg">{t.mission.visionTitle}</h3>
@@ -52,7 +52,7 @@ export default async function AboutPage() {
 
       <Section id="problem" muted title={t.problem.title} lead={t.problem.lead}>
         <h3 className="text-body font-semibold text-fg">{t.problem.listTitle}</h3>
-        <ol className="mt-4 grid gap-3 sm:grid-cols-2">
+        <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {t.problem.items.map((item, index) => (
             <li key={item} className="flex gap-3 rounded-lg border border-border bg-surface p-4 shadow-card">
               <span
@@ -68,7 +68,7 @@ export default async function AboutPage() {
       </Section>
 
       <Section id="goals" title={t.goals.title}>
-        <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
           {t.goals.items.map((item) => (
             <li key={item} className="flex items-start gap-3 text-body text-fg">
               <Target aria-hidden className="mt-1 size-4 shrink-0 text-primary" />
@@ -107,7 +107,7 @@ export default async function AboutPage() {
       </Section>
 
       <Section id="audience" title={t.audience.title}>
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {audience.map(({ key, icon: Icon, title, text }) => (
             <li key={key} className="rounded-lg border border-border bg-surface p-5 shadow-card">
               <IconTile>
@@ -124,7 +124,7 @@ export default async function AboutPage() {
       </Section>
 
       <Section id="channels" muted title={t.channels.title}>
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {channels.map(({ key, icon: Icon, title, text }) => (
             <li key={key} className="flex gap-4 rounded-lg border border-border bg-surface p-5 shadow-card">
               <IconTile>

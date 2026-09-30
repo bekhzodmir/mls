@@ -237,6 +237,36 @@ export function formValuesFromDraft(
   return values;
 }
 
+/**
+ * A stored requirement as form values, for editing it (§14.4). Every field
+ * becomes an agent value, so editing the sentence afterwards proposes
+ * changes instead of silently replacing what was confirmed.
+ */
+export function formValuesFromRequirement(requirement: Requirement): RequirementFormValues {
+  const { budget, floor } = requirement;
+  const values: RequirementFormValues = {
+    dealType: requirement.dealType,
+    propertyTypes: [...requirement.propertyTypes],
+    districts: [...requirement.districts],
+    rooms: { min: numberToInput(requirement.rooms.min), max: numberToInput(requirement.rooms.max) },
+    area: { min: numberToInput(requirement.area.min), max: numberToInput(requirement.area.max) },
+    budgetMin: budget.min ? minorToInput(budget.min.amountMinor) : "",
+    budgetMax: budget.max ? minorToInput(budget.max.amountMinor) : "",
+    currency: budget.currency,
+    renovation: [...(requirement.renovation ?? [])],
+    floor: {
+      notFirst: Boolean(floor?.notFirst),
+      notLast: Boolean(floor?.notLast),
+      min: numberToInput(floor?.min),
+      max: numberToInput(floor?.max),
+    },
+    extras: [...requirement.extras],
+  };
+  if (requirement.buildingKind) values.buildingKind = requirement.buildingKind;
+  if (requirement.mortgage !== undefined) values.mortgage = requirement.mortgage;
+  return values;
+}
+
 /** Parser proposal with the agent's edits on top (an override may be `undefined` on purpose). */
 export function mergeFormValues(
   parsed: RequirementFormValues,

@@ -31,7 +31,7 @@ export function ListSkeleton({
           ))}
         </div>
       ))}
-      <div className={withAside ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]" : undefined}>
+      <div className={withAside ? "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]" : undefined}>
         <div className="grid gap-4">
           {Array.from({ length: cards }, (_, card) => (
             <div key={card} className="space-y-3 rounded-lg border border-border bg-surface p-4">
@@ -75,7 +75,7 @@ export function DetailSkeleton({ label }: { label: string }) {
         <Skeleton className="h-6 w-24" />
       </div>
       <Skeleton className="h-16 w-full" />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Skeleton className="h-72" />
         <Skeleton className="h-72" />
       </div>

@@ -86,7 +86,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/[locale]/a
 
       <RadarFilters locale={locale} params={params} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
         <div className="space-y-4">
           <p role="status" className="text-body font-semibold text-fg">
             {format(plural(locale, posts.length, t.list.count), { n: posts.length })}

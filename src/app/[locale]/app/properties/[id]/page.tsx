@@ -115,7 +115,7 @@ export default async function PropertyPage({ params }: PageProps<"/[locale]/app/
 
       <PropertyHero locale={locale} view={detail} />
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <div className="space-y-4">
           <PropertySection locale={locale} view={detail} />
           <OtherListingsSection locale={locale} views={detail.otherListings} />
@@ -130,7 +130,7 @@ export default async function PropertyPage({ params }: PageProps<"/[locale]/app/
       </div>
 
       <ReverseMatchesSection locale={locale} matches={detail.reverseMatches} listingId={listing.id} />
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <ViewingsSection locale={locale} viewings={detail.viewings} listingId={listing.id} />
         <OffersSection locale={locale} offers={detail.offers} />
       </div>

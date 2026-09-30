@@ -63,7 +63,7 @@ export default async function ViewingsPage({ searchParams }: PageProps<"/[locale
             </h2>
             <p className="text-small text-fg-muted">{t.attention.text}</p>
           </div>
-          <ul className="grid gap-3 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {attention.map((view) => (
               <li key={view.viewing.id}>
                 <ViewingCard locale={locale} view={view} all={all} now={at} />

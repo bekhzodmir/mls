@@ -2,15 +2,14 @@ import { Search } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ChipLink } from "@/components/ui/misc";
 import type { Locale } from "@/i18n/config";
+import { compareText } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import radar from "@/i18n/messages/radar";
 import { districtName } from "@/lib/domain/geo";
 import { dealTypes, districtIds } from "@/lib/domain/types";
 import { GetForm } from "../mls/get-form";
 import { hasRadarFilters, radarHref, radarStatusFilters, type RadarParams } from "./radar-params";
-
-const fieldClass =
-  "h-11 w-full rounded-md border border-border bg-surface px-3 text-small text-fg placeholder:text-fg-subtle focus-visible:border-primary";
+import { inputClasses } from "@/components/ui/field";
 
 /**
  * Radar filters (§7.2 "поиск и фильтры"): a search + district form that works
@@ -27,7 +26,7 @@ export function RadarFilters({ locale, params }: { locale: Locale; params: Radar
       <GetForm
         action={action}
         role="search"
-        className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_14rem_auto] sm:items-end"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_14rem_auto] sm:items-end"
       >
         <div className="space-y-1">
           <label htmlFor="radar-q" className="text-caption font-medium text-fg-muted">
@@ -39,17 +38,17 @@ export function RadarFilters({ locale, params }: { locale: Locale; params: Radar
             type="search"
             defaultValue={params.q ?? ""}
             placeholder={t.searchPlaceholder}
-            className={fieldClass}
+            className={inputClasses}
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="radar-district" className="text-caption font-medium text-fg-muted">
             {t.district}
           </label>
-          <select id="radar-district" name="district" defaultValue={params.district ?? ""} className={fieldClass}>
+          <select id="radar-district" name="district" defaultValue={params.district ?? ""} className={inputClasses}>
             <option value="">{t.districtAny}</option>
             {[...districtIds]
-              .sort((a, b) => districtName(a, locale).localeCompare(districtName(b, locale), locale))
+              .sort((a, b) => compareText(locale, districtName(a, locale), districtName(b, locale)))
               .map((id) => (
                 <option key={id} value={id}>
                   {districtName(id, locale)}

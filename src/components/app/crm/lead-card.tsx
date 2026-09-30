@@ -123,7 +123,7 @@ export function LeadCard({ locale, view, at }: { locale: Locale; view: LeadView;
         <SlaBadge display={sla} label={t.sla.label} />
       </div>
 
-      <dl className="grid gap-x-4 gap-y-1 text-small sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-small sm:grid-cols-2">
         <div className="flex gap-1.5">
           <dt className="text-fg-muted">{t.card.responsible}:</dt>
           <dd className={view.assignedAgent ? "text-fg" : "font-medium text-warning-fg"}>

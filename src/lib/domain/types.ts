@@ -606,12 +606,21 @@ export interface TermsVersion {
   note?: string;
 }
 
+/**
+ * How the requesting agent takes part (§35.6 step 2): leading the client
+ * personally, or referring the client to another agent. Both are the client
+ * side in the commission split.
+ */
+export type CooperationInitiatorRole = "buyer_agent" | "referral_partner";
+
 export interface CooperationRequest {
   id: ID;
   listingId: ID;
   requirementId?: ID;
   /** The agent who asks to cooperate (usually the buyer's agent). */
   fromAgentId: ID;
+  /** The requesting agent's role; absent on records that never stated it (unknown). */
+  initiatorRole?: CooperationInitiatorRole;
   /** The listing agent. */
   toAgentId: ID;
   status: CooperationStatus;
@@ -741,9 +750,12 @@ export interface Deal {
 
 /* ------------------------------------------------------ tasks & signals */
 
+/** What a task or notification points at; `match` ids are `${requirementId}--${targetId}`. */
 export type EntityRef =
   | { kind: "lead"; id: ID }
   | { kind: "client"; id: ID }
+  | { kind: "requirement"; id: ID }
+  | { kind: "match"; id: ID }
   | { kind: "listing"; id: ID }
   | { kind: "deal"; id: ID }
   | { kind: "viewing"; id: ID }

@@ -171,7 +171,7 @@ export function NewLeadForm({
         <FieldHint id={`${ids.source}-hint`}>{t.form.sourceHint}</FieldHint>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <PhoneField id={ids.phone} locale={locale} value={phone} onChange={setPhone} showErrors={submitted} />
         <div className="space-y-1.5">
           <FieldLabel htmlFor={ids.telegram} optional={t.form.nameHint}>
@@ -239,7 +239,7 @@ export function NewLeadForm({
         <FieldHint id={`${ids.message}-hint`}>{t.form.messageHint}</FieldHint>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <SegmentedRadio<Language>
           name={`${id}-language`}
           legend={t.form.language}

@@ -1,6 +1,6 @@
 import { format } from "@/i18n/define-messages";
-import { formatNumber } from "@/i18n/format";
-import { intlLocale, type Locale } from "@/i18n/config";
+import { formatList, formatNumber } from "@/i18n/format";
+import type { Locale } from "@/i18n/config";
 import domain from "@/i18n/messages/domain";
 import mls from "@/i18n/messages/mls";
 import radar from "@/i18n/messages/radar";
@@ -24,7 +24,7 @@ export function floorRelevant(type: PropertyType | undefined): boolean {
 
 /** "a, b и c" / "a, b va c". */
 export function joinList(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 /** «Квартира, 3 комн.» — the type with rooms where rooms apply. */

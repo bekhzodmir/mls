@@ -27,8 +27,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { format } from "@/i18n/define-messages";
-import { intlLocale, type Locale } from "@/i18n/config";
-import { formatDate, formatDateTime, formatTime } from "@/i18n/format";
+import type { Locale } from "@/i18n/config";
+import { formatDateTime, formatDay, formatList, formatTime } from "@/i18n/format";
 import viewings from "@/i18n/messages/viewings";
 import type { Viewing } from "@/lib/domain/types";
 import { canRecordOutcome, DURATION_OPTIONS, findOverlaps, isOpen, slotEnd } from "./agenda";
@@ -126,7 +126,7 @@ export function ViewingDemoProvider({
 /* ------------------------------------------------------------- helpers */
 
 function listText(locale: Locale, items: string[]): string {
-  return new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
+  return formatList(locale, items);
 }
 
 function timeRange(locale: Locale, viewing: Pick<Viewing, "startsAt" | "durationMinutes">): string {
@@ -201,7 +201,7 @@ export function ViewingStatusCard() {
           <div className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-small text-fg-muted">{t.detail.date}</dt>
             <dd className="text-right text-small font-medium text-fg">
-              {formatDate(locale, viewing.startsAt, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {formatDay(locale, viewing.startsAt, { year: true })}
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 py-2">

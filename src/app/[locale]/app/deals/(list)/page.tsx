@@ -44,7 +44,7 @@ export default async function DealsPage({ searchParams }: PageProps<"/[locale]/a
       {shown.length === 0 ? (
         <DealsEmpty locale={locale} stage={views.length > 0 ? stage : undefined} />
       ) : stage ? (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {shown.map((view) => (
             <li key={view.deal.id}>
               <DealCard locale={locale} view={view} headingLevel={2} />

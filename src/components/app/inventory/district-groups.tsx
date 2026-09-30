@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { format, plural } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
+import { compareText } from "@/i18n/format";
 import properties from "@/i18n/messages/properties";
 import type { ListingView } from "@/lib/data/views";
 import { districtName } from "@/lib/domain/geo";
@@ -25,7 +26,7 @@ export function groupByDistrict(locale: Locale, views: readonly ListingView[]): 
   }
   return [...groups.entries()]
     .map(([district, items]) => ({ district, views: items }))
-    .sort((a, b) => districtName(a.district, locale).localeCompare(districtName(b.district, locale), locale));
+    .sort((a, b) => compareText(locale, districtName(a.district, locale), districtName(b.district, locale)));
 }
 
 /**
@@ -55,7 +56,7 @@ export function DistrictGroups({ locale, views }: { locale: Locale; views: reado
           ))}
         </ul>
       </nav>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {groups.map((group) => (
           <section key={group.district} id={`district-${group.district}`} aria-labelledby={`district-${group.district}-title`} className="scroll-mt-20">
             <Card className="overflow-hidden">
