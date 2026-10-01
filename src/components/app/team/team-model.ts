@@ -141,8 +141,9 @@ export function teamExceptions(input: {
       count: open.length,
       breached: open.filter((view) => view.sla.state === "breached").length,
     };
+    // The next deadline still ahead; missed ones are counted above, not shown as "15 hours ago".
     const next = open
-      .filter((view) => view.sla.state !== "responded")
+      .filter((view) => view.sla.state === "due_soon" || view.sla.state === "on_track")
       .map((view) => view.sla.dueAt)
       .sort()[0];
     if (next) item.nextDueAt = next;

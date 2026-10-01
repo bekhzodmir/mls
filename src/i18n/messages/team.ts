@@ -84,8 +84,8 @@ export default defineMessages({
     },
     availability: {
       label: "Доступность",
-      available: "Доступен",
-      busy: "Занят",
+      available: "Принимает лиды",
+      busy: "Высокая занятость",
       awayUntil: "Отсутствует до {date}",
       awayOpen: "Отсутствует, дата возвращения неизвестна",
       awayEnded: "Отсутствие закончилось {date} — статус не обновлён",

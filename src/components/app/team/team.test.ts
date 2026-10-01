@@ -213,7 +213,10 @@ describe("team exceptions (§33.2)", () => {
     expect(items.map((item) => item.kind)).toEqual(["sla_breach", "sla_breach", "unassigned", "away", "near_capacity"]);
     expect(items[0]).toMatchObject({ kind: "sla_breach", agentId: "agent-01", count: 1, away: false });
     expect(items[1]).toMatchObject({ kind: "sla_breach", agentId: "agent-03", away: true });
-    expect(items[2]).toMatchObject({ kind: "unassigned", count: 3 });
+    expect(items[2]).toMatchObject({ kind: "unassigned", count: 3, breached: 2 });
+    // The next deadline is one still ahead, never a missed one.
+    const next = items[2].kind === "unassigned" ? items[2].nextDueAt : undefined;
+    expect(next && Date.parse(next) > NOW.getTime()).toBe(true);
     expect(items[3]).toMatchObject({ kind: "away", agentId: "agent-03", openLeads: 2 });
   });
 

@@ -105,7 +105,7 @@ export default async function TeamMemberPage({ params, searchParams }: PageProps
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         <section aria-labelledby="member-profile" className="space-y-3">
           <h2 id="member-profile" className="sr-only">
-            {t.member.role}
+            {t.overview.open}
           </h2>
           <Card className="p-4">
             <dl className="divide-y divide-border">
@@ -299,6 +299,7 @@ export default async function TeamMemberPage({ params, searchParams }: PageProps
                     <span className="text-small font-semibold text-fg">{title}</span>
                     <span className="flex flex-wrap items-center gap-2">
                       <MoneyText locale={locale} value={view.listing.price} className="text-small font-semibold text-fg" />
+                      <span className="text-caption text-fg-muted">{d.dealType[view.listing.dealType]}</span>
                       <ListingStatusBadge locale={locale} status={view.listing.status} />
                     </span>
                   </Link>

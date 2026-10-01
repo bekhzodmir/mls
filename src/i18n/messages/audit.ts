@@ -21,7 +21,7 @@ export default defineMessages({
       team: "Вы видите свою историю и записи команды.",
       agency: "Вы видите журнал всего агентства.",
     },
-    ownOnlyNext: "Проверьте свою историю здесь. Если нужно разобраться в действии коллеги — обратитесь к руководителю команды.",
+    ownOnlyNext: "Фильтруйте и проверяйте её здесь. Если нужно разобраться в действии коллеги — обратитесь к руководителю команды.",
     scope: { own: "Своё", team: "Команда", agency: "Агентство" },
     filters: {
       label: "Фильтры журнала",
@@ -119,7 +119,7 @@ export default defineMessages({
       team: "Siz o‘z tarixingizni va jamoa yozuvlarini ko‘rasiz.",
       agency: "Siz butun agentlik jurnalini ko‘rasiz.",
     },
-    ownOnlyNext: "O‘z tarixingizni shu yerda tekshiring. Hamkasbning harakatini aniqlash kerak bo‘lsa — jamoa rahbariga murojaat qiling.",
+    ownOnlyNext: "Uni shu yerda filtrlang va tekshiring. Hamkasbning harakatini aniqlash kerak bo‘lsa — jamoa rahbariga murojaat qiling.",
     scope: { own: "O‘ziniki", team: "Jamoa", agency: "Agentlik" },
     filters: {
       label: "Jurnal filtrlari",
