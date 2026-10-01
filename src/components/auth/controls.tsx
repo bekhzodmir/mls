@@ -1,5 +1,6 @@
 import { Check, CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { inputClasses } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
 /**
@@ -9,7 +10,7 @@ import { cn } from "@/lib/cn";
  * state. Every control has a 44px+ hit area and a visible focus ring.
  */
 
-export { inputClasses } from "@/components/ui/field";
+export { inputClasses };
 
 export function FieldLabel({
   htmlFor,
@@ -71,6 +72,54 @@ export function FieldValid({ id, children }: { id?: string; children: ReactNode 
 export function describedBy(...ids: (string | false | null | undefined)[]): string | undefined {
   const list = ids.filter(Boolean);
   return list.length > 0 ? list.join(" ") : undefined;
+}
+
+/**
+ * Labelled single-line input with an optional hint and an inline error, both
+ * linked through `aria-describedby`; `aria-invalid` is set while the error shows.
+ */
+export function TextField({
+  id,
+  label,
+  value,
+  onChange,
+  hint,
+  error,
+  optional,
+  tag,
+  className,
+  ...inputProps
+}: Omit<ComponentProps<"input">, "id" | "value" | "onChange"> & {
+  id: string;
+  label: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: ReactNode;
+  error?: ReactNode;
+  optional?: string;
+  tag?: ReactNode;
+}) {
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  return (
+    <div className="space-y-1.5">
+      <FieldLabel htmlFor={id} optional={optional} tag={tag}>
+        {label}
+      </FieldLabel>
+      <input
+        id={id}
+        name={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(hintId, errorId)}
+        className={cn(inputClasses, className)}
+        {...inputProps}
+      />
+      {hint ? <FieldHint id={hintId}>{hint}</FieldHint> : null}
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+    </div>
+  );
 }
 
 /**

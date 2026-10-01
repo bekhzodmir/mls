@@ -1,6 +1,9 @@
+import { LogIn } from "lucide-react";
 import Link from "next/link";
+import { loginPath } from "@/components/auth/auth-routes";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { BinorMark } from "@/components/ui/brand-mark";
+import { ButtonLink } from "@/components/ui/button";
 import type { Locale } from "@/i18n/config";
 import site from "@/i18n/messages/site";
 import { DemoButton, DemoNote, TelegramButton, TelegramIconButton } from "./cta";
@@ -21,9 +24,9 @@ export function navLabels(locale: Locale): Record<SitePage, string> {
 }
 
 /**
- * Sticky site header. Desktop (≥1024px): inline navigation, language switch
- * and the Telegram CTA. Phones: logo, an icon-only Telegram button and a
- * disclosure menu with the same destinations. Every control is ≥44px.
+ * Sticky site header. Desktop (≥1024px): inline navigation, language switch,
+ * "Войти" and the Telegram CTA. Phones: logo, "Войти", an icon-only Telegram
+ * button and a disclosure menu with the same destinations. Every control is ≥44px.
  */
 export function SiteHeader({ locale }: { locale: Locale }) {
   const t = site[locale];
@@ -45,6 +48,16 @@ export function SiteHeader({ locale }: { locale: Locale }) {
         </nav>
 
         <LocaleSwitch locale={locale} label={t.header.language} className="hidden sm:flex" />
+        {/* Sign-in (§21.4 screen 2). Icon only at 1024–1279px, where the inline nav needs the space. */}
+        <ButtonLink
+          href={loginPath(locale)}
+          variant="ghost"
+          title={t.header.login}
+          className="lg:w-11 lg:px-0 xl:w-auto xl:px-4"
+        >
+          <LogIn aria-hidden className="hidden size-4.5 sm:block" />
+          <span className="lg:sr-only xl:not-sr-only">{t.header.login}</span>
+        </ButtonLink>
         {/* Full label where there is room; at 1024–1279px the inline nav needs the space. */}
         <TelegramButton locale={locale} size="md" className="hidden sm:inline-flex lg:hidden xl:inline-flex" />
         <TelegramButton locale={locale} size="md" compact className="hidden lg:inline-flex xl:hidden" />

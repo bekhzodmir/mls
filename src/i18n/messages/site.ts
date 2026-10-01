@@ -29,6 +29,7 @@ export default defineMessages({
       home: "Binor — на главную",
       menu: "Меню",
       language: "Язык",
+      login: "Войти",
     },
     cta: {
       telegram: "Открыть в Telegram",
@@ -84,6 +85,7 @@ export default defineMessages({
       home: "Binor — bosh sahifaga",
       menu: "Menyu",
       language: "Til",
+      login: "Kirish",
     },
     cta: {
       telegram: "Telegramda ochish",

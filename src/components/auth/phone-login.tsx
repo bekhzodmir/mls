@@ -11,7 +11,7 @@ import auth from "@/i18n/messages/auth";
 import { formatUzPhone } from "@/lib/domain/phone";
 import { cn } from "@/lib/cn";
 import { onboardingPath } from "./auth-routes";
-import { describedBy, FieldError, FieldHint, FieldLabel, inputClasses, Spinner } from "./controls";
+import { describedBy, FieldError, FieldHint, FieldLabel, Spinner } from "./controls";
 import {
   formatCountdown,
   isDemoCodeAccepted,
@@ -32,6 +32,12 @@ import { saveLoginHandoff } from "./session-store";
  */
 
 type Step = "phone" | "otp" | "accepted";
+
+/** Like the shared field style (`inputClasses`), but taller with large spaced digits. */
+const otpInputClasses = cn(
+  "h-14 w-full min-w-0 rounded-md border border-border bg-surface px-3 text-center text-h2 tracking-[0.4em] text-fg tabular shadow-card",
+  "placeholder:text-fg-subtle focus-visible:border-primary aria-invalid:border-danger-fg",
+);
 
 export function PhoneLogin({ locale }: { locale: Locale }) {
   const t = auth[locale];
@@ -189,7 +195,7 @@ export function PhoneLogin({ locale }: { locale: Locale }) {
             aria-invalid={problem ? true : undefined}
             aria-describedby={describedBy(hintId, errorId)}
             placeholder={"•".repeat(OTP_LENGTH)}
-            className={cn(inputClasses, "h-14 text-center text-h2 tracking-[0.4em] tabular")}
+            className={otpInputClasses}
           />
           <FieldHint id={hintId}>{t.otp.hint}</FieldHint>
           {problem ? (
@@ -200,7 +206,7 @@ export function PhoneLogin({ locale }: { locale: Locale }) {
         </div>
 
         {step === "accepted" ? (
-          <p role="status" className="flex items-center gap-2 text-small font-medium text-fg">
+          <p className="flex min-h-12 items-center justify-center gap-2 text-small font-medium text-fg">
             <Spinner />
             {t.otp.accepted}
           </p>
@@ -222,8 +228,9 @@ export function PhoneLogin({ locale }: { locale: Locale }) {
             {t.otp.resend}
           </Button>
         )}
+        {/* Persistent live region: announces the demo resend and the accepted code. */}
         <p role="status" className="text-center text-caption text-fg-muted">
-          {resent ? t.otp.resent : ""}
+          {step === "accepted" ? <span className="sr-only">{t.otp.accepted}</span> : resent ? t.otp.resent : ""}
         </p>
       </div>
     </section>
