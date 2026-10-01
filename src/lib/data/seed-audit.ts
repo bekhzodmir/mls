@@ -11,7 +11,8 @@ import { SYSTEM_ACTOR_ID, type OrgAuditAction, type OrgAuditTargetKind } from ".
  *   changes and new-device logins carry the purpose in `reason`.
  * - A change of responsible agent always has a reason (§36.5).
  * - Automatic assignments are by `system` and name the routing rule id;
- *   manual ones are by the team lead.
+ *   manual ones are by the team lead. Roles and agency-wide exports are the
+ *   agency owner's (agent-10, outside the viewer's team: `agency` scope).
  * - Deal histories stay on each Deal (`deal.audit`); the repository merges
  *   both logs for the audit screen.
  */
@@ -24,7 +25,8 @@ interface OrgAuditEvent extends AuditEvent {
 type Row = [ISODateTime, ID, OrgAuditAction, OrgAuditTargetKind, ID, string?];
 
 const rows: Row[] = [
-  [day(-60, "10:00"), SYSTEM_ACTOR_ID, "role_changed", "agent", "agent-02", "agency_agent → team_lead: решение руководителя агентства"],
+  [day(-60, "10:00"), "agent-10", "role_changed", "agent", "agent-02", "agency_agent → team_lead: руководитель команды «Юнусабад»"],
+  [day(-60, "10:05"), "agent-10", "permission_granted", "agent", "agent-02", "Экспорт отчётов команды без контактов клиентов"],
   [day(-58, "10:05"), "agent-01", "contract_signed", "contract", "ctr-drb-2026-003"],
   [day(-50, "10:05"), "agent-01", "contract_signed", "contract", "ctr-dr-2026-038"],
   [day(-45, "11:35"), "agent-01", "contract_signed", "contract", "ctr-dr-2026-041"],
@@ -83,6 +85,7 @@ const rows: Row[] = [
   ],
   [day(-6, "10:30"), "agent-01", "export_requested", "export", "export-2026-09-24-01", "Свои объекты для отчёта собственникам, без контактов"],
   [day(-6, "11:05"), "agent-03", "contract_signed", "contract", "ctr-dr-2026-057"],
+  [day(-6, "16:00"), "agent-10", "export_requested", "export", "export-2026-09-24-02", "Реестр договоров агентства для страховой компании"],
   [day(-6, "18:05"), "agent-03", "contract_signed", "contract", "ctr-dr-2026-058"],
   [day(-5, "16:10"), "agent-03", "records_merged", "client", "cl-18", "Похожее имя в Telegram"],
   [
@@ -109,6 +112,7 @@ const rows: Row[] = [
   [day(-2, "10:55"), "agent-08", "cooperation_accepted", "cooperation", "coop-07"],
   [day(-2, "11:05"), "agent-01", "contact_revealed", "agent", "agent-08", "Сотрудничество coop-07 принято: контакты партнёра открыты"],
   [day(-2, "14:11"), SYSTEM_ACTOR_ID, "lead_assigned", "lead", "lead-08", "rule-99 «Все остальные лиды»: round-robin → agent-01"],
+  [day(-1, "08:40"), "agent-10", "login_new_device", "session", "session-agent-10-0929", "Chrome, macOS, Ташкент"],
   [day(-1, "09:00"), "agent-02", "export_requested", "export", "export-2026-09-29-01", "Нагрузка команды за сентябрь, без контактов клиентов"],
   [day(-1, "13:05"), "agent-02", "owner_contact_viewed", "owner", "owner-12", "Звонок собственнице по встречному предложению"],
   [

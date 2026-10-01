@@ -146,6 +146,19 @@ export const agents: Agent[] = [
     languages: ["ru"],
   },
   {
+    // Heads Demo Realty; not in a team. Owns roles, permissions and agency-wide audit.
+    id: "agent-10",
+    name: "Шахноза Валиева",
+    phone: "+998900000110",
+    telegramUsername: "shakhnoza_demo",
+    organizationId: "org-01",
+    role: "agency_owner",
+    professionalStatus: "certified_realtor",
+    verifications: [identity("agent-10", 400), certificate("agent-10", "confirmed", 30)],
+    territory: ["yunusabad", "mirzo_ulugbek", "shaykhantahur"],
+    languages: ["ru", "uz"],
+  },
+  {
     id: "agent-04",
     name: "Дильноза Рахимова",
     phone: "+998900000104",

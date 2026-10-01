@@ -5,7 +5,8 @@ import { day } from "./seed-time";
  * Demo teams, availability and lead routing (§14.2, §36.5) — all fictional.
  *
  * - team-01 is the viewer's team at Demo Realty: lead agent-02 (Нигора),
- *   members agent-01 (the viewer) and agent-03. team-02 belongs to the
+ *   members agent-01 (the viewer) and agent-03. The agency owner agent-10
+ *   heads the organization outside any team. team-02 belongs to the
  *   partner agency and is never shown to the viewer.
  * - agent-03 is away until tomorrow morning and agent-02 is busy, so a
  *   routing simulator has to skip or deprioritize them.
@@ -52,6 +53,13 @@ export const agentAvailability: AgentAvailability[] = [
     awayUntil: day(1, "09:00"),
     dailyLeadCapacity: 5,
     specializations: ["apartment", "room"],
+  },
+  {
+    // The agency owner takes only the occasional large commercial client.
+    agentId: "agent-10",
+    status: "available",
+    dailyLeadCapacity: 1,
+    specializations: ["commercial"],
   },
 ];
 

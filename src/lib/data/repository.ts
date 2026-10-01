@@ -13,15 +13,24 @@ import {
   type RankedMatch,
 } from "@/lib/domain/matching";
 import { toMinor } from "@/lib/domain/money";
+import { normalizeUzPhone } from "@/lib/domain/phone";
 import { foldText } from "@/lib/domain/text";
 import {
   dealStages,
   type Agent,
+  type AgentAvailability,
   type AppNotification,
+  type AuditEvent,
+  type Call,
   type Client,
+  type Communication,
   type ConfidenceBand,
+  type Consent,
+  type Contract,
+  type ContractStatus,
   type CooperationRequest,
   type Deal,
+  type DealDocument,
   type DistrictId,
   type ID,
   type Lead,
@@ -30,16 +39,62 @@ import {
   type MatchTarget,
   type Offer,
   type Organization,
+  type Owner,
   type ParsedField,
   type Property,
   type Requirement,
   type Task,
   type TelegramListing,
   type TelegramSource,
+  type VerificationItem,
+  type VerificationStatus,
   type Viewing,
 } from "@/lib/domain/types";
 import { tashkentDateKey } from "@/lib/domain/working-days";
 import { seed, VIEWER_AGENT_ID, type MatchStatusRecord } from "./seed";
+import {
+  CONTRACT_CLAUSES,
+  SYSTEM_ACTOR_ID,
+  type AgentWorkload,
+  type AuditEventView,
+  type AuditFilter,
+  type AuditScope,
+  type CallDetailView,
+  type CallFilter,
+  type CallView,
+  type CommunicationFilter,
+  type CommunicationView,
+  type ConsentFilter,
+  type ConsentRegistryItem,
+  type ContractDetailView,
+  type ContractFilter,
+  type ContractPartyView,
+  type ContractView,
+  type CooperationStats,
+  type MyTeamView,
+  type OwnerDetailView,
+  type OwnerFilter,
+  type OwnerListItem,
+  type OwnerRecordView,
+  type PartnerAgent,
+  type PartnerCooperationView,
+  type PartnerDetailView,
+  type PartnerFilter,
+  type PartnerListItem,
+  type PartnerListingView,
+  type PartnerOrganization,
+  type RecordScope,
+  type RightHolderView,
+  type RoutingContext,
+  type SubjectRef,
+  type TeamMemberDetailView,
+  type TeamMemberMetrics,
+  type TeamMemberView,
+  type VerificationQueueFilter,
+  type VerificationQueueItem,
+  type VerificationResult,
+  type VerificationTarget,
+} from "./views";
 import type {
   ClientDetailView,
   ClientFilter,
@@ -130,6 +185,10 @@ const cooperationById = indexById(seed.cooperationRequests);
 const viewingsById = indexById(seed.viewings);
 const offersById = indexById(seed.offers);
 const dealsById = indexById(seed.deals);
+const contractsById = indexById(seed.contracts);
+const contractsByNumber = new Map(seed.contracts.map((contract) => [contract.number, contract]));
+const callsById = indexById(seed.calls);
+const availabilityByAgent = new Map(seed.agentAvailability.map((entry) => [entry.agentId, entry]));
 
 function must<T>(value: T | undefined, what: string): T {
   if (value === undefined) throw new Error(`Demo data is inconsistent: missing ${what}`);
@@ -824,6 +883,819 @@ function dealDoc(view: DealView): SearchDoc {
   };
 }
 
+/* ------------------------------------------------- organization & team */
+
+const viewerOrganizationId = viewer.organizationId;
+
+/** Agents of the viewer's organization (colleagues and the viewer). */
+function inViewerOrganization(agentId: ID | undefined): boolean {
+  if (!agentId || !viewerOrganizationId) return agentId === viewer.id;
+  return agentsById.get(agentId)?.organizationId === viewerOrganizationId;
+}
+
+function organizationAgents(): Agent[] {
+  return seed.agents.filter((agent) => inViewerOrganization(agent.id)).sort(byIdAsc);
+}
+
+const viewerTeam = seed.teams.find(
+  (team) => team.organizationId === viewerOrganizationId && team.memberIds.includes(viewer.id),
+);
+const viewerTeamMemberIds = new Set<ID>(viewerTeam?.memberIds ?? [viewer.id]);
+
+/** Tashkent calendar day number (days since the epoch) of an instant. */
+function tashkentDayNumber(value: string | Date): number {
+  return Math.round(Date.parse(tashkentDateKey(value)) / DAY_MS);
+}
+
+/** Whole Tashkent calendar days from `at` to `iso`: 0 = the same day, negative = before. */
+function tashkentDaysUntil(iso: string, at: Date): number {
+  return tashkentDayNumber(iso) - tashkentDayNumber(at);
+}
+
+/**
+ * Contacts with a partner are shared after an accepted cooperation request
+ * with `contacts_shared` disclosure between the two (§18.2) — the same rule
+ * that turns a listing into `partner_shared`.
+ */
+function contactsSharedWith(agentId: ID): boolean {
+  return seed.cooperationRequests.some(
+    (request) =>
+      request.status === "accepted" &&
+      request.disclosure === "contacts_shared" &&
+      isParty(request, viewer.id) &&
+      isParty(request, agentId),
+  );
+}
+
+/* ------------------------------------------------------------ contracts */
+
+/**
+ * Contracts belong to the organization that concluded them: the viewer sees
+ * Demo Realty's contracts (own and colleagues'), never a partner's.
+ */
+function isVisibleContract(contract: Contract): boolean {
+  return Boolean(viewerOrganizationId) && contract.organizationId === viewerOrganizationId;
+}
+
+const visibleContracts = seed.contracts.filter(isVisibleContract);
+
+/* --------------------------------------------------------------- owners */
+
+interface OwnerLink {
+  ownerId: ID;
+  /** The organization's listings on the owner's properties, by id. */
+  listings: Listing[];
+  /** Visible contracts where the owner is the customer or a right holder, by id. */
+  contracts: Contract[];
+  propertyIds: ID[];
+  scope: RecordScope;
+  contactVisible: boolean;
+  responsibleAgentId: ID;
+  rightHolderOnly: boolean;
+}
+
+/**
+ * Owners the viewer may know about: owners of the organization's listings and
+ * right holders on its contracts. Owner identity is agency-level; contacts
+ * (RESTRICTED, §34.2) follow `seesOwnerData` — the listing's own agent or
+ * agency management — or the viewer's own contract with the owner.
+ * Partner listings never link an owner: a masked listing hides its owner.
+ * Access does not depend on time, so links are computed once.
+ */
+function buildOwnerLinks(): Map<ID, OwnerLink> {
+  const draft = new Map<ID, { listings: Listing[]; contracts: Contract[]; properties: Set<ID>; owns: boolean }>();
+  const entry = (ownerId: ID) => {
+    let found = draft.get(ownerId);
+    if (!found) {
+      found = { listings: [], contracts: [], properties: new Set(), owns: false };
+      draft.set(ownerId, found);
+    }
+    return found;
+  };
+  for (const listing of seed.listings) {
+    const access = accessOf(listing);
+    if (access !== "owner" && access !== "agency") continue;
+    const property = must(propertiesById.get(listing.propertyId), `property ${listing.propertyId}`);
+    if (!property.ownerId) continue;
+    const found = entry(property.ownerId);
+    found.listings.push(listing);
+    found.properties.add(property.id);
+    found.owns = true;
+  }
+  for (const contract of visibleContracts) {
+    const customerOwner = contract.customer.kind === "owner" ? contract.customer.id : undefined;
+    const ownerIds = new Set([
+      ...(customerOwner ? [customerOwner] : []),
+      ...contract.rightHolderConsents.map((holder) => holder.ownerId),
+    ]);
+    const listing = contract.listingId ? listingsById.get(contract.listingId) : undefined;
+    for (const ownerId of ownerIds) {
+      const found = entry(ownerId);
+      found.contracts.push(contract);
+      if (ownerId === customerOwner) found.owns = true;
+      if (listing) found.properties.add(listing.propertyId);
+    }
+  }
+  const links = new Map<ID, OwnerLink>();
+  for (const [ownerId, found] of draft) {
+    const listings = found.listings.sort(byIdAsc);
+    const contracts = found.contracts.sort(byIdAsc);
+    const own =
+      listings.some((listing) => listing.agentId === viewer.id) ||
+      contracts.some((contract) => contract.agentId === viewer.id);
+    const responsibleAgentId = own
+      ? viewer.id
+      : (listings[0]?.agentId ?? must(contracts[0], `link of ${ownerId}`).agentId);
+    links.set(ownerId, {
+      ownerId,
+      listings,
+      contracts,
+      propertyIds: [...found.properties].sort(),
+      scope: own ? "own" : "agency",
+      contactVisible:
+        listings.some((listing) => seesOwnerData(must(accessOf(listing), `access ${listing.id}`))) ||
+        contracts.some((contract) => contract.agentId === viewer.id),
+      responsibleAgentId,
+      rightHolderOnly: !found.owns,
+    });
+  }
+  return links;
+}
+
+const ownerLinks = buildOwnerLinks();
+
+function ownerRecordView(owner: Owner, link: OwnerLink): OwnerRecordView {
+  const { phone, ...rest } = owner;
+  return link.contactVisible ? { ...rest, phone } : rest;
+}
+
+/* ---------------------------------------------------- subjects & contacts */
+
+/** A lead, client or owner as a name-only reference, when the viewer may see it. */
+function subjectRef(kind: SubjectRef["kind"], id: ID): SubjectRef | undefined {
+  switch (kind) {
+    case "lead": {
+      const lead = leadsById.get(id);
+      if (!lead || !visibleLead(lead)) return undefined;
+      const ref: SubjectRef = { kind, id };
+      if (lead.name) ref.name = lead.name;
+      return ref;
+    }
+    case "client": {
+      const client = visibleClient(id);
+      return client ? { kind, id, name: client.name } : undefined;
+    }
+    case "owner": {
+      const owner = ownersById.get(id);
+      return owner && ownerLinks.has(id) ? { kind, id, name: owner.name } : undefined;
+    }
+  }
+}
+
+function attachedSubject(record: { clientId?: ID; leadId?: ID; ownerId?: ID }): SubjectRef | undefined {
+  if (record.clientId) return subjectRef("client", record.clientId);
+  if (record.leadId) return subjectRef("lead", record.leadId);
+  if (record.ownerId) return subjectRef("owner", record.ownerId);
+  return undefined;
+}
+
+function partyView(customer: Contract["customer"]): ContractPartyView {
+  switch (customer.kind) {
+    case "owner": {
+      const owner = must(ownersById.get(customer.id), `owner ${customer.id}`);
+      const view: ContractPartyView = { kind: "owner", id: owner.id, name: owner.name };
+      if (ownerLinks.get(owner.id)?.contactVisible) view.phone = owner.phone;
+      else view.contactHidden = "owner_data_permission";
+      return view;
+    }
+    case "client": {
+      const client = must(clientsById.get(customer.id), `client ${customer.id}`);
+      const view: ContractPartyView = { kind: "client", id: client.id, name: client.name };
+      if (visibleClient(client.id) && client.phones[0]) view.phone = client.phones[0];
+      else view.contactHidden = "not_responsible";
+      return view;
+    }
+    case "agent": {
+      const agent = must(agentsById.get(customer.id), `agent ${customer.id}`);
+      const view: ContractPartyView = { kind: "agent", id: agent.id, name: agent.name };
+      if (inViewerOrganization(agent.id) || contactsSharedWith(agent.id)) view.phone = agent.phone;
+      else view.contactHidden = "no_accepted_cooperation";
+      return view;
+    }
+  }
+}
+
+function rightHolderView(contract: Contract, holder: Contract["rightHolderConsents"][number]): RightHolderView {
+  const owner = must(ownersById.get(holder.ownerId), `owner ${holder.ownerId}`);
+  const view: RightHolderView = {
+    ownerId: owner.id,
+    name: owner.name,
+    status: holder.status,
+    isCustomer: contract.customer.kind === "owner" && contract.customer.id === owner.id,
+  };
+  const consent = holder.consentId ? owner.consents.find((item) => item.id === holder.consentId) : undefined;
+  if (consent) view.consent = consent;
+  return view;
+}
+
+function toContractView(contract: Contract, at: Date): ContractView {
+  const daysLeft = tashkentDaysUntil(contract.endsAt, at);
+  const view: ContractView = {
+    contract,
+    scope: contract.agentId === viewer.id ? "own" : "agency",
+    customer: partyView(contract.customer),
+    agent: must(agentsById.get(contract.agentId), `agent ${contract.agentId}`),
+    rightHolders: contract.rightHolderConsents.map((holder) => rightHolderView(contract, holder)),
+    expiring: contract.status === "active" && daysLeft >= 0 && daysLeft <= EXPIRING_CONTRACT_DAYS,
+    daysLeft,
+    missingClauses: CONTRACT_CLAUSES.filter((clause) => !contract.clauses[clause]),
+    missingConsents: contract.rightHolderConsents.filter((holder) => holder.status === "missing").length,
+    hasSimpleElectronicSignature: contract.signatures.some((signature) => signature.method === "simple_electronic"),
+  };
+  const organization = contract.organizationId ? organizationsById.get(contract.organizationId) : undefined;
+  if (organization) view.organization = organization;
+  const listing = contract.listingId ? listingViewById(contract.listingId, at) : undefined;
+  if (listing) view.listing = listing;
+  return view;
+}
+
+/** Needs action first: expiring, then unsigned, then the rest; earliest end first. */
+const CONTRACT_STATUS_RANK: Record<ContractStatus, number> = {
+  awaiting_signature: 1,
+  draft: 2,
+  active: 3,
+  expired: 4,
+  terminated: 5,
+};
+
+function contractRank(view: ContractView): number {
+  return view.expiring ? 0 : CONTRACT_STATUS_RANK[view.contract.status];
+}
+
+function sortContractViews(views: ContractView[]): ContractView[] {
+  return views.sort(
+    (a, b) =>
+      contractRank(a) - contractRank(b) ||
+      isoAsc(a.contract.endsAt, b.contract.endsAt) ||
+      byIdAsc(a.contract, b.contract),
+  );
+}
+
+function contractDoc(view: ContractView): SearchDoc {
+  return doc(
+    [
+      view.contract.id,
+      view.contract.number,
+      view.contract.service,
+      view.customer.name,
+      view.agent.name,
+      ...view.rightHolders.map((holder) => holder.name),
+      view.listing?.listing.id,
+      view.listing?.property.areaName,
+      view.listing?.property.landmark,
+    ],
+    [view.customer.phone],
+    view.listing ? [view.listing.property.district] : [],
+  );
+}
+
+/* -------------------------------------------------------- communications */
+
+/**
+ * Calls are personal data with a separate recording consent (§36.5): the
+ * viewer hears and reads only their own calls. Reviewing colleagues' calls
+ * would need a team permission the demo viewer (an agency agent) lacks
+ * (§19 "Own/assigned"), so agency calls are not listed at all.
+ */
+function visibleCall(call: Call): boolean {
+  return call.agentId === viewer.id;
+}
+
+/** The viewer's own timeline entries about a person they may see. */
+function visibleCommunication(item: Communication): boolean {
+  return item.agentId === viewer.id && attachedSubject(item) !== undefined;
+}
+
+function phoneMatchesOf(phone: string): SubjectRef[] {
+  const normalized = normalizeUzPhone(phone);
+  if (!normalized) return [];
+  const same = (value: string | undefined) => value !== undefined && normalizeUzPhone(value) === normalized;
+  const leads = seed.leads
+    .filter((lead) => visibleLead(lead) && same(lead.phone))
+    .sort(byIdAsc)
+    .flatMap((lead) => subjectRef("lead", lead.id) ?? []);
+  const clients = seed.clients
+    .filter((client) => isViewerClient(client) && client.phones.some(same))
+    .sort(byIdAsc)
+    .flatMap((client) => subjectRef("client", client.id) ?? []);
+  // Only owners whose contact the viewer may see can be recognised by number.
+  const owners = seed.owners
+    .filter((owner) => ownerLinks.get(owner.id)?.contactVisible && same(owner.phone))
+    .sort(byIdAsc)
+    .flatMap((owner) => subjectRef("owner", owner.id) ?? []);
+  return [...leads, ...clients, ...owners];
+}
+
+function toCallView(call: Call, at: Date): CallView {
+  const linked = attachedSubject(call);
+  const phoneMatches = linked ? [] : phoneMatchesOf(call.phone);
+  const view: CallView = {
+    call,
+    agent: must(agentsById.get(call.agentId), `agent ${call.agentId}`),
+    phoneMatches,
+    unknownNumber: !linked && phoneMatches.length === 0,
+  };
+  if (linked) view.linked = linked;
+  const listing = call.listingId ? listingViewById(call.listingId, at) : undefined;
+  if (listing) view.listing = listing;
+  return view;
+}
+
+function callViews(at: Date, keep: (call: Call) => boolean = () => true): CallView[] {
+  return seed.calls
+    .filter((call) => visibleCall(call) && keep(call))
+    .sort((a, b) => isoDesc(a.startedAt, b.startedAt) || byIdAsc(a, b))
+    .map((call) => toCallView(call, at));
+}
+
+function toCommunicationView(item: Communication): CommunicationView {
+  const view: CommunicationView = {
+    communication: item,
+    agent: must(agentsById.get(item.agentId), `agent ${item.agentId}`),
+  };
+  const subject = attachedSubject(item);
+  if (subject) view.subject = subject;
+  const call = item.callId ? callsById.get(item.callId) : undefined;
+  if (call && visibleCall(call)) view.call = call;
+  return view;
+}
+
+function communicationViews(keep: (item: Communication) => boolean): CommunicationView[] {
+  return seed.communications
+    .filter((item) => visibleCommunication(item) && keep(item))
+    .sort((a, b) => isoDesc(a.at, b.at) || byIdAsc(a, b))
+    .map(toCommunicationView);
+}
+
+/** Same person: the same attached record, or the same number when nothing is attached. */
+function sameParty(a: { clientId?: ID; leadId?: ID; ownerId?: ID }, b: typeof a): boolean {
+  return (
+    (a.clientId !== undefined && a.clientId === b.clientId) ||
+    (a.leadId !== undefined && a.leadId === b.leadId) ||
+    (a.ownerId !== undefined && a.ownerId === b.ownerId)
+  );
+}
+
+function lastOwnerContact(ownerId: ID): string | undefined {
+  const times = [
+    ...seed.calls.filter((call) => visibleCall(call) && call.ownerId === ownerId).map((call) => call.startedAt),
+    ...seed.communications
+      .filter((item) => visibleCommunication(item) && item.ownerId === ownerId)
+      .map((item) => item.at),
+  ];
+  return times.sort(isoDesc)[0];
+}
+
+function toOwnerListItem(link: OwnerLink): OwnerListItem {
+  const owner = must(ownersById.get(link.ownerId), `owner ${link.ownerId}`);
+  const item: OwnerListItem = {
+    owner: ownerRecordView(owner, link),
+    scope: link.scope,
+    contactVisible: link.contactVisible,
+    responsibleAgent: must(agentsById.get(link.responsibleAgentId), `agent ${link.responsibleAgentId}`),
+    listingIds: link.listings.map((listing) => listing.id),
+    propertyIds: link.propertyIds,
+    contractIds: link.contracts.map((contract) => contract.id),
+    rightHolderOnly: link.rightHolderOnly,
+    activeConsents: owner.consents.filter((consent) => !consent.revokedAt).length,
+  };
+  if (!link.contactVisible) item.contactHidden = "owner_data_permission";
+  const lastContactAt = lastOwnerContact(owner.id);
+  if (lastContactAt) item.lastContactAt = lastContactAt;
+  return item;
+}
+
+function ownerDoc(item: OwnerListItem): SearchDoc {
+  const properties = item.propertyIds.map((id) => must(propertiesById.get(id), `property ${id}`));
+  return doc(
+    [
+      item.owner.id,
+      item.owner.name,
+      ...item.listingIds,
+      ...item.contractIds.map((id) => contractsById.get(id)?.number),
+      ...properties.flatMap((property) => [property.areaName, property.landmark]),
+    ],
+    [item.owner.phone],
+    properties.map((property) => property.district),
+  );
+}
+
+/* --------------------------------------------------------- verification */
+
+/** Confirmed evidence expiring within this many days needs a new check soon. */
+const VERIFICATION_EXPIRING_DAYS = 30;
+
+function resultOnly(item: VerificationItem): VerificationResult {
+  const result: VerificationResult = { ...item };
+  delete result.source;
+  delete result.note;
+  delete result.performedById;
+  return result;
+}
+
+function queueItem(
+  item: VerificationItem,
+  target: VerificationTarget,
+  targetId: ID,
+  detailed: boolean,
+  scope: VerificationQueueItem["scope"],
+  at: Date,
+): VerificationQueueItem {
+  const msLeft = item.expiresAt ? new Date(item.expiresAt).getTime() - at.getTime() : undefined;
+  const confirmed = item.status === "confirmed";
+  return {
+    key: `${target.kind}:${targetId}:${item.id}`,
+    item: detailed ? item : resultOnly(item),
+    detailed,
+    target,
+    scope,
+    expiresSoon: confirmed && msLeft !== undefined && msLeft > 0 && msLeft <= VERIFICATION_EXPIRING_DAYS * DAY_MS,
+    expired: confirmed && msLeft !== undefined && msLeft <= 0,
+  };
+}
+
+/** Partner listings the viewer works on: their deals and their cooperation requests. */
+function partnerWorkListingIds(): Set<ID> {
+  return new Set([
+    ...seed.deals.filter((deal) => deal.agentId === viewer.id).map((deal) => deal.listingId),
+    ...seed.cooperationRequests.filter((request) => isParty(request, viewer.id)).map((request) => request.listingId),
+  ]);
+}
+
+function listingQueueItems(listings: Listing[], at: Date): VerificationQueueItem[] {
+  return listings.flatMap((listing) => {
+    const view = toListingView(listing, at);
+    if (!view) return [];
+    const scope = view.access === "owner" ? "own" : view.access === "agency" ? "agency" : "partner";
+    // The existing result-only rule (§19): source and note go with the right to owner data.
+    return listing.verifications.map((item) =>
+      queueItem(item, { kind: "listing", view }, listing.id, view.ownerData, scope, at),
+    );
+  });
+}
+
+function verificationQueue(at: Date): VerificationQueueItem[] {
+  const workIds = partnerWorkListingIds();
+  const listings = seed.listings.filter((listing) => {
+    const access = accessOf(listing);
+    if (access === "owner" || access === "agency") return true;
+    return access !== undefined && workIds.has(listing.id);
+  });
+  const agentItems = organizationAgents().flatMap((agent) =>
+    agent.verifications.map((item) =>
+      queueItem(
+        item,
+        { kind: "agent", agent },
+        agent.id,
+        agent.id === viewer.id,
+        agent.id === viewer.id ? "own" : "agency",
+        at,
+      ),
+    ),
+  );
+  const organization = viewerOrganizationId ? organizationsById.get(viewerOrganizationId) : undefined;
+  const organizationItems = organization
+    ? [organization.registry, organization.insurance]
+        .filter((item): item is VerificationItem => item !== undefined)
+        .map((item) => queueItem(item, { kind: "organization", organization }, organization.id, true, "agency", at))
+    : [];
+  return [...listingQueueItems(listings, at), ...agentItems, ...organizationItems];
+}
+
+const VERIFICATION_RANK: Record<VerificationStatus, number> = {
+  problem: 0,
+  unavailable: 2,
+  pending: 3,
+  confirmed: 5,
+};
+
+function verificationRank(entry: VerificationQueueItem): number {
+  if (entry.expired) return 1;
+  if (entry.expiresSoon) return 4;
+  return VERIFICATION_RANK[entry.item.status];
+}
+
+/* --------------------------------------------------------- team & routing */
+
+const OPEN_LEAD = (lead: Lead) => !CLOSED_LEAD.has(lead.status);
+const INACTIVE_CLIENT = new Set<Client["status"]>(["lost", "deferred"]);
+const ACTIVE_LISTING = new Set<ListingStatus>([
+  "contract_signed",
+  "verification_pending",
+  "verified",
+  "active_mls",
+  "offer",
+  "under_contract",
+]);
+
+/** Tashkent week (Monday–Sunday) of `at`, as day numbers [from, to). */
+function tashkentWeek(at: Date): [number, number] {
+  const today = tashkentDayNumber(at);
+  // Day 0 of the epoch (1970-01-01) was a Thursday: Monday = 0 after the shift.
+  const sinceMonday = (today + 3) % 7;
+  return [today - sinceMonday, today - sinceMonday + 7];
+}
+
+function memberMetrics(agentId: ID, at: Date): TeamMemberMetrics {
+  const today = tashkentDateKey(at);
+  const [weekFrom, weekTo] = tashkentWeek(at);
+  const leads = seed.leads.filter((lead) => lead.assignedAgentId === agentId);
+  return {
+    newLeadsToday: leads.filter((lead) => tashkentDateKey(lead.receivedAt) === today).length,
+    openLeads: leads.filter(OPEN_LEAD).length,
+    slaBreaches: leads.filter((lead) => leadSla(lead, at).state === "breached").length,
+    activeClients: seed.clients.filter(
+      (client) => client.responsibleAgentId === agentId && !INACTIVE_CLIENT.has(client.status),
+    ).length,
+    activeListings: seed.listings.filter((listing) => listing.agentId === agentId && ACTIVE_LISTING.has(listing.status))
+      .length,
+    viewingsThisWeek: seed.viewings.filter((viewing) => {
+      if (viewing.agentId !== agentId && viewing.partnerAgentId !== agentId) return false;
+      if (INACTIVE_VIEWING.has(viewing.status)) return false;
+      const dayNumber = tashkentDayNumber(viewing.startsAt);
+      return dayNumber >= weekFrom && dayNumber < weekTo;
+    }).length,
+    dealsInProgress: seed.deals.filter(
+      (deal) => (deal.agentId === agentId || deal.partnerAgentId === agentId) && deal.stage !== "archived",
+    ).length,
+  };
+}
+
+function availabilityOf(agentId: ID): AgentAvailability {
+  return must(availabilityByAgent.get(agentId), `availability of ${agentId}`);
+}
+
+function toTeamMemberView(agent: Agent, at: Date): TeamMemberView {
+  const availability = availabilityOf(agent.id);
+  const metrics = memberMetrics(agent.id, at);
+  return {
+    agent,
+    isLead: viewerTeam?.leadAgentId === agent.id,
+    isViewer: agent.id === viewer.id,
+    availability,
+    metrics,
+    capacityLeft: Math.max(0, availability.dailyLeadCapacity - metrics.newLeadsToday),
+  };
+}
+
+function toWorkload(agentId: ID, at: Date): AgentWorkload {
+  const availability = availabilityOf(agentId);
+  const metrics = memberMetrics(agentId, at);
+  const workload: AgentWorkload = {
+    agentId,
+    status: availability.status,
+    assignedToday: metrics.newLeadsToday,
+    openLeads: metrics.openLeads,
+    capacity: availability.dailyLeadCapacity,
+    remaining: Math.max(0, availability.dailyLeadCapacity - metrics.newLeadsToday),
+  };
+  if (availability.awayUntil) workload.awayUntil = availability.awayUntil;
+  return workload;
+}
+
+function organizationRules() {
+  return seed.routingRules
+    .filter((rule) => rule.organizationId === viewerOrganizationId)
+    .sort((a, b) => a.priority - b.priority || byIdAsc(a, b));
+}
+
+/* ------------------------------------------------------------- partners */
+
+function isPartnerAgent(agent: Agent): boolean {
+  return agent.id !== viewer.id && !inViewerOrganization(agent.id);
+}
+
+function partnerAgentView(agent: Agent): PartnerAgent {
+  const { phone, telegramUsername, verifications, ...rest } = agent;
+  const view: PartnerAgent = { ...rest, verifications: verifications.map(resultOnly) };
+  if (contactsSharedWith(agent.id)) {
+    view.phone = phone;
+    if (telegramUsername) view.telegramUsername = telegramUsername;
+  }
+  return view;
+}
+
+function partnerOrganizationView(organization: Organization): PartnerOrganization {
+  const { registry, insurance, ...rest } = organization;
+  const view: PartnerOrganization = { ...rest };
+  if (registry) view.registry = resultOnly(registry);
+  if (insurance) view.insurance = resultOnly(insurance);
+  return view;
+}
+
+function requestsWith(agentId: ID): CooperationRequest[] {
+  return seed.cooperationRequests.filter((request) => isParty(request, viewer.id) && isParty(request, agentId));
+}
+
+function cooperationStats(agentId: ID): CooperationStats {
+  const stats: CooperationStats = { total: 0, accepted: 0, declined: 0, inProgress: 0, other: 0 };
+  for (const request of requestsWith(agentId)) {
+    stats.total += 1;
+    if (request.status === "accepted") stats.accepted += 1;
+    else if (request.status === "declined") stats.declined += 1;
+    else if (OPEN_COOPERATION.has(request.status)) stats.inProgress += 1;
+    else stats.other += 1;
+  }
+  return stats;
+}
+
+function withoutAgent(view: ListingView): PartnerListingView {
+  const result: PartnerListingView & Partial<Pick<ListingView, "agent" | "organization">> = { ...view };
+  delete result.agent;
+  delete result.organization;
+  return result;
+}
+
+/** A cooperation view inside a partner profile, without the agent and organization objects. */
+function withoutAgents(view: CooperationView): PartnerCooperationView {
+  const result: Omit<PartnerCooperationView, "listing"> &
+    Partial<Pick<CooperationView, "fromAgent" | "toAgent" | "counterpart" | "fromOrganization" | "toOrganization">> & {
+      listing: ListingView | PartnerListingView;
+    } = { ...view };
+  delete result.fromAgent;
+  delete result.toAgent;
+  delete result.counterpart;
+  delete result.fromOrganization;
+  delete result.toOrganization;
+  return { ...result, listing: withoutAgent(view.listing) };
+}
+
+function toPartnerListItem(agent: Agent, at: Date): PartnerListItem {
+  const contactsShared = contactsSharedWith(agent.id);
+  const item: PartnerListItem = {
+    agent: partnerAgentView(agent),
+    contactsShared,
+    cooperation: cooperationStats(agent.id),
+    activeMlsListings: visibleListings().filter(
+      (listing) => listing.agentId === agent.id && listing.status === "active_mls",
+    ).length,
+  };
+  const organization = agent.organizationId ? organizationsById.get(agent.organizationId) : undefined;
+  if (organization) item.organization = partnerOrganizationView(organization);
+  if (!contactsShared) item.contactHidden = "no_accepted_cooperation";
+  const interactions = [
+    ...requestsWith(agent.id).map((request) => must(latestVersion(request), `terms of ${request.id}`).proposedAt),
+    ...seed.deals
+      .filter((deal) => deal.agentId === viewer.id && deal.partnerAgentId === agent.id)
+      .map((deal) => deal.createdAt),
+    ...seed.viewings
+      .filter(
+        (viewing) =>
+          viewing.agentId === viewer.id && viewing.partnerAgentId === agent.id && isBefore(viewing.startsAt, at),
+      )
+      .map((viewing) => viewing.startsAt),
+  ].sort(isoDesc);
+  if (interactions[0]) item.lastInteractionAt = interactions[0];
+  return item;
+}
+
+function partnerDoc(agent: Agent): SearchDoc {
+  const organization = agent.organizationId ? organizationsById.get(agent.organizationId) : undefined;
+  return doc([agent.id, agent.name, organization?.name], [], agent.territory);
+}
+
+/* ---------------------------------------------------------------- audit */
+
+/** Reveals and views of restricted data, exports, permission/role and security events (§38.6, §39.6). */
+const SENSITIVE_AUDIT_ACTIONS = new Set<string>([
+  "contact_revealed",
+  "owner_contact_viewed",
+  "restricted_document_viewed",
+  "document.viewed",
+  "export_requested",
+  "permission_granted",
+  "permission_revoked",
+  "role_changed",
+  "login_new_device",
+]);
+
+const documentsById = new Map<ID, { document: DealDocument; deal: Deal }>(
+  seed.deals.flatMap((deal) => deal.documents.map((document) => [document.id, { document, deal }] as const)),
+);
+
+function consentSubject(consentId: ID): { kind: "client"; client: Client } | { kind: "owner"; owner: Owner } | undefined {
+  const client = seed.clients.find((item) => item.consents.some((consent) => consent.id === consentId));
+  if (client) return { kind: "client", client };
+  const owner = seed.owners.find((item) => item.consents.some((consent) => consent.id === consentId));
+  return owner ? { kind: "owner", owner } : undefined;
+}
+
+/** Agents a target record belongs to (the responsible / listing / deal agent). */
+function recordAgents(target: AuditEvent["target"]): ID[] {
+  switch (target.kind) {
+    case "lead": {
+      const agentId = leadsById.get(target.id)?.assignedAgentId;
+      return agentId ? [agentId] : [];
+    }
+    case "client":
+      return [clientsById.get(target.id)?.responsibleAgentId].filter((id): id is ID => id !== undefined);
+    case "owner": {
+      const link = ownerLinks.get(target.id);
+      return link ? [...link.listings, ...link.contracts].map((record) => record.agentId) : [];
+    }
+    case "listing":
+      return [listingsById.get(target.id)?.agentId].filter((id): id is ID => id !== undefined);
+    case "contract":
+      return [contractsById.get(target.id)?.agentId].filter((id): id is ID => id !== undefined);
+    case "document": {
+      const found = documentsById.get(target.id);
+      return found ? [found.deal.agentId] : [];
+    }
+    case "deal":
+      return [dealsById.get(target.id)?.agentId].filter((id): id is ID => id !== undefined);
+    case "offer": {
+      const offer = offersById.get(target.id);
+      const client = offer ? clientsById.get(offer.clientId) : undefined;
+      return client ? [client.responsibleAgentId] : [];
+    }
+    case "agent":
+      return [target.id];
+    case "consent": {
+      const subject = consentSubject(target.id);
+      if (subject?.kind === "client") return [subject.client.responsibleAgentId];
+      if (subject?.kind === "owner") return recordAgents({ kind: "owner", id: subject.owner.id });
+      return [];
+    }
+    case "cooperation": {
+      const request = cooperationById.get(target.id);
+      return request ? [request.fromAgentId, request.toAgentId] : [];
+    }
+    default:
+      return [];
+  }
+}
+
+function listingLabel(listingId: ID): string {
+  const listing = listingsById.get(listingId);
+  const property = listing ? propertiesById.get(listing.propertyId) : undefined;
+  return property?.areaName ? `${property.areaName} (${listingId})` : listingId;
+}
+
+/** A list-safe label: names, massifs and numbers only — never a phone, address or document content. */
+function auditTarget(target: AuditEvent["target"]): AuditEventView["target"] {
+  const base = { kind: target.kind, id: target.id };
+  switch (target.kind) {
+    case "lead":
+      return { ...base, label: leadsById.get(target.id)?.name ?? target.id };
+    case "client":
+      return { ...base, label: clientsById.get(target.id)?.name ?? target.id };
+    case "owner":
+      return { ...base, label: ownersById.get(target.id)?.name ?? target.id };
+    case "agent":
+      return { ...base, label: agentsById.get(target.id)?.name ?? target.id };
+    case "listing":
+      return { ...base, label: listingLabel(target.id) };
+    case "contract":
+      return { ...base, label: contractsById.get(target.id)?.number ?? target.id };
+    case "document": {
+      const found = documentsById.get(target.id);
+      return found ? { ...base, label: target.id, documentType: found.document.type } : { ...base, label: target.id };
+    }
+    case "deal": {
+      const deal = dealsById.get(target.id);
+      const client = deal ? clientsById.get(deal.clientId) : undefined;
+      return { ...base, label: client ? `${client.name} (${target.id})` : target.id };
+    }
+    case "consent": {
+      const subject = consentSubject(target.id);
+      const name = subject?.kind === "client" ? subject.client.name : subject?.owner.name;
+      return { ...base, label: name ?? target.id };
+    }
+    case "cooperation": {
+      const request = cooperationById.get(target.id);
+      return { ...base, label: request ? `${listingLabel(request.listingId)} · ${target.id}` : target.id };
+    }
+    default:
+      return { ...base, label: target.id };
+  }
+}
+
+function toAuditEventView(event: AuditEvent, log: AuditEventView["log"], dealId?: ID): AuditEventView {
+  const system = event.actorId === SYSTEM_ACTOR_ID;
+  const view: AuditEventView = {
+    event,
+    log,
+    system,
+    target: auditTarget(event.target),
+    sensitive: SENSITIVE_AUDIT_ACTIONS.has(event.action),
+    scope: auditScope(event),
+  };
+  const actor = system ? undefined : agentsById.get(event.actorId);
+  if (actor) view.actor = actor;
+  if (dealId) view.dealId = dealId;
+  return view;
+}
+
 /* ============================================================ public API */
 
 /* ---------------------------------------------------------------- people */
@@ -1339,4 +2211,437 @@ export async function searchAll(q: string): Promise<SearchResults> {
     deals: limit(dealViews(at).filter((view) => matchesQuery(dealDoc(view), query))),
   };
   return copy(results);
+}
+
+/* ------------------------------------------------------------ contracts */
+
+/**
+ * Service contracts of the viewer's organization (§17.5, §38.5): the viewer's
+ * own and colleagues'; a partner's contracts are never listed. Needs action
+ * first: expiring (≤ 14 Tashkent days), awaiting signature, drafts, then
+ * active, expired and terminated; earliest end date first within a group.
+ */
+export async function listContracts(filter: ContractFilter = {}): Promise<ContractView[]> {
+  const at = now();
+  const query = filter.q ? parseQuery(filter.q) : undefined;
+  const views = visibleContracts
+    .filter((contract) => !filter.kind || contract.kind === filter.kind)
+    .map((contract) => toContractView(contract, at))
+    .filter((view) => {
+      if (filter.status === "expiring" && !view.expiring) return false;
+      if (filter.status && filter.status !== "expiring" && view.contract.status !== filter.status) return false;
+      return !query || matchesQuery(contractDoc(view), query);
+    });
+  return copy(sortContractViews(views));
+}
+
+/** One contract with its deal, request and related contracts; undefined for a partner's contract. */
+export async function getContract(id: ID): Promise<ContractDetailView | undefined> {
+  const contract = contractsById.get(id);
+  if (!contract || !isVisibleContract(contract)) return undefined;
+  const at = now();
+  const detail: ContractDetailView = {
+    ...toContractView(contract, at),
+    related: sortContractViews(
+      visibleContracts
+        .filter((other) => other.id !== id && other.listingId !== undefined && other.listingId === contract.listingId)
+        .map((other) => toContractView(other, at)),
+    ),
+  };
+  const deal = contract.dealId ? dealsById.get(contract.dealId) : undefined;
+  const dealView = deal ? toDealView(deal, at) : undefined;
+  if (dealView) detail.deal = dealView;
+  const requirement = contract.requirementId ? requirementsById.get(contract.requirementId) : undefined;
+  if (requirement && requirement.agentId === viewer.id) detail.requirement = requirement;
+  if (contract.kind === "cooperation" && contract.customer.kind === "agent") {
+    const partnerId = contract.customer.id;
+    const request =
+      (deal?.cooperationId ? cooperationById.get(deal.cooperationId) : undefined) ??
+      seed.cooperationRequests.find(
+        (item) =>
+          item.listingId === contract.listingId &&
+          item.status === "accepted" &&
+          isParty(item, viewer.id) &&
+          isParty(item, partnerId),
+      );
+    const cooperation = request ? toCooperationView(request, at) : undefined;
+    if (cooperation) detail.cooperation = cooperation;
+  }
+  return copy(detail);
+}
+
+/** The contract a listing's `contractId` refers to, e.g. "DR-2026-041"; same visibility as `getContract`. */
+export async function getContractByNumber(number: string): Promise<ContractDetailView | undefined> {
+  const contract = contractsByNumber.get(number);
+  return contract ? getContract(contract.id) : undefined;
+}
+
+/* ------------------------------------------------------------- consents */
+
+/**
+ * Consent registry (§38.6 item 2): every consent of the organization's
+ * clients (own and colleagues') and of the owners linked to its listings or
+ * contracts, newest event (grant or revocation) first.
+ */
+export async function listConsents(filter: ConsentFilter = {}): Promise<ConsentRegistryItem[]> {
+  const items: ConsentRegistryItem[] = [];
+  const add = (
+    subject: ConsentRegistryItem["subject"],
+    consents: readonly Consent[],
+    responsibleAgentId: ID,
+    scope: RecordScope,
+  ) => {
+    for (const consent of consents) {
+      items.push({
+        subject,
+        consent,
+        state: consent.revokedAt ? "revoked" : "active",
+        responsibleAgent: must(agentsById.get(responsibleAgentId), `agent ${responsibleAgentId}`),
+        scope,
+      });
+    }
+  };
+  if (filter.subject !== "owner") {
+    for (const client of seed.clients) {
+      if (!inViewerOrganization(client.responsibleAgentId)) continue;
+      add(
+        { kind: "client", id: client.id, name: client.name },
+        client.consents,
+        client.responsibleAgentId,
+        client.responsibleAgentId === viewer.id ? "own" : "agency",
+      );
+    }
+  }
+  if (filter.subject !== "client") {
+    for (const link of ownerLinks.values()) {
+      const owner = must(ownersById.get(link.ownerId), `owner ${link.ownerId}`);
+      add({ kind: "owner", id: owner.id, name: owner.name }, owner.consents, link.responsibleAgentId, link.scope);
+    }
+  }
+  const lastEvent = (item: ConsentRegistryItem) => item.consent.revokedAt ?? item.consent.grantedAt;
+  return copy(
+    items
+      .filter(
+        (item) =>
+          (!filter.purpose || item.consent.purpose === filter.purpose) &&
+          (!filter.state || item.state === filter.state),
+      )
+      .sort((a, b) => isoDesc(lastEvent(a), lastEvent(b)) || a.consent.id.localeCompare(b.consent.id)),
+  );
+}
+
+/* --------------------------------------------------------------- owners */
+
+/**
+ * Owner CRM (§14.6): owners of the organization's listings and right holders
+ * on its contracts — the viewer's own first, then by name. Contacts only
+ * where `contactVisible` (§34.2); search matches a phone only then.
+ */
+export async function listOwners(filter: OwnerFilter = {}): Promise<OwnerListItem[]> {
+  const query = filter.q ? parseQuery(filter.q) : undefined;
+  return copy(
+    [...ownerLinks.values()]
+      .map(toOwnerListItem)
+      .filter((item) => !query || matchesQuery(ownerDoc(item), query))
+      .sort(
+        (a, b) =>
+          (a.scope === "own" ? 0 : 1) - (b.scope === "own" ? 0 : 1) ||
+          a.owner.name.localeCompare(b.owner.name, "ru") ||
+          a.owner.id.localeCompare(b.owner.id),
+      ),
+  );
+}
+
+/** Owner profile with properties, listings, contracts, consents, timeline, calls and checks. */
+export async function getOwner(id: ID): Promise<OwnerDetailView | undefined> {
+  const link = ownerLinks.get(id);
+  if (!link) return undefined;
+  const at = now();
+  const listingIds = new Set(link.listings.map((listing) => listing.id));
+  const properties = link.propertyIds.flatMap((propertyId) => {
+    const property = must(propertiesById.get(propertyId), `property ${propertyId}`);
+    // Mask the property as strictly as the viewer's best access to it requires.
+    const accesses = seed.listings
+      .filter((listing) => listing.propertyId === propertyId)
+      .map((listing) => accessOf(listing))
+      .filter((access): access is ListingAccess => access === "owner" || access === "agency");
+    const access = accesses.includes("owner") ? "owner" : accesses[0];
+    return access ? [propertyView(property, access)] : [];
+  });
+  const detail: OwnerDetailView = {
+    ...toOwnerListItem(link),
+    properties,
+    listings: sortListingViews(
+      link.listings.map((listing) => must(toListingView(listing, at), `listing view ${listing.id}`)),
+    ),
+    contracts: sortContractViews(link.contracts.map((contract) => toContractView(contract, at))),
+    communications: communicationViews((item) => item.ownerId === id),
+    calls: callViews(at, (call) => call.ownerId === id),
+    verification: listingQueueItems(link.listings, at)
+      .filter((item) => item.target.kind === "listing" && listingIds.has(item.target.view.listing.id))
+      .sort((a, b) => verificationRank(a) - verificationRank(b) || a.key.localeCompare(b.key)),
+  };
+  return copy(detail);
+}
+
+/* -------------------------------------------------------- communications */
+
+/**
+ * The viewer's own calls, newest first (§14.7). Colleagues' calls are not
+ * listed: recordings and transcripts are personal data under a separate
+ * consent, and team call review needs a permission the viewer lacks.
+ */
+export async function listCalls(filter: CallFilter = {}): Promise<CallView[]> {
+  return copy(
+    callViews(
+      now(),
+      (call) =>
+        (!filter.direction || call.direction === filter.direction) &&
+        (!filter.outcome || call.outcome === filter.outcome) &&
+        (!filter.linked || (attachedSubject(call) !== undefined) === (filter.linked === "linked")),
+    ),
+  );
+}
+
+/** One of the viewer's calls with the party's other touchpoints; undefined for a colleague's call. */
+export async function getCall(id: ID): Promise<CallDetailView | undefined> {
+  const call = callsById.get(id);
+  if (!call || !visibleCall(call)) return undefined;
+  const at = now();
+  const base = toCallView(call, at);
+  const normalized = normalizeUzPhone(call.phone);
+  const detail: CallDetailView = {
+    ...base,
+    communications: base.linked
+      ? communicationViews((item) => item.callId !== id && sameParty(item, call))
+      : [],
+    otherCalls: callViews(
+      at,
+      (other) =>
+        other.id !== id &&
+        (base.linked
+          ? sameParty(other, call)
+          : attachedSubject(other) === undefined && normalizeUzPhone(other.phone) === normalized),
+    ),
+  };
+  const lead = call.leadId ? leadsById.get(call.leadId) : undefined;
+  if (lead && visibleLead(lead)) detail.lead = toLeadView(lead, at);
+  const client = call.clientId ? visibleClient(call.clientId) : undefined;
+  if (client) detail.client = client;
+  const link = call.ownerId ? ownerLinks.get(call.ownerId) : undefined;
+  if (link) detail.owner = toOwnerListItem(link);
+  return copy(detail);
+}
+
+/**
+ * Timeline entries (§36.5) — channel, time, result, next step — newest
+ * first. Only the viewer's own touchpoints with people they may see, for the
+ * same reason as calls.
+ */
+export async function listCommunications(filter: CommunicationFilter = {}): Promise<CommunicationView[]> {
+  return copy(
+    communicationViews(
+      (item) =>
+        (!filter.clientId || item.clientId === filter.clientId) &&
+        (!filter.ownerId || item.ownerId === filter.ownerId) &&
+        (!filter.leadId || item.leadId === filter.leadId) &&
+        (!filter.channel || item.channel === filter.channel),
+    ),
+  );
+}
+
+/* --------------------------------------------------------- verification */
+
+/**
+ * Verification center: every checked fact on the organization's listings,
+ * its agents and the organization itself, plus partner listings the viewer
+ * works on (deals, cooperation) — those as result only. Needs attention
+ * first: problem, expired evidence, registry unavailable, pending, expiring
+ * within 30 days, confirmed.
+ */
+export async function listVerificationQueue(filter: VerificationQueueFilter = {}): Promise<VerificationQueueItem[]> {
+  return copy(
+    verificationQueue(now())
+      .filter(
+        (entry) =>
+          (!filter.status || entry.item.status === filter.status) &&
+          (!filter.subject || entry.item.subject === filter.subject) &&
+          (!filter.target || entry.target.kind === filter.target),
+      )
+      .sort(
+        (a, b) =>
+          verificationRank(a) - verificationRank(b) ||
+          isoAsc(a.item.expiresAt ?? "9999", b.item.expiresAt ?? "9999") ||
+          isoDesc(a.item.checkedAt ?? "", b.item.checkedAt ?? "") ||
+          a.key.localeCompare(b.key),
+      ),
+  );
+}
+
+/* --------------------------------------------------------- team & routing */
+
+/**
+ * The viewer's team with per-member workload computed from the records
+ * (§36.5). Metrics are counts only: they do not open colleagues' leads or
+ * clients to the viewer. Undefined when the viewer is in no team.
+ */
+export async function getMyTeam(): Promise<MyTeamView | undefined> {
+  if (!viewerTeam) return undefined;
+  const at = now();
+  const lead = must(agentsById.get(viewerTeam.leadAgentId), `agent ${viewerTeam.leadAgentId}`);
+  const members = viewerTeam.memberIds
+    .map((agentId) => toTeamMemberView(must(agentsById.get(agentId), `agent ${agentId}`), at))
+    .sort(
+      (a, b) =>
+        Number(b.isLead) - Number(a.isLead) || a.agent.name.localeCompare(b.agent.name, "ru") || byIdAsc(a.agent, b.agent),
+    );
+  const totals: TeamMemberMetrics = {
+    newLeadsToday: 0,
+    openLeads: 0,
+    slaBreaches: 0,
+    activeClients: 0,
+    activeListings: 0,
+    viewingsThisWeek: 0,
+    dealsInProgress: 0,
+  };
+  for (const member of members) {
+    for (const key of Object.keys(totals) as (keyof TeamMemberMetrics)[]) totals[key] += member.metrics[key];
+  }
+  // A viewing or deal shared by two members counts once per member, so totals can exceed distinct records.
+  const view: MyTeamView = { team: viewerTeam, lead, members, totals };
+  const organization = organizationsById.get(viewerTeam.organizationId);
+  if (organization) view.organization = organization;
+  return copy(view);
+}
+
+/** A colleague (or the viewer) in the viewer's organization; undefined for partners. */
+export async function getTeamMember(agentId: ID): Promise<TeamMemberDetailView | undefined> {
+  const agent = agentsById.get(agentId);
+  if (!agent || !inViewerOrganization(agent.id)) return undefined;
+  const at = now();
+  const detail: TeamMemberDetailView = {
+    ...toTeamMemberView(agent, at),
+    listings: sortListingViews(
+      seed.listings
+        .filter((listing) => listing.agentId === agent.id && ACTIVE_LISTING.has(listing.status))
+        .flatMap((listing) => toListingView(listing, at) ?? []),
+    ),
+    routingRules: organizationRules().filter((rule) => rule.agentIds.includes(agent.id)),
+  };
+  // `isLead` and `team` speak about the viewer's team only.
+  if (viewerTeam?.memberIds.includes(agent.id)) detail.team = viewerTeam;
+  return copy(detail);
+}
+
+/**
+ * Inputs for the lead-routing simulator (§14.2, §36.5): the organization's
+ * rules by priority, its agents with availability and today's workload, and
+ * the open leads nobody is assigned to.
+ */
+export async function getRoutingContext(): Promise<RoutingContext> {
+  const at = now();
+  const agents = organizationAgents();
+  const context: RoutingContext = {
+    generatedAt: at.toISOString(),
+    rules: organizationRules(),
+    agents,
+    availability: agents.map((agent) => availabilityOf(agent.id)),
+    workloadToday: agents.map((agent) => toWorkload(agent.id, at)),
+    unassignedLeads: seed.leads
+      .filter((lead) => lead.assignedAgentId === undefined && OPEN_LEAD(lead))
+      .map((lead) => toLeadView(lead, at))
+      .sort((a, b) => isoAsc(a.lead.slaDueAt, b.lead.slaDueAt) || byIdAsc(a.lead, b.lead)),
+  };
+  const organization = viewerOrganizationId ? organizationsById.get(viewerOrganizationId) : undefined;
+  if (organization) context.organization = organization;
+  return copy(context);
+}
+
+/* ------------------------------------------------------------- partners */
+
+/**
+ * Professional partners (§5.6, §15): agents outside the viewer's
+ * organization with cooperation history and Active MLS listings, most
+ * recent interaction first. Phone and Telegram only after an accepted
+ * cooperation with shared contacts; verification is result only.
+ */
+export async function listPartners(filter: PartnerFilter = {}): Promise<PartnerListItem[]> {
+  const at = now();
+  const query = filter.q ? parseQuery(filter.q) : undefined;
+  return copy(
+    seed.agents
+      .filter((agent) => isPartnerAgent(agent) && (!query || matchesQuery(partnerDoc(agent), query)))
+      .map((agent) => toPartnerListItem(agent, at))
+      .sort(
+        (a, b) =>
+          isoDesc(a.lastInteractionAt ?? "", b.lastInteractionAt ?? "") ||
+          a.agent.name.localeCompare(b.agent.name, "ru") ||
+          byIdAsc(a.agent, b.agent),
+      ),
+  );
+}
+
+/** A partner's profile: their visible listings (masked as usual) and the history with the viewer. */
+export async function getPartner(agentId: ID): Promise<PartnerDetailView | undefined> {
+  const agent = agentsById.get(agentId);
+  if (!agent || !isPartnerAgent(agent)) return undefined;
+  const at = now();
+  const cooperationHistory = cooperationViews(at)
+    .filter((view) => view.counterpart.id === agentId)
+    .map(withoutAgents);
+  const detail: PartnerDetailView = {
+    ...toPartnerListItem(agent, at),
+    listings: sortListingViews(
+      visibleListings()
+        .filter((listing) => listing.agentId === agentId)
+        .map((listing) => must(toListingView(listing, at), `listing view ${listing.id}`)),
+    ).map(withoutAgent),
+    cooperationHistory,
+    deals: seed.deals
+      .filter((deal) => deal.agentId === viewer.id && deal.partnerAgentId === agentId)
+      .sort((a, b) => isoDesc(a.createdAt, b.createdAt) || byIdAsc(a, b))
+      .map((deal) => ({ id: deal.id, stage: deal.stage, listingId: deal.listingId, createdAt: deal.createdAt })),
+  };
+  return copy(detail);
+}
+
+/* ---------------------------------------------------------------- audit */
+
+/**
+ * Where an audit event sits relative to the viewer (§19 audit levels):
+ * `own` when the viewer acted or the record is theirs, `team` when a member
+ * of the viewer's team acted or owns the record, `agency` otherwise. The
+ * audit screen applies the permission matrix with it.
+ */
+export function auditScope(event: AuditEvent): AuditScope {
+  if (event.actorId === viewer.id) return "own";
+  const owners = recordAgents(event.target);
+  if (owners.includes(viewer.id)) return "own";
+  if (viewerTeamMemberIds.has(event.actorId) || owners.some((id) => viewerTeamMemberIds.has(id))) return "team";
+  return "agency";
+}
+
+/**
+ * The organization journal merged with the deal histories of the
+ * organization's deals, newest first. Not filtered by role: the audit
+ * screen decides what the viewer may open using `scope` (see `auditScope`).
+ */
+export async function listAuditEvents(filter: AuditFilter = {}): Promise<AuditEventView[]> {
+  const events: AuditEventView[] = [
+    ...seed.orgAuditLog.map((event) => toAuditEventView(event, "organization")),
+    ...seed.deals
+      .filter((deal) => inViewerOrganization(deal.agentId))
+      .flatMap((deal) => deal.audit.map((event) => toAuditEventView(event, "deal", deal.id))),
+  ];
+  return copy(
+    events
+      .filter(
+        (view) =>
+          (!filter.actorId || view.event.actorId === filter.actorId) &&
+          (!filter.action || view.event.action === filter.action) &&
+          (!filter.targetKind || view.event.target.kind === filter.targetKind) &&
+          (!filter.sensitiveOnly || view.sensitive),
+      )
+      .sort((a, b) => isoDesc(a.event.at, b.event.at) || b.event.id.localeCompare(a.event.id)),
+  );
 }

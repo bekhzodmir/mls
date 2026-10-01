@@ -49,6 +49,12 @@ function allIds(): string[] {
   });
   add(seed.tasks);
   add(seed.notifications);
+  add(seed.contracts);
+  add(seed.calls);
+  add(seed.communications);
+  add(seed.teams);
+  add(seed.routingRules);
+  add(seed.orgAuditLog);
   return out;
 }
 
@@ -299,6 +305,7 @@ describe("demo seed integrity", () => {
       ...seed.clients.flatMap((client) => [...client.phones, ...client.household.map((party) => party.phone)]),
       ...seed.leads.map((lead) => lead.phone),
       ...seed.telegramListings.map((post) => post.parsed.phone.value),
+      ...seed.calls.map((call) => call.phone),
     ].filter((phone): phone is string => phone !== undefined);
     expect(phones.length).toBeGreaterThan(60);
     for (const phone of phones) {

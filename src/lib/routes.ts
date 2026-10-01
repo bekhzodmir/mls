@@ -4,15 +4,18 @@
  * bundling it. Every workspace path is relative to `/{locale}/app`.
  */
 
-/** Named workspace destinations used by the chrome and the "+" menu. */
+/** Named workspace destinations used by the chrome, the "+" menu and the More page. */
 export const appRoutes = {
   today: "",
   search: "/search",
   notifications: "/notifications",
   tasks: "/tasks",
   more: "/more",
+  calls: "/calls",
   leads: "/leads",
   clients: "/clients",
+  owners: "/owners",
+  ownersNew: "/owners/new",
   requirementsNew: "/requirements/new",
   properties: "/properties",
   propertiesNew: "/properties/new",
@@ -20,9 +23,18 @@ export const appRoutes = {
   radar: "/radar",
   mls: "/mls",
   cooperation: "/mls/cooperation",
+  partners: "/partners",
   viewings: "/viewings",
   viewingsNew: "/viewings/new",
+  offers: "/offers",
   deals: "/deals",
+  contracts: "/contracts",
+  consents: "/consents",
+  verification: "/verification",
+  verificationRequest: "/verification/request",
+  team: "/team",
+  teamRouting: "/team/routing",
+  audit: "/audit",
   leadsNew: "/leads/new",
   clientsNew: "/clients/new",
   tasksNew: "/tasks/new",
@@ -41,4 +53,17 @@ export function appHref(locale: string, route: AppRoute): string {
  */
 export function appPath(locale: string, path: string): string {
   return `/${locale}/app${path}`;
+}
+
+/** Public account pages outside the workspace: sign-in and first-run onboarding. */
+export const authRoutes = {
+  login: "/login",
+  onboarding: "/onboarding",
+} as const;
+
+export type AuthRoute = keyof typeof authRoutes;
+
+/** `/{locale}/login` or `/{locale}/onboarding` — not under `/app`. */
+export function authHref(locale: string, route: AuthRoute): string {
+  return `/${locale}${authRoutes[route]}`;
 }

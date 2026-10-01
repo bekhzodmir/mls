@@ -592,8 +592,19 @@ export type VerificationResult = Omit<VerificationItem, "source" | "note" | "per
 
 /* ------------------------------------------------------------ contracts */
 
-/** A missing required clause of a service contract (§17.5, §38.5). */
+/** A required clause of a service contract (§17.5, §38.5). */
 export type ContractClause = keyof Contract["clauses"];
+
+/** Required clauses in the order the law lists them (§38.5); the contracts screen labels each. */
+export const CONTRACT_CLAUSES = [
+  "certificateDetails",
+  "membershipDetails",
+  "insuranceDetails",
+  "rightsAndObligations",
+  "liability",
+  "terminationAndRefund",
+  "confidentiality",
+] as const satisfies readonly ContractClause[];
 
 export interface ContractFilter {
   /** `expiring` = active and ending within 14 Tashkent calendar days (today included). */
