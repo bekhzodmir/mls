@@ -23,7 +23,7 @@ export default defineMessages({
       designer: "Дизайнерский ремонт",
     },
     source: {
-      verified_binor: "Проверенный объект Binor",
+      verified_binor: "Объект из базы Binor",
       realtor_confirmed: "Подтверждён риэлтором",
       agency: "База агентства",
       telegram: "Telegram",
@@ -329,7 +329,7 @@ export default defineMessages({
       designer: "Dizaynerlik ta’miri",
     },
     source: {
-      verified_binor: "Binor tekshirgan ob’yekt",
+      verified_binor: "Binor bazasidagi ob’yekt",
       realtor_confirmed: "Rieltor tasdiqlagan",
       agency: "Agentlik bazasi",
       telegram: "Telegram",

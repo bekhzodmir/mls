@@ -41,6 +41,8 @@ describe("numbers", () => {
     expect(parseAmount("85,000")).toEqual({ ok: false });
     expect(parseAmount("0")).toEqual({ ok: false });
     expect(parseAmount("сто")).toEqual({ ok: false });
+    // Too large to hold in minor units: a validation error, not an exception.
+    expect(parseAmount("100000000000000000")).toEqual({ ok: false });
   });
 
   it("parses counts, allowing decimals only where they make sense", () => {

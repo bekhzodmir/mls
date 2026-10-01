@@ -126,6 +126,22 @@ describe("scanMoney", () => {
     expect(scanMoney(foldText("Юнусабад-19, 5 минут до метро, сдача 2025, 3 этаж"))).toEqual([]);
   });
 
+  it("keeps a range whose first end carries its own multiplier", () => {
+    const [min, max] = scanMoney(foldText("85к-90к $"));
+    expect(decimalString(min.amount)).toBe("85000");
+    expect(decimalString(max.amount)).toBe("90000");
+    expect([min.bound, max.bound, min.currency]).toEqual(["min", "max", "USD"]);
+  });
+
+  it("lets a budget label start a range instead of closing it", () => {
+    const [min, max] = scanMoney(foldText("бюджет 80-100 тыс $"));
+    expect([decimalString(min.amount), min.bound]).toEqual(["80000", "min"]);
+    expect([decimalString(max.amount), max.bound]).toEqual(["100000", "max"]);
+    expect(one("бюджет 100 000$").bound).toBe("max");
+    // "до" still closes: "до 80 000 - 100 000" is not a range.
+    expect(scanMoney(foldText("до 80 000$ - 100 000$")).map((hit) => hit.inRange)).toEqual([false, false]);
+  });
+
   it("flags per-m² and auxiliary amounts", () => {
     expect(one("от 700$ за м²").perUnit).toBe(true);
     expect(one("депозит 1000$").auxiliary).toBe(true);
@@ -148,6 +164,26 @@ describe("scanPhones", () => {
   it("does not read 9-digit prices as phones", () => {
     expect(scanPhones(foldText("850000000 сум"))).toEqual([]);
     expect(scanPhones(foldText("901234567 сум"))).toEqual([]);
+  });
+
+  it("does not read nine bare digits after a price label as a phone", () => {
+    expect(scanPhones(foldText("цена 950000000"))).toEqual([]);
+    expect(scanPhones(foldText("Narxi: 990000000"))).toEqual([]);
+    expect(scanPhones(foldText("тел 901234567")).map((hit) => hit.e164)).toEqual(["+998901234567"]);
+  });
+});
+
+describe("scanLandmarks", () => {
+  it.each(["54 кв.м. Цена 60 000 $", "от 70 кв.м. Юнусабад", "50 кв. м. Бюджет", "78 м. Ремонт"])(
+    "%s: an area unit is not «м. <Station>»",
+    (text) => {
+      expect(scanLandmarks(text, foldText(text))).toEqual([]);
+    },
+  );
+
+  it("still reads «м. <Station>»", () => {
+    const text = "рядом с м. Буюк Ипак Йули";
+    expect(scanLandmarks(text, foldText(text)).map((hit) => hit.text)).toEqual(["м. Буюк Ипак Йули"]);
   });
 });
 

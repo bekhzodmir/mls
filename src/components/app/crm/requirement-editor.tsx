@@ -337,9 +337,11 @@ export function RequirementEditor({
         ) : null}
         {variant !== "inline" ? (
           // A blocked CTA stays clickable: it moves focus to the field that needs an answer.
+          // It switches to the secondary style instead of being dimmed, so its label keeps AA contrast.
           <Button
+            variant={blocked ? "secondary" : "primary"}
             size={compact ? "md" : "lg"}
-            className={cn("w-full", blocked && "opacity-60")}
+            className="w-full"
             onClick={onSearch}
             aria-disabled={!blocked && counts.total === 0 && !showResults ? true : undefined}
             aria-describedby={blocked ? hintId : undefined}

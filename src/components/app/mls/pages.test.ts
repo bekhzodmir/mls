@@ -156,4 +156,32 @@ describe.each(["ru", "uz"] as const)("W4 pages (%s)", (locale) => {
     expect(html).toContain(locale === "ru" ? "Запросить сотрудничество" : "Hamkorlik so‘rash");
     expect(html).not.toMatch(/cadastral|кадастровый номер/i);
   });
+
+  it("MLS gives partners the result of a check, not its source (§19)", async () => {
+    const { seed } = await import("@/lib/data/seed");
+    const html = await render(pages.mls);
+    const partnerSources = seed.listings
+      .filter((listing) => listing.organizationId !== "org-01" && listing.agentId !== "agent-01")
+      .flatMap((listing) => listing.verifications.map((item) => item.source))
+      .filter((source) => /№/.test(source));
+    expect(partnerSources.length).toBeGreaterThan(0);
+    for (const source of partnerSources) expect(html).not.toContain(source);
+  });
+
+  it("MLS lists only listings published to partners (§11.1)", async () => {
+    const html = await render(pages.mls);
+    // lst-28 is a partner's listing that has passed verification but is not yet Active MLS.
+    expect(html).not.toContain("/app/properties/lst-28");
+    expect(html).toContain("/app/properties/lst-32");
+  });
+
+  it("does not call a realtor certified while the certificate check is not confirmed", async () => {
+    // agent-05's registry did not answer: the incoming request names no certificate.
+    const incoming = await render(pages.cooperationDetail, {}, { id: "coop-03" });
+    const { default: domain } = await import("@/i18n/messages/domain");
+    // His side of the page runs from his name to his (masked) phone.
+    const side = incoming.slice(incoming.indexOf("Jasur Tursunov"), incoming.indexOf("*** **"));
+    expect(side).toContain(domain[locale].professionalStatus.unconfirmed);
+    expect(side).not.toContain(domain[locale].professionalStatus.certified_realtor);
+  });
 });

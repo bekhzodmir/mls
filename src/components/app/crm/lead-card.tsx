@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { ChevronRight, Inbox, Phone, Send, UserPlus } from "lucide-react";
 import { ButtonAnchor, ButtonLink } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/misc";
-import type { Locale } from "@/i18n/config";
+import { htmlLang, type Locale } from "@/i18n/config";
 import { format } from "@/i18n/define-messages";
 import { formatDateTime, formatRelative } from "@/i18n/format";
 import leads from "@/i18n/messages/leads";
@@ -116,7 +116,9 @@ export function LeadCard({ locale, view, at }: { locale: Locale; view: LeadView;
         <LeadStatusBadge locale={locale} status={lead.status} />
       </div>
 
-      <p className="line-clamp-2 text-small text-fg">{lead.message}</p>
+      <p lang={htmlLang[lead.language]} className="line-clamp-2 text-small text-fg">
+        {lead.message}
+      </p>
 
       <div className="flex flex-wrap gap-1.5">
         <LeadSourceBadge locale={locale} source={lead.source} />

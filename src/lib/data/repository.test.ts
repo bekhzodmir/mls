@@ -59,14 +59,14 @@ describe("demo seed integrity", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it("shows the owner in a deal only with owner or agency access to the listing", async () => {
+  it("shows the owner in a deal only with the right to sensitive owner data (§19)", async () => {
     const accesses = new Set<string>();
     for (const deal of seed.deals) {
       const detail = await repo.getDeal(deal.id);
       if (!detail) continue;
       accesses.add(detail.listing.access);
-      const restricted = detail.listing.access === "owner" || detail.listing.access === "agency";
-      if (!restricted) expect(detail.owner, deal.id).toBeUndefined();
+      expect(detail.listing.ownerData, deal.id).toBe(detail.listing.access === "owner");
+      if (!detail.listing.ownerData) expect(detail.owner, deal.id).toBeUndefined();
       else if (detail.listing.property.ownerId) expect(detail.owner?.id, deal.id).toBe(detail.listing.property.ownerId);
     }
     // The seed exercises both sides of the rule.
@@ -454,12 +454,19 @@ describe("repository", () => {
     expect(own?.owner?.id).toBe("owner-01");
     expect(own?.property.address).toBeDefined();
 
+    // An agency agent sees a colleague's listing and address, but owner data needs a permission (§19).
     const colleague = await repo.getListing("lst-12");
     expect(colleague?.access).toBe("agency");
-    expect(colleague?.owner).toBeDefined();
+    expect(colleague?.ownerData).toBe(false);
+    expect(colleague?.owner).toBeUndefined();
+    expect(colleague?.property.ownerId).toBeUndefined();
+    expect(colleague?.property.address).toBeDefined();
 
     // A partner's off-market listing does not exist for the viewer.
     expect(await repo.getListing("lst-21")).toBeUndefined();
+    // Nor does a partner's listing that is not yet published to the MLS (§11.1).
+    expect(seed.listings.find((listing) => listing.id === "lst-28")?.status).toBe("verified");
+    expect(await repo.getListing("lst-28")).toBeUndefined();
     expect(await repo.getReverseMatches("lst-21")).toEqual([]);
     const all = await repo.listListings();
     expect(all.map((view) => view.listing.id)).not.toContain("lst-21");
@@ -478,6 +485,9 @@ describe("repository", () => {
     // The viewer's off-market listing stays out of the MLS.
     expect(mine.map((view) => view.listing.id)).toContain("lst-06");
     expect(mls.map((view) => view.listing.id)).not.toContain("lst-06");
+    // So does a listing not yet published (§11.1): verified is not yet Active MLS.
+    expect(mine.map((view) => view.listing.id)).toContain("lst-09");
+    expect(mls.map((view) => view.listing.id)).not.toContain("lst-09");
     expect(mls.some((view) => view.access === "partner_masked")).toBe(true);
   });
 

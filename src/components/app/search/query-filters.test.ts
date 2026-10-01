@@ -24,6 +24,12 @@ describe("interpretQuery", () => {
     expect(interpretQuery("+998 90")).toBeUndefined();
   });
 
+  it("does not throw on an amount too large to be a budget", () => {
+    expect(() => interpretQuery("до 100000 млрд")).not.toThrow();
+    expect(interpretQuery("до 100000 млрд")).toBeUndefined();
+    expect(kinds("2 комнаты до 100000000000000 сум")).toEqual([["rooms", true]]);
+  });
+
   it("never guesses the currency: the amount waits for an explicit choice (§35.5)", () => {
     const result = interpretQuery("Чиланзар 2 комнаты до 70 000");
     expect(result?.params).toEqual({ district: "chilanzar", roomsMin: "2", roomsMax: "2" });

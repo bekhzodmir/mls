@@ -181,9 +181,10 @@ export default defineMessages({
       notConfirmed: "Не подтверждалось",
       restricted: "Ограниченный доступ",
       hiddenValue: "Скрыто",
+      phoneMaskedHint: "откроется после принятия условий сотрудничества",
       hiddenAddress:
         "Адрес скрыт до соглашения. Партнёры видят массив и ориентир, точный адрес — после принятого запроса на сотрудничество.",
-      hiddenCadastre: "Кадастровый номер видит только агентство объекта.",
+      hiddenCadastre: "Кадастровый номер видят агент объекта и руководство его агентства.",
       geo: {
         exact: "Точные координаты",
         building: "С точностью до здания",
@@ -210,14 +211,18 @@ export default defineMessages({
         consents: "Согласия",
         noConsents: "Согласий не записано",
         consentSince: "{purpose} — с {date}",
-        notLinked: "Собственник ещё не привязан к объекту. Добавьте его — контакты будут видны только вам и вашему агентству.",
+        notLinked:
+          "Собственник ещё не привязан к объекту. Добавьте его — контакты увидят только агент объекта и руководство агентства.",
         maskedTitle: "Контакты собственника скрыты",
         maskedText:
-          "Их видит только агент объекта и его агентство. Нужное право — принятый запрос на сотрудничество с раскрытием контактов. Его выдаёт агент объекта: {agent}.",
+          "Их видят только агент объекта и руководство его агентства. Нужное право — принятый запрос на сотрудничество с раскрытием контактов. Его выдаёт агент объекта: {agent}.",
+        agencyTitle: "Контакты собственника — по разрешению",
+        agencyText:
+          "Данные собственника видят агент объекта и руководство агентства. Доступ выдаёт руководитель агентства. Сейчас можно работать через агента объекта: {agent}.",
         maskedAction: "Отправить запрос на сотрудничество",
         sharedTitle: "Собственник — через агента объекта",
         sharedText:
-          "По принятому соглашению вам открыт адрес. Контакты собственника остаются у агента объекта — свяжитесь с {agent}.",
+          "По принятому соглашению вам открыт адрес. Контакты собственника остаются у агента объекта: {agent}.",
       },
       contract: {
         number: "Номер договора",
@@ -229,7 +234,10 @@ export default defineMessages({
         expiredText: "Без действующего договора предложение нельзя показывать как активное.",
         none: "Договор с собственником не записан.",
         partnerTitle: "Детали договора скрыты",
-        partnerText: "Номер и сроки договора видит только агентство объекта. Сам факт договора отражён в проверках ниже.",
+        partnerText:
+          "Номер и сроки договора видят агент объекта и руководство его агентства. Сам факт договора отражён в проверках ниже.",
+        agencyText:
+          "Номер и сроки договора видят агент объекта и руководство агентства; доступ выдаёт руководитель агентства. Сам факт договора отражён в проверках ниже.",
       },
       verification: {
         hint: "Каждая отметка — один проверенный факт: с методом, источником и датой.",
@@ -241,6 +249,7 @@ export default defineMessages({
         noDate: "Дата не указана",
         none: "Проверок пока нет.",
         unavailableNote: "«Не удалось проверить» значит, что источник не ответил. Это не подтверждение.",
+        resultOnly: "Источник и комментарий проверки видят агент объекта и руководство его агентства — здесь показан результат.",
       },
       mls: {
         terms: "Условия сотрудничества",
@@ -594,9 +603,10 @@ export default defineMessages({
       notConfirmed: "Tasdiqlanmagan",
       restricted: "Cheklangan kirish",
       hiddenValue: "Yashirin",
+      phoneMaskedHint: "hamkorlik shartlari qabul qilingandan keyin ochiladi",
       hiddenAddress:
         "Manzil kelishuvgacha yashirin. Hamkorlar massiv va mo‘ljalni ko‘radi, aniq manzilni — hamkorlik so‘rovi qabul qilingandan keyin.",
-      hiddenCadastre: "Kadastr raqamini faqat ob’yekt agentligi ko‘radi.",
+      hiddenCadastre: "Kadastr raqamini ob’yekt agenti va uning agentligi rahbariyati ko‘radi.",
       geo: {
         exact: "Aniq koordinatalar",
         building: "Bino aniqligida",
@@ -624,10 +634,13 @@ export default defineMessages({
         noConsents: "Roziliklar qayd etilmagan",
         consentSince: "{purpose} — {date} dan",
         notLinked:
-          "Mulkdor hali ob’yektga bog‘lanmagan. Uni qo‘shing — kontaktlar faqat sizga va agentligingizga ko‘rinadi.",
+          "Mulkdor hali ob’yektga bog‘lanmagan. Uni qo‘shing — kontaktlarni faqat ob’yekt agenti va agentlik rahbariyati ko‘radi.",
         maskedTitle: "Mulkdor kontaktlari yashirin",
         maskedText:
-          "Ularni faqat ob’yekt agenti va uning agentligi ko‘radi. Kerakli huquq — kontaktlarni ochish bilan qabul qilingan hamkorlik so‘rovi. Uni ob’yekt agenti beradi: {agent}.",
+          "Ularni faqat ob’yekt agenti va uning agentligi rahbariyati ko‘radi. Kerakli huquq — kontaktlarni ochish bilan qabul qilingan hamkorlik so‘rovi. Uni ob’yekt agenti beradi: {agent}.",
+        agencyTitle: "Mulkdor kontaktlari — ruxsat bilan",
+        agencyText:
+          "Mulkdor ma’lumotlarini ob’yekt agenti va agentlik rahbariyati ko‘radi. Ruxsatni agentlik rahbari beradi. Hozir ob’yekt agenti orqali ishlash mumkin: {agent}.",
         maskedAction: "Hamkorlik so‘rovini yuborish",
         sharedTitle: "Mulkdor bilan — ob’yekt agenti orqali",
         sharedText:
@@ -648,7 +661,9 @@ export default defineMessages({
         none: "Mulkdor bilan shartnoma qayd etilmagan.",
         partnerTitle: "Shartnoma tafsilotlari yashirin",
         partnerText:
-          "Shartnoma raqami va muddatlarini faqat ob’yekt agentligi ko‘radi. Shartnoma borligi quyidagi tekshiruvlarda aks etgan.",
+          "Shartnoma raqami va muddatlarini ob’yekt agenti va uning agentligi rahbariyati ko‘radi. Shartnoma borligi quyidagi tekshiruvlarda aks etgan.",
+        agencyText:
+          "Shartnoma raqami va muddatlarini ob’yekt agenti va agentlik rahbariyati ko‘radi; ruxsatni agentlik rahbari beradi. Shartnoma borligi quyidagi tekshiruvlarda aks etgan.",
       },
       verification: {
         hint: "Har bir belgi — bitta tekshirilgan fakt: usuli, manbasi va sanasi bilan.",
@@ -660,6 +675,7 @@ export default defineMessages({
         noDate: "Sana ko‘rsatilmagan",
         none: "Hozircha tekshiruvlar yo‘q.",
         unavailableNote: "«Tekshirib bo‘lmadi» — manba javob bermadi degani. Bu tasdiq emas.",
+        resultOnly: "Tekshiruv manbasi va izohini ob’yekt agenti va uning agentligi rahbariyati ko‘radi — bu yerda natija ko‘rsatilgan.",
       },
       mls: {
         terms: "Hamkorlik shartlari",

@@ -25,7 +25,6 @@ export default defineMessages({
       band: { label: "Насколько подходит", all: "Все" },
       status: { label: "Статус", all: "Любой статус" },
       group: {
-        label: "Запрос клиента {name}",
         shortlist: "Вся подборка",
         more: {
           one: "Ещё {n} вариант — в подборке",
@@ -117,7 +116,6 @@ export default defineMessages({
       band: { label: "Qanchalik mos", all: "Hammasi" },
       status: { label: "Holat", all: "Istalgan holat" },
       group: {
-        label: "{name} mijozning so‘rovi",
         shortlist: "To‘liq tanlov",
         more: {
           one: "Yana {n} ta variant — tanlovda",

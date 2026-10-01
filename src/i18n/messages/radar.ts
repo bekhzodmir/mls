@@ -93,7 +93,7 @@ export default defineMessages({
       area: "{n} м²",
       floor: "{n} этаж",
       floorOf: "{floor}/{total} этаж",
-      floorsTotal: "{n} этажей в доме",
+      floorsTotal: "{n}-этажный дом",
     },
     confidence: {
       label: "Качество разбора",
@@ -117,8 +117,10 @@ export default defineMessages({
     warning: {
       title: "Требует внимания",
       empty_text: "Текст пустой — нечего разбирать.",
+      demand_post: "Это запрос («куплю», «сниму»), а не предложение: цены нет, в подбор пост не попадает.",
       currency_unknown: "Сумма указана без валюты. Цену не угадываем — уточните у автора.",
       price_conflict: "В тексте несколько разных цен. Цена оставлена неизвестной.",
+      price_range: "Цена указана как «от / до» или диапазоном — точная цена неизвестна, уточните у автора.",
       deal_type_conflict: "Непонятно, продажа это или аренда.",
       district_conflict: "Упомянуто несколько районов. Район оставлен неизвестным.",
       rooms_conflict: "Разное число комнат в тексте.",
@@ -357,8 +359,10 @@ export default defineMessages({
     warning: {
       title: "E’tibor talab qiladi",
       empty_text: "Matn bo‘sh — tahlil qiladigan narsa yo‘q.",
+      demand_post: "Bu so‘rov («sotib olaman», «ijaraga olaman»), taklif emas: narx yo‘q, post tanlovda qatnashmaydi.",
       currency_unknown: "Summa valyutasiz ko‘rsatilgan. Narxni taxmin qilmaymiz — muallifdan aniqlang.",
       price_conflict: "Matnda bir nechta turli narx bor. Narx noma’lum qoldirildi.",
+      price_range: "Narx «dan / gacha» yoki oraliq bilan ko‘rsatilgan — aniq narx noma’lum, muallifdan aniqlang.",
       deal_type_conflict: "Sotuvmi yoki ijarami — tushunarsiz.",
       district_conflict: "Bir nechta tuman tilga olingan. Tuman noma’lum qoldirildi.",
       rooms_conflict: "Matnda xonalar soni turlicha.",

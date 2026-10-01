@@ -232,8 +232,10 @@ const CURRENCY = String.raw`\$|usd|у\.\s?е\.?|уе|y\.\s?e\.?|долл(?:ар\
 /** Uzbek case suffixes glued to an amount: "90 ming dollargacha", "500$gacha", "60 mingdan". */
 const UZ_SUFFIX = String.raw`(?:gacha|dan|гача|дан)?`;
 
+// `(?<!(?<!\d)\p{L}-)`: a letter-hyphen blocks "Юнусабад-19" and "Ц-5", but a
+// multiplier glued to a digit does not, so "85к-90к $" stays a range.
 const MONEY_RE = pattern(
-  String.raw`(?<![\p{L}\p{N}.,/])(?<!\p{L}-)(?:(\$|usd)\s?)?(${NUMBER})` +
+  String.raw`(?<![\p{L}\p{N}.,/])(?<!(?<!\d)\p{L}-)(?:(\$|usd)\s?)?(${NUMBER})` +
     String.raw`(\s?(?:${MULTIPLIER})${UZ_SUFFIX}${WORD_END}|[kк]${UZ_SUFFIX}${WORD_END})?` +
     String.raw`(\s{0,2}(?:${CURRENCY})${UZ_SUFFIX}${WORD_END})?`,
 );
@@ -242,7 +244,15 @@ const MONEY_RE = pattern(
 export const MONEY_UNIT_AFTER_RE = new RegExp(String.raw`^\s{0,2}(?:${MULTIPLIER}|${CURRENCY})`, "u");
 
 const BOUND_MAX_BEFORE_RE = new RegExp(
-  String.raw`(?<!\p{L})(?:до|не\s+дороже|не\s+более|не\s+больше|не\s+выше|максимум|макс\.?|max|в\s+пределах|потолок|бюджет\p{L}*|budjet\p{L}*)\s*[:\-]?\s*$`,
+  String.raw`(?<!\p{L})(?:до|не\s+дороже|не\s+более|не\s+больше|не\s+выше|максимум|макс\.?|max|потолок)\s*[:\-]?\s*$`,
+  "u",
+);
+/**
+ * "бюджет 100 000$" reads as a ceiling, but the label does not close a range:
+ * "бюджет 80-100 тыс $" keeps both bounds.
+ */
+const BUDGET_LABEL_BEFORE_RE = new RegExp(
+  String.raw`(?<!\p{L})(?:в\s+пределах|бюджет\p{L}*|budjet\p{L}*)\s*[:\-]?\s*$`,
   "u",
 );
 const BOUND_MIN_BEFORE_RE = new RegExp(
@@ -253,8 +263,9 @@ const BOUND_MAX_AFTER_RE = new RegExp(
   String.raw`^\s*(?:gacha|гача|и\s+(?:ниже|меньше|дешевле)|максимум|max)${WORD_END}`,
   "u",
 );
+/** "100 000$+" is a floor; "65 000$ + комиссия" adds a cost and is not. */
 const BOUND_MIN_AFTER_RE = new RegExp(
-  String.raw`^\s*(?:\+|и\s+(?:выше|больше|дороже|более)${WORD_END}|(?:dan|дан)${WORD_END})`,
+  String.raw`^(?:\+|\s*\+(?!\s*[\p{L}\p{N}])|\s*(?:и\s+(?:выше|больше|дороже|более)|dan|дан)${WORD_END})`,
   "u",
 );
 /** "100 ming dollardan oshmasin" — "not more than", despite the -dan suffix. */
@@ -363,6 +374,8 @@ interface RawMoney {
   hit: MoneyHit;
   base: Decimal;
   power: number;
+  /** The ceiling comes only from a "бюджет / в пределах" label, which may start a range. */
+  labelled: boolean;
 }
 
 /**
@@ -391,10 +404,14 @@ export function scanMoney(folded: string): MoneyHit[] {
     }
 
     let bound = suffixBound(suffixCurrency?.trim()) ?? suffixBound(multiplier?.trim());
+    let labelled = false;
     if (bound === "min" && DAN_NOT_MORE_RE.test(after)) bound = "max";
     if (!bound) {
       if (BOUND_MAX_BEFORE_RE.test(before)) bound = "max";
-      else if (BOUND_MIN_BEFORE_RE.test(before)) bound = "min";
+      else if (BUDGET_LABEL_BEFORE_RE.test(before)) {
+        bound = "max";
+        labelled = true;
+      } else if (BOUND_MIN_BEFORE_RE.test(before)) bound = "min";
       else if (DAN_NOT_MORE_RE.test(after) && /^\s*(?:dan|дан)/u.test(after)) bound = "max";
       else if (BOUND_MAX_AFTER_RE.test(after)) bound = "max";
       else if (BOUND_MIN_AFTER_RE.test(after)) bound = "min";
@@ -411,7 +428,7 @@ export function scanMoney(folded: string): MoneyHit[] {
     };
     if (currency) hit.currency = currency;
     if (bound) hit.bound = bound;
-    raws.push({ hit, base, power });
+    raws.push({ hit, base, power, labelled });
   }
 
   // Ranges: "80-100 тыс $", "от 80 до 100 тыс", "$60 000 – 70 000", "60 dan 80 gacha".
@@ -419,7 +436,7 @@ export function scanMoney(folded: string): MoneyHit[] {
     const a = raws[i];
     const b = raws[i + 1];
     const between = folded.slice(a.hit.end, b.hit.start);
-    if (!/^\s*(?:-|до|dan|дан|to)\s*$/u.test(between) || a.hit.bound === "max") continue;
+    if (!/^\s*(?:-|до|dan|дан|to)\s*$/u.test(between) || (a.hit.bound === "max" && !a.labelled)) continue;
     // "от 80 до 100 тыс": the multiplier written once applies to both ends.
     if (a.power === 0 && b.power > 0) {
       const inherited = scaleDecimal(a.base, b.power);
@@ -465,6 +482,8 @@ const BARE_PHONE_CODES = new Set([
 const PHONE_RE = pattern(
   String.raw`(?<![\p{N}+])(\+\s?)?(998[\s-]?)?\(?(\d{2})\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}(?!\d)`,
 );
+/** "цена 950000000": nine bare digits after a price label are the price, not a phone. */
+const PRICE_CUE_BEFORE_RE = /(?<!\p{L})(?:цен\p{L}*|стоимост\p{L}*|narx\p{L}*|нарх\p{L}*|price)\s*[:\-]?\s*$/u;
 
 /** "+998 90 123 45 67", "(90) 123-45-67", "901234567", "tel 90 555 12 34". */
 export function scanPhones(folded: string): PhoneHit[] {
@@ -474,6 +493,9 @@ export function scanPhones(folded: string): PhoneHit[] {
     const hasCountryCode = Boolean(match[2]);
     if (!hasCountryCode && !BARE_PHONE_CODES.has(match[3])) continue;
     if (MONEY_UNIT_AFTER_RE.test(textAfter(folded, span.end, 12))) continue;
+    if (!hasCountryCode && /^\d{9}$/.test(match[0]) && PRICE_CUE_BEFORE_RE.test(textBefore(folded, span.start, 20))) {
+      continue;
+    }
     const e164 = normalizeUzPhone(match[0]);
     if (e164) hits.push({ ...span, e164 });
   }
@@ -573,7 +595,8 @@ export function scanLandmarks(original: string, folded: string): LandmarkHit[] {
     const keyword = match[1];
     const keywordStart = match.index + match[0].length - keyword.length;
     const span = spanOf(match);
-    if (keyword === "м." && /\d\s*$/u.test(textBefore(work, keywordStart, 4))) continue; // "78 м."
+    // "78 м.", "54 кв.м.", "кв. м.": an area unit, not "м. <Station>".
+    if (keyword === "м." && /(?:\d|кв\.?)\s*$/u.test(textBefore(work, keywordStart, 4))) continue;
     const name = nameAfter(original, work, span.end, keyword === "метро");
     if (name) {
       take({ start: span.start, end: name.end, text: original.slice(keywordStart, name.end).trim(), kind: "metro" });

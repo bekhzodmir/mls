@@ -257,6 +257,8 @@ describe("site messages", () => {
   it("states the Radar volume only as the canonical claim", () => {
     expect(siteHome.ru.radar.lead).toContain("Более 10 000 объявлений из большого пула Telegram-источников");
     expect(siteHome.uz.radar.lead).toContain("10 000 dan ortiq e’lon");
+    expect(siteHow.ru.principles.radar.text).toContain("Более 10 000 объявлений из большого пула Telegram-источников");
+    expect(siteHow.uz.principles.radar.text).toContain("Katta Telegram manbalari to‘plamidan 10 000 dan ortiq e’lon");
   });
 
   it("describes the illustrated match with the criteria that actually fit", () => {

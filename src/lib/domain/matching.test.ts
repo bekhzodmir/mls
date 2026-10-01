@@ -214,6 +214,28 @@ describe("price reasons", () => {
     });
   });
 
+  it("flags a conversion when the converted price is over or under the budget too", () => {
+    const over = evaluate(
+      requirement({ budget: { max: money(80_000, "USD"), currency: "USD" } }),
+      candidate({ price: money(1_050_000_000, "UZS") }),
+    );
+    expect(reasonFor(over, "price")).toMatchObject({
+      outcome: "partial",
+      detail: { kind: "price_over", by: money(2_677.17, "USD"), converted: { from: "UZS", to: "USD" } },
+    });
+    const under = evaluate(
+      requirement({ budget: { min: money(90_000, "USD"), max: money(100_000, "USD"), currency: "USD" } }),
+      candidate({ price: money(1_016_000_000, "UZS") }),
+    );
+    expect(reasonFor(under, "price")).toMatchObject({
+      outcome: "partial",
+      detail: { kind: "price_under", by: money(10_000, "USD"), converted: { from: "UZS", to: "USD" } },
+    });
+    // Same currency: no conversion flag.
+    const plain = evaluate(requirement(), candidate({ price: money(105_000, "USD") }));
+    expect(reasonFor(plain, "price").detail).toEqual({ kind: "price_over", by: money(5_000, "USD") });
+  });
+
   it("does not score price when the requirement has no budget", () => {
     const result = evaluate(requirement({ budget: { currency: "USD" } }), candidate({ price: undefined }));
     expect(reasonFor(result, "price")).toMatchObject({ outcome: "match", credit: 1, requested: false });
@@ -280,6 +302,15 @@ describe("soft criteria", () => {
     expect(reasonFor(evaluate(newBuilding, candidate()), "floor").outcome).toBe("unknown");
   });
 
+  it("leaves «не последний этаж» unknown when the building height is unknown", () => {
+    const notLast = requirement({ floor: { notLast: true }, hardCriteria: ["floor"] });
+    const result = eligible(evaluate(notLast, candidate({ floor: 9, floorsTotal: undefined })));
+    expect(reasonFor(result, "floor")).toMatchObject({ outcome: "unknown", detail: { kind: "missing_data" } });
+    expect(result.score).toBe(98); // 100 − 5 × 0.5 = 97.5 → 98
+    expect(reasonFor(evaluate(notLast, candidate({ floor: 9, floorsTotal: 12 })), "floor").outcome).toBe("match");
+    expect(failures(evaluate(notLast, candidate({ floor: 9, floorsTotal: 9 })))).toEqual(["hard_criterion"]);
+  });
+
   it("reports extras not found in the text as unknown, not as a mismatch", () => {
     const req = requirement({ extras: ["парковка", "метро"] });
     expect(reasonFor(evaluate(req, candidate({ text: "Есть ПАРКОВКА во дворе" })), "extras")).toMatchObject({
@@ -291,6 +322,34 @@ describe("soft criteria", () => {
       outcome: "unknown",
       credit: defaultMatchingConfig.unknownCredit,
     });
+  });
+
+  it("finds extras the parser keeps with their preposition", () => {
+    const req = requirement({ extras: ["с парковкой", "рядом со школой", "с мебелью"] });
+    const result = evaluate(req, candidate({ text: "Парковка во дворе, рядом школа. Мебель остаётся" }));
+    expect(reasonFor(result, "extras")).toMatchObject({
+      outcome: "match",
+      credit: 1,
+      detail: { kind: "extras", matched: ["с парковкой", "рядом со школой", "с мебелью"], missing: [] },
+    });
+    const uz = evaluate(requirement({ extras: ["mebel bilan", "maktab yaqinida"] }), candidate({ text: "Mebel qoladi, maktab bor" }));
+    expect(reasonFor(uz, "extras").outcome).toBe("match");
+    // A different amenity is still missing.
+    const lift = evaluate(requirement({ extras: ["с лифтом"] }), candidate({ text: "Парковка во дворе" }));
+    expect(reasonFor(lift, "extras").outcome).toBe("unknown");
+  });
+
+  it("does not let extras hide a requested renovation the candidate does not state", () => {
+    const req = requirement({ renovation: ["renovated"], extras: ["парковка"] });
+    const unknownRenovation = eligible(evaluate(req, candidate({ text: "Есть парковка" })));
+    expect(reasonFor(unknownRenovation, "extras")).toMatchObject({
+      outcome: "partial",
+      credit: 0.75,
+      detail: { kind: "extras", matched: ["парковка"], missing: [], renovationUnknown: true },
+    });
+    expect(unknownRenovation.score).toBe(99); // 100 − 5 × 0.25 = 98.75 → 99
+    const known = evaluate(req, candidate({ text: "Есть парковка", renovation: "renovated" }));
+    expect(reasonFor(known, "extras")).toMatchObject({ outcome: "match", credit: 1 });
   });
 });
 
@@ -404,6 +463,12 @@ describe("candidate adapters", () => {
     expect(candidateFromTelegram(post({ status: "saved" })).active).toBe(true);
   });
 
+  it("never offers a buyer's or tenant's request as supply", () => {
+    const demand = candidateFromTelegram(post({}, { intent: field("demand", 0.9) }));
+    expect(demand.active).toBe(false);
+    expect(failures(evaluate(requirement(), demand))).toContain("inactive_source");
+  });
+
   it("maps a listing and its property, active only in live statuses", () => {
     const property = {
       id: "p-1",
@@ -441,5 +506,44 @@ describe("candidate adapters", () => {
     });
     expect(candidateFromListing({ ...listing, status: "withdrawn" }, property).active).toBe(false);
     expect(candidateFromListing({ ...listing, status: "closed" }, property).active).toBe(false);
+  });
+
+  it("searches the public landmark and massif name for extras", () => {
+    const property = {
+      id: "p-2",
+      propertyType: "apartment",
+      city: "tashkent",
+      district: "chilanzar",
+      areaName: "Ц-5",
+      address: "—",
+      landmark: "метро Хамид Олимжон",
+      rooms: 2,
+      areaTotal: 60,
+      createdAt: ago(30),
+    } satisfies Property;
+    const listing = {
+      id: "l-2",
+      propertyId: "p-2",
+      agentId: "agent-1",
+      dealType: "sale",
+      price: money(95_000, "USD"),
+      priceHistory: [],
+      status: "active_mls",
+      confidentiality: "professional",
+      source: "realtor_confirmed",
+      exclusive: false,
+      verifications: [],
+      description: "Светлая квартира",
+      photoCount: 0,
+      publishedAt: ago(2),
+      updatedAt: ago(2),
+    } satisfies Listing;
+    const cand = candidateFromListing(listing, property);
+    expect(cand.text).toBe("Светлая квартира\nметро Хамид Олимжон\nЦ-5");
+    const result = evaluate(requirement({ extras: ["метро Хамид Олимжон"] }), cand);
+    expect(reasonFor(result, "extras")).toMatchObject({
+      outcome: "match",
+      detail: { kind: "extras", matched: ["метро Хамид Олимжон"], missing: [] },
+    });
   });
 });

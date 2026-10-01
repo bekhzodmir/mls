@@ -62,9 +62,11 @@
     --fg-muted: oklch(0.8 0.015 293);
     --fg-subtle: oklch(0.7 0.018 293);
 
-    --primary: var(--color-violet-500);
-    --primary-hover: var(--color-violet-400);
-    --primary-fg: oklch(1 0 0);
+    /* A light primary with dark text: violet-950 on violet-400 is 5.3:1, and
+       violet-400 as text on bg/surface stays above 4.5:1 (WCAG AA). */
+    --primary: var(--color-violet-400);
+    --primary-hover: var(--color-violet-300);
+    --primary-fg: var(--color-violet-950);
     --primary-soft: oklch(0.3 0.08 293);
     --primary-soft-fg: var(--color-violet-100);
     --ring: var(--color-violet-400);

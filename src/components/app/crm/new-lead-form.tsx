@@ -156,7 +156,7 @@ export function NewLeadForm({
           value={source}
           required
           aria-invalid={errorFor(ids.source) ? true : undefined}
-          aria-describedby={`${ids.source}-hint`}
+          aria-describedby={errorFor(ids.source) ? `${ids.source}-error ${ids.source}-hint` : `${ids.source}-hint`}
           onChange={(event) => setSource(event.target.value as LeadSource | "")}
           className={inputClasses}
         >
@@ -167,7 +167,7 @@ export function NewLeadForm({
             </option>
           ))}
         </select>
-        {errorFor(ids.source) ? <FieldError>{errorFor(ids.source)}</FieldError> : null}
+        {errorFor(ids.source) ? <FieldError id={`${ids.source}-error`}>{errorFor(ids.source)}</FieldError> : null}
         <FieldHint id={`${ids.source}-hint`}>{t.form.sourceHint}</FieldHint>
       </div>
 
@@ -185,11 +185,13 @@ export function NewLeadForm({
             spellCheck={false}
             placeholder={t.form.telegramPlaceholder}
             aria-invalid={errorFor(ids.telegram) ? true : undefined}
-            aria-describedby={`${ids.telegram}-hint`}
+            aria-describedby={
+              errorFor(ids.telegram) ? `${ids.telegram}-error ${ids.telegram}-hint` : `${ids.telegram}-hint`
+            }
             onChange={(event) => setTelegram(event.target.value)}
             className={inputClasses}
           />
-          {errorFor(ids.telegram) ? <FieldError>{errorFor(ids.telegram)}</FieldError> : null}
+          {errorFor(ids.telegram) ? <FieldError id={`${ids.telegram}-error`}>{errorFor(ids.telegram)}</FieldError> : null}
           <FieldHint id={`${ids.telegram}-hint`}>{t.form.telegramHint}</FieldHint>
         </div>
       </div>

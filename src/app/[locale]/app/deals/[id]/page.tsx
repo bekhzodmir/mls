@@ -108,7 +108,11 @@ export default async function DealPage({ params }: PageProps<"/[locale]/app/deal
           <div className="space-y-4">
             <PartiesSection locale={locale} view={view} viewerId={viewer.id} organizations={organizations} />
             <PropertySection locale={locale} view={view} />
-            <VerificationSection locale={locale} items={view.listing.listing.verifications} />
+            <VerificationSection
+              locale={locale}
+              items={view.listing.listing.verifications}
+              detailed={view.listing.ownerData}
+            />
             <CommissionSection locale={locale} view={view} />
             <ActSection locale={locale} view={view} />
           </div>

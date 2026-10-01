@@ -60,7 +60,7 @@ export default defineMessages({
       },
       radar: {
         title: "Telegram Radar со ссылками",
-        text: "Более 10 000 объявлений из Telegram — у каждого ссылка на исходный пост.",
+        text: "Более 10 000 объявлений из большого пула Telegram-источников — у каждого ссылка на исходный пост.",
       },
     },
     cta: {
@@ -124,7 +124,7 @@ export default defineMessages({
       },
       radar: {
         title: "Havolali Telegram Radar",
-        text: "Telegramdan 10 000 dan ortiq e’lon — har birida asl postga havola.",
+        text: "Katta Telegram manbalari to‘plamidan 10 000 dan ortiq e’lon — har birida asl postga havola.",
       },
     },
     cta: {

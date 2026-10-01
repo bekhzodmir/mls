@@ -129,14 +129,16 @@ export default async function ContactsPage() {
       <Section id="details" muted title={t.details.title}>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {details.map(({ key, icon: Icon, term, value }) => (
-            <div key={key} className="flex gap-4 rounded-lg border border-border bg-surface p-5 shadow-card">
-              <IconTile>
-                <Icon className="size-5" />
-              </IconTile>
-              <div>
-                <dt className="text-small text-fg-muted">{term}</dt>
-                <dd className="mt-0.5 text-body font-semibold text-fg">{value}</dd>
-              </div>
+            // One wrapper with <dt>/<dd> as direct children keeps the term–value pairs valid;
+            // the decorative icon sits inside the <dt>, positioned in the card's left gutter.
+            <div key={key} className="relative min-h-21 rounded-lg border border-border bg-surface p-5 pl-20 shadow-card">
+              <dt className="text-small text-fg-muted">
+                <IconTile className="absolute top-5 left-5">
+                  <Icon className="size-5" />
+                </IconTile>
+                {term}
+              </dt>
+              <dd className="mt-0.5 text-body font-semibold text-fg">{value}</dd>
             </div>
           ))}
         </dl>

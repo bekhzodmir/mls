@@ -180,8 +180,19 @@ function visibleClient(id: ID): Client | undefined {
 
 /* ----------------------------------------------------------- listings */
 
-/** Never shown outside the owning organization, whatever the confidentiality. */
-const NOT_IN_MLS = new Set<ListingStatus>(["draft", "archived"]);
+/**
+ * Not published to partners (§11.1): a listing reaches the MLS at "Active MLS".
+ * Before that — draft, contract, verification — and once archived it is seen
+ * only inside the owning organization, whatever the confidentiality.
+ */
+const NOT_PUBLISHED_TO_PARTNERS = new Set<ListingStatus>([
+  "draft",
+  "contract_signed",
+  "verification_pending",
+  "verified",
+  "verification_failed",
+  "archived",
+]);
 
 /** Listings that no longer need confirmations, contracts or price alerts. */
 const FINISHED = new Set<ListingStatus>(["closed", "archived", "withdrawn"]);
@@ -189,7 +200,7 @@ const FINISHED = new Set<ListingStatus>(["closed", "archived", "withdrawn"]);
 function computeAccess(listing: Listing): ListingAccess | undefined {
   if (listing.agentId === viewer.id) return "owner";
   if (viewer.organizationId && listing.organizationId === viewer.organizationId) return "agency";
-  if (listing.confidentiality === "restricted" || NOT_IN_MLS.has(listing.status)) return undefined;
+  if (listing.confidentiality === "restricted" || NOT_PUBLISHED_TO_PARTNERS.has(listing.status)) return undefined;
   const shared = seed.cooperationRequests.some(
     (request) =>
       request.listingId === listing.id &&
@@ -211,13 +222,25 @@ function seesRestricted(access: ListingAccess): boolean {
   return access === "owner" || access === "agency";
 }
 
+/**
+ * Sensitive owner data — the owner, the contract, the cadastral number (§19):
+ * the listing's own agent, and agency management ("Approved" / "All audited").
+ * Other agents and team leads need a permission the demo has no grant for.
+ */
+function seesOwnerData(access: ListingAccess): boolean {
+  return (
+    access === "owner" ||
+    (access === "agency" && (viewer.role === "agency_owner" || viewer.role === "agency_admin"))
+  );
+}
+
 function visibleListings(): Listing[] {
   return seed.listings.filter((listing) => accessOf(listing) !== undefined);
 }
 
 function propertyView(property: Property, access: ListingAccess): PropertyView {
   const view: PropertyView = { ...property };
-  if (seesRestricted(access)) return view;
+  if (seesOwnerData(access)) return view;
   delete view.cadastralNumber;
   delete view.ownerId;
   if (access === "partner_masked") {
@@ -244,6 +267,7 @@ function toListingView(listing: Listing, at: Date): ListingView | undefined {
     agent: must(agentsById.get(listing.agentId), `agent ${listing.agentId}`),
     freshness: computeFreshness(listing, at),
     access,
+    ownerData: seesOwnerData(access),
     otherListingsOnProperty: visibleListings().filter(
       (other) => other.propertyId === listing.propertyId && other.id !== listing.id,
     ).length,
@@ -752,7 +776,7 @@ function listingDoc(view: ListingView): SearchDoc {
       view.agent.name,
       view.organization?.name,
       restricted || view.access === "partner_shared" ? property.address : undefined,
-      restricted ? property.cadastralNumber : undefined,
+      view.ownerData ? property.cadastralNumber : undefined,
     ],
     [],
     [property.district],
@@ -931,7 +955,7 @@ export async function listListings(filter: ListingFilter = {}): Promise<ListingV
       const { listing, property, access, freshness } = view;
       if (scope === "mine" && access !== "owner") return false;
       if (scope === "agency" && !seesRestricted(access)) return false;
-      if (scope === "mls" && (listing.confidentiality === "restricted" || NOT_IN_MLS.has(listing.status))) {
+      if (scope === "mls" && (listing.confidentiality === "restricted" || NOT_PUBLISHED_TO_PARTNERS.has(listing.status))) {
         return false;
       }
       if (filter.dealType && listing.dealType !== filter.dealType) return false;
@@ -976,7 +1000,7 @@ export async function getListing(id: ID): Promise<ListingDetailView | undefined>
     reverseMatches: reverseMatchesFor(listingCandidate(listing), at),
     cooperation: cooperationViews(at).filter((view) => view.request.listingId === id),
   };
-  const owner = seesRestricted(base.access) && property.ownerId ? ownersById.get(property.ownerId) : undefined;
+  const owner = base.ownerData && property.ownerId ? ownersById.get(property.ownerId) : undefined;
   if (owner) detail.owner = owner;
   return copy(detail);
 }
@@ -1143,8 +1167,8 @@ export async function getDeal(id: ID): Promise<DealDetailView | undefined> {
   };
   const cooperation = cooperationRequest ? toCooperationView(cooperationRequest, at) : undefined;
   if (cooperation) detail.cooperation = cooperation;
-  // `propertyView` already drops ownerId for partners; the access check keeps the rule explicit.
-  const ownerId = seesRestricted(base.listing.access) ? base.listing.property.ownerId : undefined;
+  // `propertyView` already drops ownerId without the right; the check keeps the rule explicit.
+  const ownerId = base.listing.ownerData ? base.listing.property.ownerId : undefined;
   const owner = ownerId ? ownersById.get(ownerId) : undefined;
   if (owner) detail.owner = owner;
   return copy(detail);

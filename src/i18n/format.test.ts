@@ -83,6 +83,17 @@ describe("formatRelative", () => {
   it("uses Intl for Russian", () => {
     expect(formatRelative("ru", at(-3 * 24 * 60), now)).toBe("3 дня назад");
   });
+
+  it("counts Tashkent calendar days, not 24-hour blocks", () => {
+    // 30 Sep 11:00 Tashkent; 28 Sep 23:30 Tashkent is two dates back.
+    expect(formatRelative("ru", "2026-09-28T18:30:00Z", now)).toBe("позавчера");
+    // 30 Sep 01:00 Tashkent; 28 Sep 20:00 Tashkent.
+    const lateNight = new Date("2026-09-29T20:00:00Z");
+    expect(formatRelative("ru", "2026-09-28T15:00:00Z", lateNight)).toBe("позавчера");
+    expect(formatRelative("uz", "2026-09-28T15:00:00Z", lateNight)).toBe("2 kun oldin");
+    // 29 Sep 05:30 Tashkent is one date back from 30 Sep 11:00, though 29.5 hours have passed.
+    expect(formatRelative("ru", "2026-09-29T00:30:00Z", now)).toBe("вчера");
+  });
 });
 
 describe("numbers and lists", () => {

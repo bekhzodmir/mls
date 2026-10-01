@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CircleHelp, Copy, ExternalLink, Image as ImageIcon, Send, UserRound } from "lucide-react";
+import { textLang } from "@/components/app/inventory/labels";
 import { FreshnessBadge } from "@/components/domain/badges";
 import { Badge } from "@/components/ui/badge";
 import { ButtonAnchor, ButtonLink } from "@/components/ui/button";
@@ -66,7 +67,9 @@ export function PostCard({ locale, view, now }: { locale: Locale; view: Telegram
         </Link>
       </h2>
 
-      <p className="text-small text-fg-muted break-words">{excerpt(post.rawText)}</p>
+      <p lang={textLang(post.rawText)} className="text-small text-fg-muted break-words">
+        {excerpt(post.rawText)}
+      </p>
 
       <ul className="flex flex-wrap gap-1.5" aria-label={t.detail.normalized}>
         {chips.map((chip) => (

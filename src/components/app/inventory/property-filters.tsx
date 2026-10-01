@@ -47,12 +47,13 @@ import { inputClasses } from "@/components/ui/field";
  * state is a URL; the removable chips below say exactly what narrows the list.
  */
 
+/** A labelled group around a real list, so the chips keep their list semantics. */
 function ChipGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
     <li className={cn("shrink-0", className)}>
-      <ul role="group" aria-label={label} className="flex gap-2">
-        {children}
-      </ul>
+      <div role="group" aria-label={label}>
+        <ul className="flex gap-2">{children}</ul>
+      </div>
     </li>
   );
 }

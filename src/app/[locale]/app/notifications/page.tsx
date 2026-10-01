@@ -166,14 +166,14 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/[l
         <ul className="flex gap-2">
           <li>
             <ChipLink href={listHref(locale, "/notifications")} active={!category}>
-              {t.filter.all} <span className="tabular opacity-80">{all.length}</span>
+              {t.filter.all} <span className="tabular">{all.length}</span>
             </ChipLink>
           </li>
           {categories.map((key) => (
             <li key={key}>
               <ChipLink href={listHref(locale, "/notifications", { category: key })} active={category === key}>
                 {d.notificationCategory[key]}{" "}
-                <span className="tabular opacity-80">{all.filter((item) => item.category === key).length}</span>
+                <span className="tabular">{all.filter((item) => item.category === key).length}</span>
               </ChipLink>
             </li>
           ))}

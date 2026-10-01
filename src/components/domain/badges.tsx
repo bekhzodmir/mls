@@ -1,8 +1,8 @@
 import {
-  BadgeCheck,
   Building2,
   CircleHelp,
   Clock,
+  Database,
   Hourglass,
   Send,
   ShieldAlert,
@@ -61,19 +61,35 @@ const verificationStyle: Record<VerificationItem["status"], { tone: Tone; icon: 
 /**
  * One badge = one checked fact (§38.2): "Право собственности: Подтверждено".
  * The method (owner's words vs official source) is part of the accessible label.
+ * A partner sees the result only (§19 "Verification: Result only"): with
+ * `showSource={false}` the source, e.g. a contract number, stays out of the title.
  */
-export function VerificationBadge({ locale, item }: { locale: Locale; item: VerificationItem }) {
+export function VerificationBadge({
+  locale,
+  item,
+  showSource = true,
+}: {
+  locale: Locale;
+  item: VerificationItem;
+  showSource?: boolean;
+}) {
   const d = domain[locale];
   const { tone, icon } = verificationStyle[item.status];
+  const method = d.verificationMethod[item.method];
   return (
-    <Badge tone={tone} icon={icon} title={`${d.verificationMethod[item.method]} · ${item.source}`}>
+    <Badge tone={tone} icon={icon} title={showSource ? `${method} · ${item.source}` : method}>
       {d.verificationSubject[item.subject]}: {d.verificationStatus[item.status]}
     </Badge>
   );
 }
 
+/**
+ * Where a record came from. Provenance is not verification: a "from the Binor
+ * base" badge names no checked fact, so it carries no check icon (§16.4, §38.2);
+ * verified facts are shown one by one with `VerificationBadge`.
+ */
 const sourceStyle: Record<SourceKind, { tone: Tone; icon: LucideIcon }> = {
-  verified_binor: { tone: "brand", icon: BadgeCheck },
+  verified_binor: { tone: "brand", icon: Database },
   realtor_confirmed: { tone: "neutral", icon: UserCheck },
   agency: { tone: "neutral", icon: Building2 },
   telegram: { tone: "info", icon: Send },

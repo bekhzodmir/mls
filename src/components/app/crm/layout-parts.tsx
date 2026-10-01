@@ -76,5 +76,5 @@ export function ChipRow({ label, children }: { label: string; children: ReactNod
 
 /** Count inside a chip, e.g. «Новый 3». */
 export function ChipCount({ n }: { n: number }) {
-  return <span className="tabular text-caption opacity-80">{n}</span>;
+  return <span className="tabular text-caption">{n}</span>;
 }

@@ -1,6 +1,6 @@
 import type { RankedMatch } from "@/lib/domain/matching";
 import { MIN_APPLY_CONFIDENCE, type RequirementDraft } from "@/lib/domain/requirement-parser";
-import { toMinor } from "@/lib/domain/money";
+import { fitsMinor, toMinor } from "@/lib/domain/money";
 import type {
   BuildingKind,
   Currency,
@@ -127,12 +127,14 @@ type Parsed<T> = { ok: true; value?: T } | { ok: false };
 
 const SPACES = /[\s   ]/g;
 
-/** "85 000" → 8 500 000 minor units; "" → no value; "85,000" or "abc" → error. */
+/** "85 000" → 8 500 000 minor units; "" → no value; "85,000", "abc" or an amount too large to hold → error. */
 export function parseAmount(text: string): Parsed<number> {
   const compact = text.replace(SPACES, "");
   if (!compact) return { ok: true };
   if (!/^\d+(?:[.,]\d{1,2})?$/.test(compact)) return { ok: false };
-  const minor = toMinor(compact.replace(",", "."));
+  const amount = compact.replace(",", ".");
+  if (!fitsMinor(amount)) return { ok: false };
+  const minor = toMinor(amount);
   return minor > 0 ? { ok: true, value: minor } : { ok: false };
 }
 

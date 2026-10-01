@@ -1544,7 +1544,9 @@ export const listings: Listing[] = [
     dealType: "sale",
     currency: "USD",
     prices: [[day(-8, "10:00"), 165_000]],
-    status: "verification_pending",
+    // Published to the MLS while the ownership check is still running: partners
+    // see it, with the pending check shown as such.
+    status: "active_mls",
     confidentiality: "professional",
     source: "realtor_confirmed",
     cooperation: split("50/50", 50, "USD"),

@@ -86,7 +86,7 @@ export function TermsEditor({
 
   return (
     <div className="space-y-4">
-      <fieldset>
+      <fieldset aria-describedby={id("preset-issues")}>
         <legend className="mb-1 text-caption font-medium text-fg-muted">{e.preset}</legend>
         <div className="flex flex-wrap gap-2">
           {splitPresetIds.map((preset) => (
@@ -118,6 +118,7 @@ export function TermsEditor({
             inputErrors.includes("listingText") || percentIssues.some((issue) => issue.field === "listingSidePercent")
           }
           inputError={inputErrors.includes("listingText") ? e.percentInvalid : undefined}
+          describedBy={id("percent-issues")}
           onChange={(text) => onChange(withPercentText(draft, "listing", text))}
         />
         <PercentField
@@ -129,6 +130,7 @@ export function TermsEditor({
             inputErrors.includes("buyerText") || percentIssues.some((issue) => issue.field === "buyerSidePercent")
           }
           inputError={inputErrors.includes("buyerText") ? e.percentInvalid : undefined}
+          describedBy={id("percent-issues")}
           onChange={(text) => onChange(withPercentText(draft, "buyer", text))}
         />
       </div>
@@ -192,7 +194,7 @@ export function TermsEditor({
               aria-describedby={id("amount-issues")}
               className={cn(inputClasses, "tabular")}
             />
-            <div id={id("amount-issues")}>
+            <div id={id("amount-issues")} aria-live="polite">
               {inputErrors.includes("amountText") ? (
                 <p className="text-caption text-danger-fg">{e.amountInvalid}</p>
               ) : null}
@@ -284,6 +286,7 @@ function PercentField({
   value,
   invalid,
   inputError,
+  describedBy,
   onChange,
 }: {
   id: string;
@@ -292,6 +295,8 @@ function PercentField({
   value: string;
   invalid: boolean;
   inputError?: string;
+  /** The shared issue list ("Не больше двух знаков после запятой"), read with the field. */
+  describedBy: string;
   onChange: (value: string) => void;
 }) {
   return (
@@ -306,7 +311,7 @@ function PercentField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={invalid ? true : undefined}
-        aria-describedby={`${id}-hint`}
+        aria-describedby={`${id}-hint ${describedBy}`}
         className={cn(inputClasses, "text-body font-semibold tabular")}
       />
       <p id={`${id}-hint`} className={cn("text-caption", inputError ? "text-danger-fg" : "text-fg-muted")}>
@@ -325,14 +330,23 @@ function IssueList({
   labels: CooperationMessages["issue"];
   id?: string;
 }) {
-  if (issues.length === 0) return id ? <div id={id} /> : null;
-  return (
-    <ul id={id} className="space-y-0.5">
-      {[...new Set(issues.map((issue) => issue.code))].map((code) => (
-        <li key={code} className="text-caption text-danger-fg">
-          {labels[code]}
-        </li>
-      ))}
-    </ul>
+  const list =
+    issues.length > 0 ? (
+      <ul className="space-y-0.5">
+        {[...new Set(issues.map((issue) => issue.code))].map((code) => (
+          <li key={code} className="text-caption text-danger-fg">
+            {labels[code]}
+          </li>
+        ))}
+      </ul>
+    ) : null;
+  // With an id the list is a persistent live region that fields point to,
+  // so an issue that appears while typing is announced and read with the field.
+  return id ? (
+    <div id={id} aria-live="polite">
+      {list}
+    </div>
+  ) : (
+    list
   );
 }

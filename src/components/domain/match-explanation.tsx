@@ -34,9 +34,15 @@ export function describeReason(locale: Locale, reason: MatchReason): string | nu
   if (!detail) return null;
   switch (detail.kind) {
     case "price_over":
-      return format(t.price_over, { amount: formatMoney(locale, detail.by) });
-    case "price_under":
-      return format(t.price_under, { amount: formatMoney(locale, detail.by) });
+    case "price_under": {
+      const amount = formatMoney(locale, detail.by);
+      // A comparison through the settings rate says so, whichever way it went.
+      if (detail.converted) {
+        const template = detail.kind === "price_over" ? t.price_over_converted : t.price_under_converted;
+        return format(template, { amount, from: detail.converted.from, to: detail.converted.to });
+      }
+      return format(detail.kind === "price_over" ? t.price_over : t.price_under, { amount });
+    }
     case "price_within":
       return t.price_within;
     case "price_converted":
@@ -68,6 +74,7 @@ export function describeReason(locale: Locale, reason: MatchReason): string | nu
       const parts: string[] = [];
       if (detail.matched.length) parts.push(format(t.extras_matched, { list: list(locale, detail.matched) }));
       if (detail.missing.length) parts.push(format(t.extras_missing, { list: list(locale, detail.missing) }));
+      if (detail.renovationUnknown) parts.push(t.extras_renovation_unknown);
       return parts.join(". ") || null;
     }
     case "missing_data":

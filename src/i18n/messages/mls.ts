@@ -130,7 +130,7 @@ export default defineMessages({
       newRequirement: "Новый запрос клиента",
       openCooperation: "Открыть запрос на сотрудничество",
       openRequirement: "Открыть запрос",
-      fromAgent: "От {agent}",
+      fromAgent: "Отправитель: {agent}",
     },
     criteria: {
       any: "Любой",

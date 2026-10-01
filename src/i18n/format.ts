@@ -194,14 +194,24 @@ function relative(locale: Locale, value: number, unit: RelativeUnit): string {
   return (value < 0 ? t.past : t.future).replace("{n}", formatNumber(locale, Math.abs(value)));
 }
 
-/** "3 дня назад" / "3 kun oldin" relative to a reference instant. */
+/** Days since the epoch of the Tashkent calendar date of an instant. */
+function tashkentDayNumber(iso: string): number {
+  const { year, month, day } = tashkentParts(iso);
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+}
+
+/**
+ * "3 дня назад" / "3 kun oldin" relative to a reference instant. Minutes and
+ * hours count elapsed time; days count Tashkent calendar dates, so 23:30 two
+ * dates back is "позавчера", not "вчера".
+ */
 export function formatRelative(locale: Locale, iso: string, now: Date): string {
   const diffMs = new Date(iso).getTime() - now.getTime();
   const minutes = Math.round(diffMs / 60_000);
   if (Math.abs(minutes) < 60) return relative(locale, minutes, "minute");
   const hours = Math.round(minutes / 60);
   if (Math.abs(hours) < 24) return relative(locale, hours, "hour");
-  const days = Math.round(hours / 24);
+  const days = tashkentDayNumber(iso) - tashkentDayNumber(now.toISOString());
   if (Math.abs(days) < 30) return relative(locale, days, "day");
   const months = Math.round(days / 30);
   return relative(locale, months, "month");

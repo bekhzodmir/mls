@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { defaultLocale, hasLocale } from "@/i18n/config";
+import { defaultLocale, hasLocale, locales } from "@/i18n/config";
 import site from "@/i18n/messages/site";
 import siteHome from "@/i18n/messages/site-home";
 import { publicContacts } from "@/lib/site";
@@ -13,6 +13,11 @@ import { publicContacts } from "@/lib/site";
 export const alt = publicContacts.brand;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+// Route handlers do not inherit the root layout's params: prerender one image per locale.
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
 
 // Light-theme values of the design tokens (globals.css): bg, fg, fg-muted, violet-600, fuchsia-500, violet-100.
 const colors = {

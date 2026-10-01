@@ -22,6 +22,7 @@ import { getViewer } from "@/lib/data/repository";
 import type { CooperationView } from "@/lib/data/views";
 import type { SplitSide } from "@/lib/domain/commission";
 import { formatUzPhone, maskUzPhone, telHref } from "@/lib/domain/phone";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import type { Agent, CooperationInitiatorRole, Organization } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 
@@ -72,7 +73,7 @@ function Participant({
           {role ? d.initiatorRole[role] : d.unknown}
         </p>
       ) : null}
-      <p className="text-small text-fg-muted">{d.professionalStatus[agent.professionalStatus]}</p>
+      <p className="text-small text-fg-muted">{d.professionalStatus[displayedProfessionalStatus(agent)]}</p>
       {isViewer ? null : shared ? (
         <p className="flex items-center gap-2 text-small">
           <Phone aria-hidden className="size-4 text-fg-muted" />

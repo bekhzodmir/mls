@@ -30,7 +30,7 @@ import properties from "@/i18n/messages/properties";
 import type { CooperationView, ListingDetailView, ListingView, OfferView, ReverseMatchView, ViewingView } from "@/lib/data/views";
 import { districtName } from "@/lib/domain/geo";
 import { formatMoney, subtractMoney } from "@/lib/domain/money";
-import { formatUzPhone, telHref } from "@/lib/domain/phone";
+import { formatUzPhone, maskUzPhone, telHref } from "@/lib/domain/phone";
 import type { CommissionTerms, Listing, VerificationItem } from "@/lib/domain/types";
 import { cn } from "@/lib/cn";
 import { appPath } from "@/lib/routes";
@@ -103,10 +103,6 @@ function Unknown({ locale }: { locale: Locale }) {
   return <span className="font-normal italic text-fg-muted">{domain[locale].unknown}</span>;
 }
 
-function seesRestricted(view: ListingView): boolean {
-  return view.access === "owner" || view.access === "agency";
-}
-
 /* -------------------------------------------------------------- property */
 
 export function PropertySection({ locale, view }: { locale: Locale; view: ListingView }) {
@@ -163,7 +159,7 @@ export function PropertySection({ locale, view }: { locale: Locale; view: Listin
         <Field
           label={t.field.cadastre}
           value={
-            seesRestricted(view) ? (
+            view.ownerData ? (
               property.cadastralNumber ? (
                 <>
                   <span className="tabular">{property.cadastralNumber}</span>
@@ -184,7 +180,7 @@ export function PropertySection({ locale, view }: { locale: Locale; view: Listin
         <Field label={t.field.propertyId} value={<span className="tabular">{property.id}</span>} />
       </dl>
       {!property.address ? <Notice kind="permission">{t.hiddenAddress}</Notice> : null}
-      {!seesRestricted(view) && property.address ? <p className="text-caption text-fg-muted">{t.hiddenCadastre}</p> : null}
+      {!view.ownerData && property.address ? <p className="text-caption text-fg-muted">{t.hiddenCadastre}</p> : null}
     </DetailSection>
   );
 }
@@ -219,9 +215,17 @@ export function ListingSection({ locale, view, at }: { locale: Locale; view: Lis
           <Field
             label={t.field.agentPhone}
             value={
-              <a href={telHref(view.agent.phone)} className="tabular text-primary underline-offset-2 hover:underline">
-                {formatUzPhone(view.agent.phone)}
-              </a>
+              // A partner's direct phone opens only once cooperation terms are accepted (§18.2).
+              view.access === "partner_masked" ? (
+                <span>
+                  <span className="tabular">{maskUzPhone(view.agent.phone)}</span>{" "}
+                  <span className="text-caption text-fg-muted">({t.phoneMaskedHint})</span>
+                </span>
+              ) : (
+                <a href={telHref(view.agent.phone)} className="tabular text-primary underline-offset-2 hover:underline">
+                  {formatUzPhone(view.agent.phone)}
+                </a>
+              )
             }
           />
         ) : null}
@@ -395,8 +399,14 @@ export function OwnerSection({ locale, detail }: { locale: Locale; detail: Listi
         </div>
       </>
     );
-  } else if (seesRestricted(detail)) {
+  } else if (detail.ownerData) {
     body = <p className="text-small text-fg-muted">{t.owner.notLinked}</p>;
+  } else if (detail.access === "agency") {
+    body = (
+      <Notice kind="permission" title={t.owner.agencyTitle}>
+        {format(t.owner.agencyText, { agent: detail.agent.name })}
+      </Notice>
+    );
   } else if (detail.access === "partner_masked") {
     body = (
       <Notice
@@ -436,11 +446,11 @@ export function ContractSection({ locale, view, at }: { locale: Locale; view: Li
   const title = properties[locale].detail.sections.contract;
   const { listing } = view;
 
-  if (!seesRestricted(view)) {
+  if (!view.ownerData) {
     return (
       <DetailSection id="contract" icon={FileSignature} title={title}>
         <Notice kind="permission" title={t.partnerTitle}>
-          {t.partnerText}
+          {view.access === "agency" ? t.agencyText : t.partnerText}
         </Notice>
       </DetailSection>
     );
@@ -497,7 +507,20 @@ export function ContractSection({ locale, view, at }: { locale: Locale; view: Li
 
 /* ---------------------------------------------------------- verification */
 
-export function VerificationSection({ locale, items }: { locale: Locale; items: VerificationItem[] }) {
+/**
+ * One fact per entry. `detailed` (the viewer may see sensitive owner data)
+ * adds the source and the note; everyone else gets the result only (§19),
+ * since a source can name a contract and a note an ownership problem.
+ */
+export function VerificationSection({
+  locale,
+  items,
+  detailed,
+}: {
+  locale: Locale;
+  items: VerificationItem[];
+  detailed: boolean;
+}) {
   const t = properties[locale].detail.verification;
   const d = domain[locale];
   return (
@@ -508,12 +531,16 @@ export function VerificationSection({ locale, items }: { locale: Locale; items: 
         <ul className="space-y-3">
           {items.map((item) => (
             <li key={item.id} className="space-y-1.5 rounded-md border border-border p-3">
-              <VerificationBadge locale={locale} item={item} />
+              <VerificationBadge locale={locale} item={item} showSource={detailed} />
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-caption">
                 <dt className="text-fg-muted">{t.method}</dt>
                 <dd className="text-fg">{d.verificationMethod[item.method]}</dd>
-                <dt className="text-fg-muted">{t.source}</dt>
-                <dd className="text-fg">{item.source}</dd>
+                {detailed ? (
+                  <>
+                    <dt className="text-fg-muted">{t.source}</dt>
+                    <dd className="text-fg">{item.source}</dd>
+                  </>
+                ) : null}
                 <dt className="text-fg-muted">{t.checked}</dt>
                 <dd className="text-fg">{item.checkedAt ? formatDate(locale, item.checkedAt) : t.noDate}</dd>
                 {item.expiresAt ? (
@@ -522,7 +549,7 @@ export function VerificationSection({ locale, items }: { locale: Locale; items: 
                     <dd className="text-fg">{formatDate(locale, item.expiresAt)}</dd>
                   </>
                 ) : null}
-                {item.note ? (
+                {detailed && item.note ? (
                   <>
                     <dt className="text-fg-muted">{t.note}</dt>
                     <dd className="text-fg">{item.note}</dd>
@@ -533,6 +560,7 @@ export function VerificationSection({ locale, items }: { locale: Locale; items: 
           ))}
         </ul>
       )}
+      {!detailed && items.length > 0 ? <p className="text-caption text-fg-muted">{t.resultOnly}</p> : null}
       {items.some((item) => item.status === "unavailable") ? <Notice kind="info">{t.unavailableNote}</Notice> : null}
     </DetailSection>
   );

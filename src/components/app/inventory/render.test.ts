@@ -87,6 +87,61 @@ describe("property profile sections", () => {
     expect(markup).toContain(properties.ru.detail.contract.partnerTitle);
   });
 
+  it("mask a partner's direct phone until the cooperation terms are accepted", async () => {
+    for (const id of ["lst-17", "lst-23"]) {
+      const detail = await getListing(id);
+      if (!detail) throw new Error(`${id} should be visible`);
+      expect(detail.access, id).toBe("partner_masked");
+      const markup = html(createElement(ListingSection, { locale: "ru", view: detail, at }));
+      expect(markup, id).not.toContain(`tel:${detail.agent.phone}`);
+      expect(markup, id).toContain(properties.ru.detail.phoneMaskedHint);
+    }
+    const shared = await getListing("lst-29");
+    if (!shared) throw new Error("lst-29 should be visible");
+    expect(html(createElement(ListingSection, { locale: "ru", view: shared, at }))).toContain(`tel:${shared.agent.phone}`);
+  });
+
+  it("show a partner the result of each check, not its source or note", async () => {
+    for (const id of ["lst-16", "lst-20"]) {
+      const detail = await getListing(id);
+      if (!detail) throw new Error(`${id} should be visible`);
+      expect(detail.ownerData, id).toBe(false);
+      const markup = html(
+        createElement(VerificationSection, { locale: "ru", items: detail.listing.verifications, detailed: detail.ownerData }),
+      );
+      for (const item of detail.listing.verifications) {
+        expect(markup, id).toContain(domain.ru.verificationSubject[item.subject]);
+        expect(markup, id).not.toContain(item.source);
+        if (item.note) expect(markup, id).not.toContain(item.note);
+      }
+      expect(markup, id).toContain(properties.ru.detail.verification.resultOnly);
+    }
+  });
+
+  it("keep a colleague's owner, contract and cadastre behind a permission (§19)", async () => {
+    const detail = await getListing("lst-13");
+    if (!detail) throw new Error("lst-13 should be visible");
+    expect(detail.access).toBe("agency");
+    expect(detail.ownerData).toBe(false);
+    expect(detail.owner).toBeUndefined();
+    const listing = seed.listings.find((item) => item.id === "lst-13");
+    const property = seed.properties.find((item) => item.id === listing?.propertyId);
+    const owner = seed.owners.find((item) => item.id === property?.ownerId);
+    if (!listing?.contractId || !owner) throw new Error("seed changed");
+    const markup = [
+      html(createElement(PropertySection, { locale: "ru", view: detail })),
+      html(createElement(OwnerSection, { locale: "ru", detail })),
+      html(createElement(ContractSection, { locale: "ru", view: detail, at })),
+    ].join("\n");
+    for (const secret of [owner.name, owner.phone, listing.contractId, property?.cadastralNumber]) {
+      if (secret) expect(markup).not.toContain(secret);
+    }
+    // The agency base still shows the address; the denial says who grants access (§23.5).
+    expect(markup).toContain(detail.property.address ?? "missing");
+    expect(markup).toContain(properties.ru.detail.owner.agencyTitle);
+    expect(markup).toContain(properties.ru.detail.contract.agencyText);
+  });
+
   it("show the owner, restricted markers and the contract warning to the listing agent", async () => {
     const detail = await getListing("lst-01");
     if (!detail?.owner) throw new Error("lst-01 is the viewer's own listing with an owner");
@@ -102,7 +157,9 @@ describe("property profile sections", () => {
   it("never presents an unavailable registry as verified", async () => {
     const detail = await getListing("lst-03");
     if (!detail) throw new Error("lst-03 missing");
-    const markup = html(createElement(VerificationSection, { locale: "ru", items: detail.listing.verifications }));
+    const markup = html(
+      createElement(VerificationSection, { locale: "ru", items: detail.listing.verifications, detailed: detail.ownerData }),
+    );
     expect(markup).toContain(`${domain.ru.verificationSubject.encumbrance}: ${domain.ru.verificationStatus.unavailable}`);
     expect(markup).toContain(properties.ru.detail.verification.unavailableNote);
     const hero = html(createElement(PropertyHero, { locale: "ru", view: detail }));

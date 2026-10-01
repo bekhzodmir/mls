@@ -182,10 +182,11 @@ export function NewClientForm({
           autoComplete="name"
           placeholder={t.namePlaceholder}
           aria-invalid={errorFor(ids.name) ? true : undefined}
+          aria-describedby={errorFor(ids.name) ? `${ids.name}-error` : undefined}
           onChange={(event) => setName(event.target.value)}
           className={inputClasses}
         />
-        {errorFor(ids.name) ? <FieldError>{errorFor(ids.name)}</FieldError> : null}
+        {errorFor(ids.name) ? <FieldError id={`${ids.name}-error`}>{errorFor(ids.name)}</FieldError> : null}
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -202,10 +203,11 @@ export function NewClientForm({
             spellCheck={false}
             placeholder={l.form.telegramPlaceholder}
             aria-invalid={errorFor(ids.telegram) ? true : undefined}
+            aria-describedby={errorFor(ids.telegram) ? `${ids.telegram}-error` : undefined}
             onChange={(event) => setTelegram(event.target.value)}
             className={inputClasses}
           />
-          {errorFor(ids.telegram) ? <FieldError>{errorFor(ids.telegram)}</FieldError> : null}
+          {errorFor(ids.telegram) ? <FieldError id={`${ids.telegram}-error`}>{errorFor(ids.telegram)}</FieldError> : null}
         </div>
       </div>
       {submitted && errorFor(ids.phone) === t.errorContact ? <FieldError>{t.errorContact}</FieldError> : null}
@@ -235,6 +237,7 @@ export function NewClientForm({
             value={source}
             required
             aria-invalid={errorFor(ids.source) ? true : undefined}
+            aria-describedby={errorFor(ids.source) ? `${ids.source}-error` : undefined}
             onChange={(event) => setSource(event.target.value as LeadSource | "")}
             className={inputClasses}
           >
@@ -245,7 +248,7 @@ export function NewClientForm({
               </option>
             ))}
           </select>
-          {errorFor(ids.source) ? <FieldError>{errorFor(ids.source)}</FieldError> : null}
+          {errorFor(ids.source) ? <FieldError id={`${ids.source}-error`}>{errorFor(ids.source)}</FieldError> : null}
         </div>
         <SegmentedRadio<Language>
           name={`${id}-language`}
@@ -295,10 +298,11 @@ export function NewClientForm({
                       id={nameId}
                       value={party.name}
                       aria-invalid={errorFor(nameId) ? true : undefined}
+                      aria-describedby={errorFor(nameId) ? `${nameId}-error` : undefined}
                       onChange={(event) => updateParty(party.key, { name: event.target.value })}
                       className={inputClasses}
                     />
-                    {errorFor(nameId) ? <FieldError>{errorFor(nameId)}</FieldError> : null}
+                    {errorFor(nameId) ? <FieldError id={`${nameId}-error`}>{errorFor(nameId)}</FieldError> : null}
                   </div>
                   <div className="space-y-1.5">
                     <FieldLabel htmlFor={roleId}>{t.partyRole}</FieldLabel>
@@ -326,10 +330,11 @@ export function NewClientForm({
                       value={party.phone}
                       placeholder={l.phone.placeholder}
                       aria-invalid={errorFor(phoneId) ? true : undefined}
+                      aria-describedby={errorFor(phoneId) ? `${phoneId}-error` : undefined}
                       onChange={(event) => updateParty(party.key, { phone: event.target.value })}
                       className={`${inputClasses} tabular`}
                     />
-                    {errorFor(phoneId) ? <FieldError>{errorFor(phoneId)}</FieldError> : null}
+                    {errorFor(phoneId) ? <FieldError id={`${phoneId}-error`}>{errorFor(phoneId)}</FieldError> : null}
                   </div>
                   <Button
                     variant="ghost"

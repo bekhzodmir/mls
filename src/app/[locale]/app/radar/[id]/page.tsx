@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ExternalLink, Info, UserRound } from "lucide-react";
+import { textLang } from "@/components/app/inventory/labels";
 import { requirementLine } from "@/components/app/mls/cooperation-labels";
 import { DuplicateList } from "@/components/app/radar/duplicate-list";
 import {
@@ -106,6 +107,7 @@ export default async function RadarPostPage({ params }: PageProps<"/[locale]/app
           <p className="text-caption text-fg-muted">{t.detail.rawHint}</p>
           <blockquote
             cite={post.sourceUrl}
+            lang={textLang(post.rawText)}
             className="rounded-lg border border-border bg-surface-muted p-4 text-small whitespace-pre-wrap text-fg break-words"
           >
             {post.rawText}

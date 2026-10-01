@@ -103,8 +103,9 @@ export interface ViewerView {
  * - `partner_masked` — another party's MLS listing before any agreement:
  *   the full address, cadastral number and owner stay hidden.
  *
- * Owner contacts (RESTRICTED, §34.2) are returned only for `owner` and
- * `agency`; the full address also for `partner_shared`.
+ * The full address is returned for `owner`, `agency` and `partner_shared`.
+ * Owner contacts, the contract and the cadastral number (RESTRICTED, §34.2)
+ * need more: see `ListingView.ownerData`.
  */
 export type ListingAccess = "owner" | "agency" | "partner_shared" | "partner_masked";
 
@@ -123,6 +124,12 @@ export interface ListingView {
   organization?: Organization;
   freshness: Freshness;
   access: ListingAccess;
+  /**
+   * Whether the viewer may see sensitive owner data — owner, contract,
+   * cadastral number (§19): their own listing, or agency management for a
+   * colleague's. Other colleagues see the listing without it.
+   */
+  ownerData: boolean;
   /** Other listings on the same physical property that the viewer can see (Property ≠ Listing). */
   otherListingsOnProperty: number;
 }
@@ -163,7 +170,7 @@ export interface ReverseMatchView {
 }
 
 export interface ListingDetailView extends ListingView {
-  /** Present only for `owner` / `agency` access. */
+  /** Present only when `ownerData` allows it. */
   owner?: Owner;
   otherListings: ListingView[];
   viewings: ViewingView[];
@@ -410,7 +417,7 @@ export interface DealView {
 }
 
 export interface DealDetailView extends DealView {
-  /** The property's owner, only for `owner` / `agency` access to the listing (RESTRICTED, §34.2). */
+  /** The property's owner, only when the listing's `ownerData` allows it (RESTRICTED, §34.2). */
   owner?: Owner;
   offers: OfferView[];
   viewings: ViewingView[];

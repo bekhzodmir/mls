@@ -77,13 +77,13 @@ export default async function TasksPage({ searchParams }: PageProps<"/[locale]/a
         <ul className="flex gap-2">
           <li>
             <ChipLink href={listHref(locale, "/tasks")} active={!filter}>
-              {t.filter.all} <span className="tabular opacity-80">{all.length}</span>
+              {t.filter.all} <span className="tabular">{all.length}</span>
             </ChipLink>
           </li>
           {taskStates.map((state) => (
             <li key={state}>
               <ChipLink href={listHref(locale, "/tasks", { status: state })} active={filter === state}>
-                {t.section[state]} <span className="tabular opacity-80">{count(state)}</span>
+                {t.section[state]} <span className="tabular">{count(state)}</span>
               </ChipLink>
             </li>
           ))}

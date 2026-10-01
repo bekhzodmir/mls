@@ -72,6 +72,9 @@ export default defineMessages({
         currency_unknown: "Валюта бюджета не указана — выберите её в поле «Бюджет».",
         currency_conflict: "В тексте две валюты — взята первая. Проверьте бюджет.",
         budget_conflict: "Суммы в тексте противоречат друг другу — бюджет не заполнен. Укажите его вручную.",
+        budget_out_of_range: "Сумма в тексте слишком большая для бюджета — бюджет не заполнен. Укажите его вручную.",
+        negated_criterion:
+          "Исключения вроде «кроме Чиланзара» или «не новостройка» в поля не переносятся — выберите подходящие значения вручную.",
         area_conflict: "Площадь указана противоречиво — укажите её вручную.",
         deal_type_conflict: "Непонятно, покупка это или аренда. Выберите тип сделки.",
         mortgage_conflict: "Про ипотеку сказано противоречиво — уточните у клиента.",
@@ -245,6 +248,9 @@ export default defineMessages({
         currency_unknown: "Byudjet valyutasi ko‘rsatilmagan — uni «Byudjet» maydonida tanlang.",
         currency_conflict: "Matnda ikki xil valyuta bor — birinchisi olindi. Byudjetni tekshiring.",
         budget_conflict: "Matndagi summalar bir-biriga zid — byudjet to‘ldirilmadi. Uni qo‘lda kiriting.",
+        budget_out_of_range: "Matndagi summa byudjet uchun juda katta — byudjet to‘ldirilmadi. Uni qo‘lda kiriting.",
+        negated_criterion:
+          "«Chilonzordan tashqari» yoki «yangi bino emas» kabi istisnolar maydonlarga o‘tkazilmaydi — mos qiymatlarni qo‘lda tanlang.",
         area_conflict: "Maydon qarama-qarshi ko‘rsatilgan — uni qo‘lda kiriting.",
         deal_type_conflict: "Sotib olishmi yoki ijarami — tushunarsiz. Bitim turini tanlang.",
         mortgage_conflict: "Ipoteka haqida qarama-qarshi aytilgan — mijozdan aniqlang.",

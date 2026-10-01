@@ -33,6 +33,16 @@ export function toMinor(amount: number | string): number {
   return sign ? -value : value;
 }
 
+/** Whether `toMinor` can hold a major-unit amount: parsers check this instead of throwing on "100000 млрд". */
+export function fitsMinor(amount: number | string): boolean {
+  try {
+    toMinor(amount);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function numberToPlainString(value: number): string {
   if (!Number.isFinite(value)) throw new RangeError(`Not a finite amount: ${value}`);
   // toFixed avoids exponent notation for large/small values; 6 digits is ample for rounding.

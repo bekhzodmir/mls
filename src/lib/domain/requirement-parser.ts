@@ -1,4 +1,4 @@
-import { money, toMinor } from "./money";
+import { fitsMinor, money, toMinor } from "./money";
 import {
   decimalString,
   decimalValue,
@@ -17,6 +17,8 @@ import {
   scanPropertyTypeCues,
   scanRooms,
   spanOf,
+  textAfter,
+  textBefore,
   unique,
   unknownField,
   anyOf,
@@ -73,6 +75,13 @@ export type RequirementWarning =
   | "currency_conflict"
   /** Two different values for the same budget bound, or min above max. */
   | "budget_conflict"
+  /** An amount too large to be a budget ("до 100000 млрд"): left for the agent to type. */
+  | "budget_out_of_range"
+  /**
+   * "кроме Чиланзара", "не новостройка", "Chilonzordan tashqari": an exclusion.
+   * A Requirement has no exclusion list, so the value is not applied.
+   */
+  | "negated_criterion"
   | "area_conflict"
   | "deal_type_conflict"
   | "mortgage_conflict";
@@ -160,6 +169,28 @@ const FLOOR_MIN_RE = pattern(wordOf(String.raw`не\s+ниже\s+(\d{1,2})${ORDI
 const FLOOR_EXACT_RE = pattern(
   wordOf(String.raw`(\d{1,2})\s*-?\s*(?:й|ой|ом|м|ый)?\s*(?:этаж(?!н|ей|ност)\p{L}*|qavat(?!li)\p{L}*)`),
 );
+/** "до 5 этажа", "5 этаж и ниже", "5-qavatgacha" — the floor is a ceiling. */
+const FLOOR_UPTO_BEFORE_RE = /(?<!\p{L})(?:до|по)\s*$/u;
+const FLOOR_UPTO_AFTER_RE = /^\s*и\s+ниже(?!\p{L})/u;
+/** "от 3 этажа", "с 3 этажа", "3 этаж и выше", "3+ этаж", "3-qavatdan boshlab" — a floor. */
+const FLOOR_FROM_BEFORE_RE = /(?<!\p{L})(?:от|с|начиная\s+с)\s*$/u;
+const FLOOR_FROM_AFTER_RE = /^\s*(?:и\s+(?:выше|более|больше)(?!\p{L})|\+|boshlab(?!\p{L}))/u;
+/** "выше 2 этажа", "3-qavatdan yuqori" — strictly above; "ниже 5 этажа" — strictly below. */
+const FLOOR_ABOVE_BEFORE_RE = /(?<!\p{L})выше\s*$/u;
+const FLOOR_ABOVE_AFTER_RE = /^\s*(?:yuqori|baland)\p{L}*/u;
+const FLOOR_BELOW_BEFORE_RE = /(?<!\p{L})ниже\s*$/u;
+const FLOOR_BELOW_AFTER_RE = /^\s*past\p{L}*/u;
+
+/**
+ * Exclusions: "кроме Чиланзара", "не Сергели", "не в новостройке", "Chilonzordan
+ * tashqari", "Sergeli emas". Checked on the masked text, so "не первый этаж"
+ * (already read as a floor preference) never negates what follows it.
+ */
+const NEGATED_BEFORE_RE = /(?<!\p{L})(?:не|кроме|исключая|за\s+исключением|без)(?:\s+(?:в|во|на))?\s*$/u;
+const NEGATED_AFTER_RE = /^\s*(?:tashqari|emas|ташқари|эмас)(?!\p{L})/u;
+/** "кроме Чиланзара и Сергели", "Chilonzor va Sergelidan tashqari": one exclusion, several values. */
+const NEGATED_LIST_FORWARD_RE = /^\s*(?:,|и|или|va|yoki|ва|ёки)?\s*$/u;
+const NEGATED_LIST_BACKWARD_RE = /^\s*(?:и|или|va|yoki|ва|ёки)\s*$/u;
 
 const BUILDING_CUES: { re: RegExp; value: BuildingKind }[] = [
   {
@@ -313,6 +344,26 @@ function hasValue(field: ParsedField<unknown>): boolean {
   return field.value !== undefined;
 }
 
+function negated(folded: string, span: Span): boolean {
+  return NEGATED_BEFORE_RE.test(textBefore(folded, span.start, 24)) || NEGATED_AFTER_RE.test(textAfter(folded, span.end, 16));
+}
+
+/** Hits the client excludes, including the rest of an excluded list ("кроме A и B"). */
+function negatedHits<T extends Span>(folded: string, hits: readonly T[]): Set<T> {
+  const out = new Set<T>();
+  for (let i = 0; i < hits.length; i += 1) {
+    const prev = hits[i - 1];
+    const listed = prev !== undefined && out.has(prev) && NEGATED_LIST_FORWARD_RE.test(folded.slice(prev.end, hits[i].start));
+    if (listed || NEGATED_BEFORE_RE.test(textBefore(folded, hits[i].start, 24))) out.add(hits[i]);
+  }
+  for (let i = hits.length - 1; i >= 0; i -= 1) {
+    const next = hits[i + 1];
+    const listed = next !== undefined && out.has(next) && NEGATED_LIST_BACKWARD_RE.test(folded.slice(hits[i].end, next.start));
+    if (listed || NEGATED_AFTER_RE.test(textAfter(folded, hits[i].end, 16))) out.add(hits[i]);
+  }
+  return out;
+}
+
 /* -------------------------------------------------------------- parser */
 
 function emptyDraft(text: string): RequirementDraft {
@@ -391,10 +442,16 @@ export function parseRequirementText(text: string): RequirementDraft {
 
   draft.budget = parseBudget(text, moneyHits, warn);
 
-  // Districts.
-  const districtHits = scanDistricts(work);
+  // Districts. An excluded district ("кроме Чиланзара") is never applied as wanted;
+  // with nothing else named the field stays Unknown, with the exclusion as evidence.
+  const allDistrictHits = scanDistricts(work);
+  const excludedDistricts = negatedHits(work, allDistrictHits);
+  const districtHits = allDistrictHits.filter((hit) => !excludedDistricts.has(hit));
+  if (excludedDistricts.size > 0) warn("negated_criterion");
   if (districtHits.length > 0) {
     draft.districts = knownField(unique(districtHits.map((hit) => hit.id)), 0.9, evidenceOf(text, districtHits));
+  } else if (allDistrictHits.length > 0) {
+    draft.districts = unknownField(evidenceOf(text, allDistrictHits));
   }
 
   // Deal type.
@@ -412,30 +469,42 @@ export function parseRequirementText(text: string): RequirementDraft {
   // Property types.
   draft.propertyTypes = parsePropertyTypes(text, work, roomHits);
 
-  // Building kind: "новостройка или вторичка" means no preference → unknown.
-  const buildingHits = BUILDING_CUES.flatMap(({ re, value }) =>
+  // Building kind: "новостройка или вторичка" means no preference → unknown;
+  // "только не новостройка" is an exclusion, not a preference → unknown.
+  const allBuildingHits = BUILDING_CUES.flatMap(({ re, value }) =>
     scanAll(re, work).map((match) => ({ value, span: spanOf(match) })),
   );
+  const buildingHits = allBuildingHits.filter((hit) => !negated(work, hit.span));
+  if (buildingHits.length < allBuildingHits.length) warn("negated_criterion");
   const buildingValues = unique(buildingHits.map((hit) => hit.value));
   if (buildingValues.length === 1) {
     draft.buildingKind = knownField(buildingValues[0], 0.9, evidenceOf(text, buildingHits.map((hit) => hit.span)));
-  } else if (buildingValues.length > 1) {
-    draft.buildingKind = unknownField(evidenceOf(text, buildingHits.map((hit) => hit.span)));
+  } else if (allBuildingHits.length > 0) {
+    draft.buildingKind = unknownField(evidenceOf(text, allBuildingHits.map((hit) => hit.span)));
   }
 
-  // Renovation.
+  // Renovation. "не коробка" excludes a state; it is consumed but not applied.
   const renovation: Reading<RenovationState[]>[] = [];
+  const excludedRenovation: Span[] = [];
   let renovationConfidence = 0;
   for (const cue of RENOVATION_CUES) {
     for (const match of scanAll(cue.re, work)) {
-      renovation.push({ value: cue.states, span: spanOf(match) });
-      renovationConfidence = Math.max(renovationConfidence, cue.confidence);
-      consume([spanOf(match)]);
+      const span = spanOf(match);
+      if (negated(work, span)) {
+        excludedRenovation.push(span);
+      } else {
+        renovation.push({ value: cue.states, span });
+        renovationConfidence = Math.max(renovationConfidence, cue.confidence);
+      }
+      consume([span]);
     }
   }
+  if (excludedRenovation.length > 0) warn("negated_criterion");
   if (renovation.length > 0) {
     const states = unique(renovation.flatMap((reading) => reading.value));
     draft.renovation = knownField(states, renovationConfidence, evidenceOf(text, renovation.map((r) => r.span)));
+  } else if (excludedRenovation.length > 0) {
+    draft.renovation = unknownField(evidenceOf(text, excludedRenovation));
   }
 
   // Mortgage.
@@ -455,6 +524,11 @@ export function parseRequirementText(text: string): RequirementDraft {
   const extras: Reading<string>[] = landmarks.map((hit) => ({ value: hit.text, span: hit }));
   for (const match of scanAll(AMENITY_RE, work)) {
     const span = spanOf(match);
+    // "без мебели" is not a must-have.
+    if (negated(work, span)) {
+      warn("negated_criterion");
+      continue;
+    }
     extras.push({ value: text.slice(span.start, span.end).trim(), span });
   }
   if (extras.length > 0) {
@@ -538,8 +612,22 @@ function parseFloorPreference(text: string, folded: string): { field: ParsedFiel
     const floor = Number(match[1]);
     if (floor < 1 || floor > 60) continue;
     if (pref.min === undefined && pref.max === undefined) {
-      pref.min = floor;
-      pref.max = floor;
+      // "до 5 этажа" is a ceiling and "от 3 этажа" a floor, not one exact floor.
+      const word = match[0];
+      const before = textBefore(work, match.index, 16);
+      const after = textAfter(work, match.index + word.length, 16);
+      if (FLOOR_UPTO_BEFORE_RE.test(before) || /(?:gacha|гача)$/u.test(word) || FLOOR_UPTO_AFTER_RE.test(after)) {
+        pref.max = floor;
+      } else if (FLOOR_FROM_BEFORE_RE.test(before) || FLOOR_FROM_AFTER_RE.test(after)) {
+        pref.min = floor;
+      } else if (FLOOR_ABOVE_BEFORE_RE.test(before) || (/(?:dan|дан)$/u.test(word) && FLOOR_ABOVE_AFTER_RE.test(after))) {
+        pref.min = floor + 1;
+      } else if (FLOOR_BELOW_BEFORE_RE.test(before) || (/(?:dan|дан)$/u.test(word) && FLOOR_BELOW_AFTER_RE.test(after))) {
+        pref.max = Math.max(1, floor - 1);
+      } else {
+        pref.min = floor;
+        pref.max = floor;
+      }
     }
     take(match, 0.7);
   }
@@ -587,13 +675,18 @@ function parseBudget(
 ): ParsedField<BudgetDraft> {
   const readings = hits.filter((hit) => !hit.perUnit && !hit.auxiliary);
   if (readings.length === 0) return unknownField();
+  const spanOfHit = (hit: MoneyHit): Span => hit.range ?? hit;
+  // "до 100000 млрд" is a typo, not a budget: Unknown with evidence, never an exception.
+  if (readings.some((hit) => !fitsMinor(decimalString(hit.amount)))) {
+    warn("budget_out_of_range");
+    return unknownField(evidenceOf(text, readings.map(spanOfHit)));
+  }
 
   const currencies = unique(readings.flatMap((hit) => (hit.currency ? [hit.currency] : [])));
   if (currencies.length > 1) warn("currency_conflict");
   const currency = currencies[0];
   // With a named currency, amounts in another (or no) currency are not mixed in.
   const used = currency ? readings.filter((hit) => hit.currency === currency) : readings;
-  const spanOfHit = (hit: MoneyHit): Span => hit.range ?? hit;
   const evidence = evidenceOf(text, used.map(spanOfHit));
 
   // A bare amount without "до/от" is read as the ceiling: "бюджет 100 000$".

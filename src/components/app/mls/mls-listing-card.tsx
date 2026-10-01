@@ -24,6 +24,7 @@ import mls from "@/i18n/messages/mls";
 import type { CooperationView, ListingView } from "@/lib/data/views";
 import { formatMoney } from "@/lib/domain/money";
 import { formatUzPhone, maskUzPhone, telHref } from "@/lib/domain/phone";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import type { Confidentiality, ListingStatus } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 import { cooperationHref, deadlineState, newCooperationHref } from "./cooperation-model";
@@ -134,7 +135,7 @@ export function MlsListingCard({
 
       <p className="text-small text-fg">
         {agentLine(locale, view)}
-        <span className="text-fg-muted"> · {d.professionalStatus[agent.professionalStatus]}</span>
+        <span className="text-fg-muted"> · {d.professionalStatus[displayedProfessionalStatus(agent)]}</span>
       </p>
 
       <div className="space-y-1">
@@ -145,7 +146,7 @@ export function MlsListingCard({
           <ul className="flex flex-wrap gap-1.5">
             {checks.map((item) => (
               <li key={item.id}>
-                <VerificationBadge locale={locale} item={item} />
+                <VerificationBadge locale={locale} item={item} showSource={view.ownerData} />
               </li>
             ))}
             {moreChecks > 0 ? (

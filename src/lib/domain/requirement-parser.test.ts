@@ -178,6 +178,35 @@ describe("districts", () => {
     expect(draft.districts.value).toBeUndefined();
     expect(draft.extras.value).toEqual(["метро Мирзо Улугбек", "Kosmonavtlar metrosi"]);
   });
+
+  it("never applies an excluded district as wanted", () => {
+    const draft = parseRequirementText("2 комнаты, любой район кроме Чиланзара, до 70 000$");
+    expect(draft.districts).toEqual({ confidence: 0, evidence: "Чиланзара" });
+    expect(draft.warnings).toEqual(["negated_criterion"]);
+    expect(draftToRequirementFields(draft).districts).toBeUndefined();
+  });
+
+  it.each([
+    ["не Сергели", "Сергели"],
+    ["не в Чиланзаре", "Чиланзаре"],
+    ["Chilonzordan tashqari", "Chilonzordan"],
+    ["Sergeli emas", "Sergeli"],
+    ["кроме Чиланзара и Сергели", "Чиланзара | Сергели"],
+    ["Chilonzor va Sergelidan tashqari", "Chilonzor | Sergelidan"],
+  ])("%s: the exclusion stays Unknown with evidence", (text, evidence) => {
+    const draft = parseRequirementText(text);
+    expect(draft.districts).toEqual({ confidence: 0, evidence });
+    expect(draft.warnings).toContain("negated_criterion");
+  });
+
+  it.each<[string, DistrictId[]]>([
+    ["Юнусабад, не Чиланзар", ["yunusabad"]],
+    ["Yunusobod, Chilonzor emas", ["yunusabad"]],
+    ["3 комнаты не первый этаж Чиланзар", ["chilanzar"]],
+    ["недалеко от Чиланзара", []],
+  ])("%s: only wanted districts are applied → %j", (text, ids) => {
+    expect(parseRequirementText(text).districts.value ?? []).toEqual(ids);
+  });
 });
 
 describe("rooms", () => {
@@ -245,6 +274,15 @@ describe("budget", () => {
     ["бюджет 1,5 млн сум", { max: 1_500_000 }, "UZS"],
     ["до 500 000 000 сум", { max: 500_000_000 }, "UZS"],
     ["1 mlrd so‘mgacha", { max: 1_000_000_000 }, "UZS"],
+    // A "бюджет / в пределах" label does not swallow the lower bound of a range.
+    ["бюджет 80-100 тыс $", { min: 80_000, max: 100_000 }, "USD"],
+    ["Бюджет: 70-80 тыс у.е.", { min: 70_000, max: 80_000 }, "USD"],
+    ["бюджет 80 000 - 100 000 $", { min: 80_000, max: 100_000 }, "USD"],
+    ["budjet 60-80 ming $", { min: 60_000, max: 80_000 }, "USD"],
+    ["в пределах 70-80 тыс $", { min: 70_000, max: 80_000 }, "USD"],
+    // A multiplier glued to the first number does not hide the range.
+    ["85к-90к $", { min: 85_000, max: 90_000 }, "USD"],
+    ["85k-90k$", { min: 85_000, max: 90_000 }, "USD"],
   ] as const)("%s → %j %s", (text, bounds, currency) => {
     const draft = parseRequirementText(text);
     const budget = draft.budget.value;
@@ -312,6 +350,27 @@ describe("budget", () => {
     expect(draft.warnings).toEqual([]);
   });
 
+  it("still reads a labelled amount alone as a ceiling", () => {
+    expect(parseRequirementText("бюджет 100 000$").budget.value?.amountsMinor).toEqual({ max: usd(100_000) });
+    expect(parseRequirementText("до 80 000$").budget.value?.amountsMinor).toEqual({ max: usd(80_000) });
+  });
+
+  it("reads «100 000$+» as a floor but not «+ комиссия» after a price", () => {
+    expect(parseRequirementText("100 000$+ Юнусабад").budget.value?.amountsMinor).toEqual({ min: usd(100_000) });
+    expect(parseRequirementText("до 90 000$ + ремонт").budget.value?.amountsMinor).toEqual({ max: usd(90_000) });
+  });
+
+  it.each(["до 100000 млрд", "до 100000000000000 сум", "бюджет 999999999999999$"])(
+    "%s: an amount money cannot hold is Unknown with evidence, not an exception",
+    (text) => {
+      const draft = parseRequirementText(text);
+      expect(draft.budget.value).toBeUndefined();
+      expect(draft.budget.evidence).toBeDefined();
+      expect(draft.warnings).toContain("budget_out_of_range");
+      expect(draftToRequirementFields(draft).budget).toBeUndefined();
+    },
+  );
+
   it("ignores small bare numbers", () => {
     expect(parseRequirementText("2 комнаты 500").budget.value).toBeUndefined();
   });
@@ -358,8 +417,49 @@ describe("building kind, renovation, floor, mortgage", () => {
     ["3-7 этаж", { min: 3, max: 7 }],
     ["не выше 10 этажа", { max: 10 }],
     ["не ниже 3 этажа", { min: 3 }],
+    ["3 этаж", { min: 3, max: 3 }],
+    // A bound word makes one floor a ceiling or a floor, never an exact floor.
+    ["2 комнаты до 5 этажа", { max: 5 }],
+    ["5 этаж и ниже", { max: 5 }],
+    ["5-qavatgacha", { max: 5 }],
+    ["от 3 этажа", { min: 3 }],
+    ["с 4 этажа", { min: 4 }],
+    ["2 этаж и выше", { min: 2 }],
+    ["3-qavatdan boshlab", { min: 3 }],
+    ["выше 2 этажа", { min: 3 }],
+    ["3-qavatdan yuqori", { min: 4 }],
+    ["ниже 5 этажа", { max: 4 }],
   ])("%s → %j", (text, expected) => {
     expect(parseRequirementText(text).floor.value).toEqual(expected);
+  });
+
+  it("applies «до 5 этажа» as a ceiling the form receives", () => {
+    const fields = draftToRequirementFields(parseRequirementText("2 комнаты до 5 этажа"));
+    expect(fields.floor).toEqual({ max: 5 });
+  });
+
+  it.each([
+    ["только не новостройка", "новостройка"],
+    ["не в новостройке", "новостройке"],
+    ["yangi bino emas", "yangi bino"],
+  ])("%s: an excluded building kind is not a preference", (text, evidence) => {
+    const draft = parseRequirementText(text);
+    expect(draft.buildingKind).toEqual({ confidence: 0, evidence });
+    expect(draft.warnings).toContain("negated_criterion");
+  });
+
+  it("keeps the wanted building kind next to an excluded one", () => {
+    const draft = parseRequirementText("вторичка, не новостройка");
+    expect(draft.buildingKind).toMatchObject({ value: "secondary", evidence: "вторичка" });
+  });
+
+  it.each([
+    ["не коробка", "коробка"],
+    ["не требует ремонта", "требует ремонта"],
+  ])("%s: an excluded renovation state is not applied", (text, evidence) => {
+    const draft = parseRequirementText(text);
+    expect(draft.renovation).toEqual({ confidence: 0, evidence });
+    expect(draft.warnings).toContain("negated_criterion");
   });
 
   it("reads mortgage and cash", () => {
@@ -389,6 +489,24 @@ describe("extras", () => {
     ["рядом с Мега Планет", ["рядом с Мега Планет"]],
   ])("%s → %j", (text, expected) => {
     expect(parseRequirementText(text).extras.value).toEqual(expected);
+  });
+
+  it("does not keep an excluded amenity as a must-have", () => {
+    const draft = parseRequirementText("2 комнаты без мебели, с парковкой");
+    expect(draft.extras.value).toEqual(["с парковкой"]);
+    expect(draft.warnings).toContain("negated_criterion");
+  });
+
+  it("does not read «кв.м. <Word>» as a metro station", () => {
+    const draft = parseRequirementText("3 комнаты от 70 кв.м. Юнусабад, до 90 000$");
+    expect(draft.area.value).toEqual({ min: 70 });
+    expect(draft.districts.value).toEqual(["yunusabad"]);
+    expect(draft.extras.value).toBeUndefined();
+
+    const spaced = parseRequirementText("2 комнаты от 50 кв. м. Бюджет 60 000$");
+    expect(spaced.area.value).toEqual({ min: 50 });
+    expect(spaced.extras.value).toBeUndefined();
+    expect(spaced.budget.value?.amountsMinor).toEqual({ max: usd(60_000) });
   });
 });
 

@@ -247,6 +247,13 @@ describe("floor and floors total — never guessed", () => {
 });
 
 describe("area — never guessed", () => {
+  it("reads «54 кв.м.» before a capitalised word as the area, not a metro station", () => {
+    const parsed = parseTelegramPost("Продаётся 2-комн. квартира 54 кв.м. Юнусабад, 5/9 этаж, 65 000 $");
+    expect(parsed.areaTotal.value).toBe(54);
+    expect(parsed.district.value).toBe("yunusabad");
+    expect(parseTelegramPost("Квартира 54 кв.м. Цена 60 000 $").areaTotal.value).toBe(54);
+  });
+
   it.each([
     ["78 м²", 78],
     ["78 м2", 78],
@@ -338,6 +345,57 @@ describe("price — the currency is never guessed", () => {
     expect(parsed.price).toEqual({ confidence: 0 });
     expect(warnings).toEqual([]);
   });
+
+  it.each([
+    ["Квартиры от 45 000$, 1-3 комнатные, площадь от 40 м²", "45 000$"],
+    ["Продаётся 2-комн, до 70 000$", "70 000$"],
+    ["Продаётся 2-комн, 60-65 тыс $ торг", "60-65 тыс $"],
+  ])("%s: a bound or range is not this object's price", (text, evidence) => {
+    const { parsed, warnings } = analyzeTelegramPost(text);
+    expect(parsed.price).toEqual({ confidence: 0, evidence });
+    expect(warnings).toContain("price_range");
+  });
+
+  it("keeps an exact price followed by an added cost", () => {
+    expect(parseTelegramPost("Продаю 2-комн 65 000$ + комиссия").price).toMatchObject({
+      value: { amountMinor: usd(65_000), currency: "USD" },
+      confidence: 0.9,
+    });
+  });
+
+  it("leaves an amount money cannot hold Unknown instead of throwing", () => {
+    expect(parseTelegramPost("Продаю 2-комн, цена 100000 млрд $").price).toEqual({
+      confidence: 0,
+      evidence: "100000 млрд $",
+    });
+  });
+});
+
+describe("demand posts — a request is not an offer", () => {
+  it.each([
+    ["Куплю 3-комнатную квартиру в Чиланзаре до 70 000$", "Куплю", "70 000$"],
+    ["Сниму 2-комн квартиру в Юнусабаде до 500$", "Сниму", "500$"],
+    ["Yunusobodda 2 xonali kvartira ijaraga olaman, 500$ gacha", "ijaraga olaman", "500$"],
+    ["Нужна 2-комнатная квартира в Мирабаде, бюджет 60-70 тыс $", "Нужна 2-комнатная квартира", "60-70 тыс $"],
+    ["Uy kerak, Sergeli, 40 ming $ gacha", "Uy kerak", "40 ming $"],
+  ])("%s → demand, no price", (text, cue, amount) => {
+    const { parsed, warnings } = analyzeTelegramPost(text);
+    expect(parsed.intent).toEqual({ value: "demand", confidence: 0.9, evidence: cue });
+    expect(parsed.price).toEqual({ confidence: 0, evidence: amount });
+    expect(warnings).toContain("demand_post");
+  });
+
+  it.each([
+    "Продаю 2-комн 65 000$",
+    "Ищем квартирантов! Сдаётся 2-комн, 400$ в месяц",
+    "Продаётся 3-комн, нужен ремонт, 55 000$",
+    "Sotiladi 2 xonali, ta'mir kerak, 50 000$",
+  ])("%s → an offer with its price", (text) => {
+    const { parsed, warnings } = analyzeTelegramPost(text);
+    expect(parsed.intent).toBeUndefined();
+    expect(parsed.price.value).toBeDefined();
+    expect(warnings).not.toContain("demand_post");
+  });
 });
 
 describe("phones", () => {
@@ -360,6 +418,16 @@ describe("phones", () => {
     const parsed = parseTelegramPost("Продаётся квартира 850000000 сум, тел 901234567");
     expect(parsed.price.value?.amountMinor).toBe(uzs(850_000_000));
     expect(parsed.phone.value).toBe("+998901234567");
+  });
+
+  it.each([
+    ["Продаётся 2-комн, цена 950000000, тел 90 123 45 67", "+998901234567", "950000000"],
+    ["Narxi 990000000, tel 97 123 45 67", "+998971234567", "990000000"],
+  ])("does not take a labelled 9-digit price for the phone: %s", (text, phone, price) => {
+    const { parsed, warnings } = analyzeTelegramPost(text);
+    expect(parsed.phone).toMatchObject({ value: phone, confidence: 0.95 });
+    expect(parsed.price).toEqual({ confidence: 0, evidence: price });
+    expect(warnings).toContain("currency_unknown");
   });
 
   it("extractPhones lists every distinct number with its original spelling", () => {

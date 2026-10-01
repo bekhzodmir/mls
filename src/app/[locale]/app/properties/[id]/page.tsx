@@ -39,9 +39,14 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/app/prop
   return { title: detail ? propertyTitle(locale, detail.property) : properties[locale].meta.detail };
 }
 
-/** Who the call button reaches: the owner when visible, otherwise the listing agent's work phone. */
+/**
+ * Who the call button reaches: the owner when visible, otherwise the listing
+ * agent's work phone — except a masked partner, whose direct phone opens only
+ * after the cooperation terms are accepted (the page offers that path instead).
+ */
 function callTarget(detail: ListingDetailView) {
   if (detail.owner) return { kind: "owner" as const, href: telHref(detail.owner.phone) };
+  if (detail.access === "partner_masked") return undefined;
   if (detail.access !== "owner") return { kind: "agent" as const, href: telHref(detail.agent.phone) };
   return undefined;
 }
@@ -124,7 +129,7 @@ export default async function PropertyPage({ params }: PageProps<"/[locale]/app/
         </div>
         <div className="space-y-4">
           <ListingSection locale={locale} view={detail} at={at} />
-          <VerificationSection locale={locale} items={listing.verifications} />
+          <VerificationSection locale={locale} items={listing.verifications} detailed={detail.ownerData} />
           <MlsSection locale={locale} detail={detail} />
         </div>
       </div>

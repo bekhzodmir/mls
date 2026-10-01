@@ -419,7 +419,15 @@ export interface ParsedField<T> {
   evidence?: string;
 }
 
+/** "Продаю / Сдаю" offers an object; "Куплю / Сниму / ijaraga olaman" asks for one. */
+export type PostIntent = "offer" | "demand";
+
 export interface ParsedListingFields {
+  /**
+   * Set only when the post asks for an object: a buyer's or tenant's request
+   * is demand, never supply, and is not matched against requirements (§10.1).
+   */
+  intent?: ParsedField<PostIntent>;
   dealType: ParsedField<DealType>;
   propertyType: ParsedField<PropertyType>;
   district: ParsedField<DistrictId>;
@@ -499,8 +507,8 @@ export interface MatchReason {
   /** False when the requirement does not constrain this criterion at all. */
   requested: boolean;
   detail?:
-    | { kind: "price_over"; by: Money }
-    | { kind: "price_under"; by: Money }
+    | { kind: "price_over"; by: Money; converted?: { from: Currency; to: Currency } }
+    | { kind: "price_under"; by: Money; converted?: { from: Currency; to: Currency } }
     | { kind: "price_within" }
     | { kind: "price_converted"; from: Currency; to: Currency }
     | { kind: "district_exact"; district: DistrictId }
@@ -513,7 +521,8 @@ export interface MatchReason {
     | { kind: "floor_out_of_range"; floor: number }
     | { kind: "building_kind_mismatch"; expected: BuildingKind; actual: BuildingKind }
     | { kind: "renovation_mismatch"; actual: RenovationState }
-    | { kind: "extras"; matched: string[]; missing: string[] }
+    /** `renovationUnknown`: a renovation was requested and the candidate does not state it. */
+    | { kind: "extras"; matched: string[]; missing: string[]; renovationUnknown?: true }
     | { kind: "missing_data" };
 }
 

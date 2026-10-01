@@ -31,7 +31,6 @@ export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 16 * 1024;
 
-
 type ErrorCode = keyof (typeof messages)["ru"];
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -53,6 +52,30 @@ function publicUser(user: TelegramUser) {
   };
 }
 
+/**
+ * Reads at most `limit` bytes of the body. A chunked request has no
+ * Content-Length, so the limit is enforced while streaming: the read stops
+ * and the stream is cancelled as soon as it is exceeded. Returns null then;
+ * throws on invalid UTF-8.
+ */
+async function readLimited(request: Request, limit: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks));
+}
+
 /** Explicit choice first, then the Telegram client language, then Russian. */
 function pickLocale(requested: unknown, languageCode?: string): Locale {
   if (typeof requested === "string" && hasLocale(requested)) return requested;
@@ -61,16 +84,19 @@ function pickLocale(requested: unknown, languageCode?: string): Locale {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // Fast path for an honest Content-Length; `readLimited` enforces the limit for the rest.
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (declaredLength > MAX_BODY_BYTES) return failure(413, "payload_too_large", defaultLocale);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+    return failure(413, "payload_too_large", defaultLocale);
+  }
   if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
     return failure(415, "unsupported_media_type", defaultLocale);
   }
 
   let body: unknown;
   try {
-    const text = await request.text();
-    if (text.length > MAX_BODY_BYTES) return failure(413, "payload_too_large", defaultLocale);
+    const text = await readLimited(request, MAX_BODY_BYTES);
+    if (text === null) return failure(413, "payload_too_large", defaultLocale);
     body = JSON.parse(text);
   } catch {
     return failure(400, "bad_request", defaultLocale);

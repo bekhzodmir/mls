@@ -1,6 +1,7 @@
 import { computeFreshness, defaultFreshnessConfig, type FreshnessConfig } from "./freshness";
 import { areNeighbours } from "./geo";
 import { convertMoney, subtractMoney, type FxRates } from "./money";
+import { foldText } from "./text";
 import type {
   BuildingKind,
   CityId,
@@ -123,13 +124,16 @@ const ACTIVE_LISTING_STATUSES = new Set<Listing["status"]>([
 
 /**
  * The physical attributes the engine compares. The address is not among them,
- * so a partner-safe property view (address withheld) is a valid input.
+ * so a partner-safe property view (address withheld) is a valid input; the
+ * public landmark and massif name are searched for extras like "метро …".
  */
 export type MatchableProperty = Pick<
   Property,
   | "propertyType"
   | "city"
   | "district"
+  | "areaName"
+  | "landmark"
   | "rooms"
   | "areaTotal"
   | "floor"
@@ -157,7 +161,7 @@ export function candidateFromListing(listing: Listing, property: MatchableProper
     publishedAt: listing.publishedAt,
     lastConfirmedAt: listing.lastConfirmedAt,
     expiresAt: listing.expiresAt,
-    text: listing.description,
+    text: [listing.description, property.landmark, property.areaName].filter(Boolean).join("\n"),
   };
 }
 
@@ -180,7 +184,8 @@ export function candidateFromTelegram(
     floorsTotal: pick(post.parsed.floorsTotal),
     price: pick(post.parsed.price),
     source: "telegram",
-    active: post.status !== "hidden" && post.status !== "reported_stale",
+    // A buyer's or tenant's request ("Куплю…", "Сниму…") is demand, never supply.
+    active: post.status !== "hidden" && post.status !== "reported_stale" && post.parsed.intent?.value !== "demand",
     publishedAt: post.publishedAt,
     text: post.rawText,
   };
@@ -331,21 +336,23 @@ function scorePrice(
 
   const converted = cand.price.currency !== req.budget.currency;
   const price = convertMoney(cand.price, req.budget.currency, config.fx);
-  const conversionDetail = { kind: "price_converted", from: cand.price.currency, to: req.budget.currency } as const;
+  const conversion = { from: cand.price.currency, to: req.budget.currency } as const;
+  // Every comparison made through a rate is flagged, over or under budget too.
+  const flag = converted ? { converted: conversion } : {};
 
   if (max && price.amountMinor > max.amountMinor) {
     const by = subtractMoney(price, max);
     const ratio = by.amountMinor / max.amountMinor;
     const tolerance = hardPrice ? 0 : config.budgetTolerance;
-    if (ratio > tolerance) return reason("price", config, "mismatch", 0, { kind: "price_over", by });
+    if (ratio > tolerance) return reason("price", config, "mismatch", 0, { kind: "price_over", by, ...flag });
     const credit = round2(1 - ratio / tolerance);
-    return reason("price", config, "partial", credit, { kind: "price_over", by });
+    return reason("price", config, "partial", credit, { kind: "price_over", by, ...flag });
   }
   if (min && price.amountMinor < min.amountMinor) {
     // Cheaper than expected is usually acceptable but may signal a different class of object.
-    return reason("price", config, "partial", 0.8, { kind: "price_under", by: subtractMoney(min, price) });
+    return reason("price", config, "partial", 0.8, { kind: "price_under", by: subtractMoney(min, price), ...flag });
   }
-  return reason("price", config, "match", 1, converted ? conversionDetail : { kind: "price_within" });
+  return reason("price", config, "match", 1, converted ? { kind: "price_converted", ...conversion } : { kind: "price_within" });
 }
 
 function scorePropertyType(req: Requirement, cand: MatchCandidate, config: MatchingConfig): MatchReason {
@@ -424,6 +431,8 @@ function scoreFloor(req: Requirement, cand: MatchCandidate, config: MatchingConf
     ) {
       return reason("floor", config, "mismatch", 0, { kind: "floor_out_of_range", floor: cand.floor });
     }
+    // "Не последний этаж" cannot be checked without the building height: unknown, not a fit.
+    if (prefs.notLast && cand.floorsTotal === undefined) return unknown("floor", config);
   }
 
   if (wantsBuilding && !cand.buildingKind) return unknown("floor", config);
@@ -443,17 +452,40 @@ function scoreExtras(req: Requirement, cand: MatchCandidate, config: MatchingCon
     return cand.renovation ? reason("extras", config, "match", 1) : unknown("extras", config);
   }
 
-  const haystack = (cand.text ?? "").toLocaleLowerCase("ru");
-  const matched = extras.filter((extra) => haystack.includes(extra.toLocaleLowerCase("ru")));
+  const haystack = foldText(cand.text ?? "");
+  const matched = extras.filter((extra) => extraFound(extra, haystack));
   const missing = extras.filter((extra) => !matched.includes(extra));
-  const credit = round2(matched.length / extras.length);
-  const outcome = credit === 1 ? "match" : credit === 0 ? "unknown" : "partial";
+  // A requested renovation the candidate does not state stays unknown; extras found in the text do not cover it.
+  const renovationUnknown = wantsRenovation && !cand.renovation;
+  const total = extras.length + (renovationUnknown ? 1 : 0);
+  const credit = round2((matched.length + (renovationUnknown ? config.unknownCredit : 0)) / total);
+  const outcome = matched.length === 0 ? "unknown" : matched.length === total ? "match" : "partial";
   // Absence of a keyword in free text is not proof of absence: report as unknown, not mismatch.
   return reason("extras", config, outcome, outcome === "unknown" ? config.unknownCredit : credit, {
     kind: "extras",
     matched,
     missing,
+    ...(renovationUnknown ? { renovationUnknown: true as const } : {}),
   });
+}
+
+/** Words that frame an extra rather than name it: "с парковкой", "рядом со школой", "mebel bilan". */
+const EXTRA_LEAD_RE = /^(?:рядом\s+со?|недалеко\s+от|возле|около|есть|со?|у)\s+/u;
+const EXTRA_TAIL_RE = /\s+(?:bilan|yaqinida|yonida|bor)$/u;
+
+/**
+ * An extra is found when every word of it appears in the candidate's text.
+ * Longer words are compared by stem, so "с парковкой" finds "парковка во
+ * дворе" and "рядом со школой" finds "рядом школа"; the verbatim extra is
+ * kept for display.
+ */
+function extraFound(extra: string, haystack: string): boolean {
+  const folded = foldText(extra).trim();
+  const core = folded.replace(EXTRA_LEAD_RE, "").replace(EXTRA_TAIL_RE, "").trim() || folded;
+  return core
+    .split(/[\s,]+/u)
+    .filter(Boolean)
+    .every((word) => haystack.includes(word.length > 5 ? word.slice(0, Math.max(4, word.length - 2)) : word));
 }
 
 function round2(value: number): number {

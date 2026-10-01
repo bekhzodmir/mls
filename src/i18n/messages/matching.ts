@@ -18,6 +18,8 @@ export default defineMessages({
     reason: {
       price_over: "На {amount} дороже бюджета",
       price_under: "На {amount} дешевле бюджета",
+      price_over_converted: "На {amount} дороже бюджета (пересчитано {from} → {to} по курсу из настроек)",
+      price_under_converted: "На {amount} дешевле бюджета (пересчитано {from} → {to} по курсу из настроек)",
       price_within: "В бюджете",
       price_converted: "В бюджете (пересчитано {from} → {to} по курсу из настроек)",
       district_exact: "Район: {district}",
@@ -34,6 +36,7 @@ export default defineMessages({
       renovation_mismatch: "Состояние: {actual}",
       extras_matched: "Есть: {list}",
       extras_missing: "Не указано в объявлении: {list}",
+      extras_renovation_unknown: "Нет данных о ремонте",
       missing_data: "Нет данных: {criterion}",
     },
     group: {
@@ -60,6 +63,8 @@ export default defineMessages({
     reason: {
       price_over: "Byudjetdan {amount} qimmatroq",
       price_under: "Byudjetdan {amount} arzonroq",
+      price_over_converted: "Byudjetdan {amount} qimmatroq ({from} → {to} sozlamadagi kurs bo‘yicha hisoblangan)",
+      price_under_converted: "Byudjetdan {amount} arzonroq ({from} → {to} sozlamadagi kurs bo‘yicha hisoblangan)",
       price_within: "Byudjet doirasida",
       price_converted: "Byudjet doirasida ({from} → {to} sozlamadagi kurs bo‘yicha hisoblangan)",
       district_exact: "Tuman: {district}",
@@ -76,6 +81,7 @@ export default defineMessages({
       renovation_mismatch: "Holati: {actual}",
       extras_matched: "Bor: {list}",
       extras_missing: "E’londa ko‘rsatilmagan: {list}",
+      extras_renovation_unknown: "Ta’mir haqida ma’lumot yo‘q",
       missing_data: "Ma’lumot yo‘q: {criterion}",
     },
     group: {

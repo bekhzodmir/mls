@@ -186,7 +186,7 @@ export function PartiesSection({
     return org ? format(t.organization, { name: org.name }) : agent.organizationId ? undefined : t.noOrganization;
   };
   const sideLabel: Record<DealSide, string> = t.sides;
-  const ownerKnown = view.listing.access === "owner" || view.listing.access === "agency";
+  const ownerKnown = view.listing.ownerData;
   return (
     <DealSection id="deal-parties" title={deals[locale].sections.parties} icon={Users}>
       <ul className="-my-3 divide-y divide-border">
@@ -341,8 +341,19 @@ export function ChecklistSection({
 
 /* --------------------------------------------------------- verification */
 
-/** One fact per badge, with method, source and date (§16.4, §38.2); unavailable ≠ verified. */
-export function VerificationSection({ locale, items }: { locale: Locale; items: readonly VerificationItem[] }) {
+/**
+ * One fact per badge, with method and date (§16.4, §38.2); unavailable ≠ verified.
+ * The source and note only with `detailed` (sensitive owner data, §19).
+ */
+export function VerificationSection({
+  locale,
+  items,
+  detailed,
+}: {
+  locale: Locale;
+  items: readonly VerificationItem[];
+  detailed: boolean;
+}) {
   const t = deals[locale].verification;
   const d = domain[locale];
   return (
@@ -353,14 +364,14 @@ export function VerificationSection({ locale, items }: { locale: Locale; items: 
         <ul className="space-y-3">
           {items.map((item) => (
             <li key={item.id} className="space-y-1">
-              <VerificationBadge locale={locale} item={item} />
+              <VerificationBadge locale={locale} item={item} showSource={detailed} />
               <p className="text-caption text-fg-muted">
                 {format(t.method, { method: d.verificationMethod[item.method] })} ·{" "}
-                {format(t.source, { source: item.source })} ·{" "}
+                {detailed ? <>{format(t.source, { source: item.source })} · </> : null}
                 {item.checkedAt ? format(t.checkedAt, { date: formatDate(locale, item.checkedAt) }) : t.notChecked}
                 {item.expiresAt ? ` · ${format(t.expiresAt, { date: formatDate(locale, item.expiresAt) })}` : ""}
               </p>
-              {item.note ? <p className="text-caption text-fg">{item.note}</p> : null}
+              {detailed && item.note ? <p className="text-caption text-fg">{item.note}</p> : null}
             </li>
           ))}
         </ul>

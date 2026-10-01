@@ -63,7 +63,7 @@ function FilterChips({ locale, all, params }: { locale: Locale; all: MatchView[]
           {visibleBands.map((band) => (
             <li key={band}>
               <ChipLink href={matchFeedHref(locale, { ...params, band })} active={params.band === band}>
-                {d.band[band]} <span className="tabular opacity-80">{bands[band]}</span>
+                {d.band[band]} <span className="tabular">{bands[band]}</span>
               </ChipLink>
             </li>
           ))}
@@ -73,13 +73,13 @@ function FilterChips({ locale, all, params }: { locale: Locale; all: MatchView[]
         <ul className="flex gap-2">
           <li>
             <ChipLink href={matchFeedHref(locale, { band: params.band })} active={!params.status}>
-              {t.status.all} <span className="tabular opacity-80">{statusPool.length}</span>
+              {t.status.all} <span className="tabular">{statusPool.length}</span>
             </ChipLink>
           </li>
           {statuses.map(({ status, count }) => (
             <li key={status}>
               <ChipLink href={matchFeedHref(locale, { ...params, status })} active={params.status === status}>
-                {d.matchStatus[status]} <span className="tabular opacity-80">{count}</span>
+                {d.matchStatus[status]} <span className="tabular">{count}</span>
               </ChipLink>
             </li>
           ))}
@@ -100,20 +100,22 @@ function Group({ locale, group }: { locale: Locale; group: RequirementGroup }) {
     .join(" · ");
 
   return (
-    <section aria-labelledby={titleId} className="space-y-3">
+    // Named by the client and the request summary: one client's two requests stay distinguishable.
+    <section aria-labelledby={`${titleId} ${titleId}-summary`} className="space-y-3">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
           <h2 id={titleId} className="text-h2 text-fg">
             <Link
               href={appPath(locale, `/clients/${encodeURIComponent(client.id)}`)}
               className="inline-flex min-h-11 items-center gap-2 underline-offset-2 hover:underline"
-              aria-label={format(t.label, { name: client.name })}
             >
               <UserRound aria-hidden className="size-5 text-fg-muted" />
               {client.name}
             </Link>
           </h2>
-          <p className="text-small text-fg-muted">{summary}</p>
+          <p id={`${titleId}-summary`} className="text-small text-fg-muted">
+            {summary}
+          </p>
         </div>
         <Link
           href={requirementDetailHref(locale, requirement.id)}

@@ -1,4 +1,4 @@
-import { money } from "./money";
+import { fitsMinor, money } from "./money";
 import {
   anyOf,
   decimalString,
@@ -52,9 +52,13 @@ export const POST_PARSER_VERSION = "post-parser@1";
 
 export type PostParseWarning =
   | "empty_text"
+  /** "Куплю… / Сниму… / ijaraga olaman": a request, not an offer — no price, never matched as supply. */
+  | "demand_post"
   /** An amount without "$ / у.е. / сум / so‘m" — the price stays Unknown. */
   | "currency_unknown"
   | "price_conflict"
+  /** "от 45 000 $", "до 70 000 $", "60–80 тыс $": a bound or a range, not this object's price. */
+  | "price_range"
   | "deal_type_conflict"
   | "district_conflict"
   | "rooms_conflict"
@@ -117,6 +121,26 @@ const ADDRESS_BEFORE_RE =
   /(?:дом|д\.|uy|кв\.?|квартал\p{L}*|kvartal\p{L}*|mavze\p{L}*|№|корп\p{L}*|ул\.|улиц\p{L}*|ko'cha\p{L}*)\s*$/u;
 
 const MAX_FLOORS = 60;
+
+/**
+ * The author asks for an object instead of offering one: "Куплю 3-комн.",
+ * "Сниму квартиру", "Ищу дом", "Нужна квартира", "ijaraga olaman",
+ * "kvartira kerak". "Ищем квартирантов", "нужен ремонт" or "ta'mir kerak"
+ * describe an offer.
+ */
+const DEMAND_RE = pattern(
+  wordOf(
+    "куплю",
+    "купим",
+    "сниму",
+    "снимем",
+    String.raw`ищ(?:у|ем)(?!\s+(?:покупател|арендатор|квартирант|жильц|клиент))`,
+    String.raw`нуж(?:на|ен|ны)\s+(?:\S+\s+){0,2}(?:квартир\p{L}*|дом\p{L}*|комнат\p{L}*|участ\p{L}*|помещени\p{L}*|офис\p{L}*)`,
+    String.raw`(?:sotib|ijaraga)\s+ol(?:aman|amiz)`,
+    String.raw`(?:kvartira|xonadon|uy|hovli|xona)\s+kerak`,
+    String.raw`(?:сотиб|ижарага)\s+ол(?:аман|амиз)`,
+  ),
+);
 
 function plausibleFloors(floor: number, floorsTotal: number): boolean {
   return floor >= 1 && floorsTotal >= 2 && floor <= floorsTotal && floorsTotal <= MAX_FLOORS;
@@ -309,7 +333,16 @@ export function analyzeTelegramPost(text: string): PostAnalysis {
       ? unknownField(roomsResult.field.evidence)
       : (roomsResult.field as ParsedField<number>);
 
-  parsed.price = parsePrice(text, moneyHits, warn);
+  // A request names a budget, not a price: the post is demand, not supply.
+  const demand = scanAll(DEMAND_RE, work).map(spanOf);
+  if (demand.length > 0) {
+    warn("demand_post");
+    parsed.intent = knownField("demand", 0.9, evidenceOf(text, demand));
+    const amounts = moneyHits.filter((hit) => !hit.perUnit && !hit.auxiliary);
+    parsed.price = unknownField(evidenceOf(text, amounts.map((hit) => hit.range ?? hit)));
+  } else {
+    parsed.price = parsePrice(text, moneyHits, warn);
+  }
 
   // District.
   const districtHits = scanDistricts(work);
@@ -362,6 +395,16 @@ function parsePrice(
   warn: (warning: PostParseWarning) => void,
 ): ParsedField<Money> {
   const candidates = hits.filter((hit) => !hit.perUnit && !hit.auxiliary);
+  // An amount money cannot hold is a typo, not a price: Unknown, never an exception.
+  if (candidates.some((hit) => !fitsMinor(decimalString(hit.amount)))) {
+    return unknownField(evidenceOf(text, candidates));
+  }
+  // "Квартиры от 45 000 $" describes several units; "60–80 тыс $" is no single price.
+  const bounded = candidates.filter((hit) => hit.currency && (hit.bound || hit.inRange));
+  if (bounded.length > 0) {
+    warn("price_range");
+    return unknownField(evidenceOf(text, candidates.map((hit) => hit.range ?? hit)));
+  }
   const priced = candidates.filter((hit) => hit.currency);
   if (priced.length === 0) {
     const bare = candidates.find((hit) => hit.marked || decimalValue(hit.amount) >= 1000);

@@ -27,6 +27,7 @@ import shell from "@/i18n/messages/shell";
 import { getLocale } from "@/i18n/server";
 import { getViewer } from "@/lib/data/repository";
 import { formatUzPhone } from "@/lib/domain/phone";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import type { ProfessionalStatus, VerificationItem, VerificationSubject } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 import { publicContacts } from "@/lib/site";
@@ -89,7 +90,8 @@ export default async function MorePage() {
   const d = domain[locale];
   const nav = shell[locale].sidebar;
   const { agent, organization } = await getViewer();
-  const status = statusStyle[agent.professionalStatus];
+  const professionalStatus = displayedProfessionalStatus(agent);
+  const status = statusStyle[professionalStatus];
   const agentFact = (subject: VerificationSubject) => agent.verifications.find((item) => item.subject === subject);
 
   return (
@@ -108,7 +110,7 @@ export default async function MorePage() {
               <p>
                 <span className="sr-only">{t.profile.status}: </span>
                 <Badge tone={status.tone} icon={status.icon}>
-                  {d.professionalStatus[agent.professionalStatus]}
+                  {d.professionalStatus[professionalStatus]}
                 </Badge>
               </p>
             </div>

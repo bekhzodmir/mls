@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, GitMerge, Link2, ShieldOff, UserPlus, Undo2, Users } from "lucide-react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,6 @@ export function DuplicateNotice({
   const t = leads[locale].duplicate;
   const [local, setLocal] = useState<DuplicateDecision>();
   const current = decision ?? local;
-  const titleId = useId();
   const [best, ...others] = hits;
   if (!best) return null;
   const clientHref = (id: string) => appPath(locale, `/clients/${encodeURIComponent(id)}`);
@@ -77,12 +76,10 @@ export function DuplicateNotice({
           ? t.separate
           : undefined;
 
+  // Not a landmark: several notices on one page would be regions with the same name.
   return (
-    <section
-      aria-labelledby={titleId}
-      className="space-y-2 rounded-md border border-warning-border bg-warning-bg p-3 text-small text-warning-fg"
-    >
-      <p id={titleId} className="flex items-center gap-2 font-semibold">
+    <div className="space-y-2 rounded-md border border-warning-border bg-warning-bg p-3 text-small text-warning-fg">
+      <p className="flex items-center gap-2 font-semibold">
         <Users aria-hidden className="size-4 shrink-0" />
         {t.title}
       </p>
@@ -146,6 +143,6 @@ export function DuplicateNotice({
           </div>
         </>
       )}
-    </section>
+    </div>
   );
 }
