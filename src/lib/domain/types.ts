@@ -807,3 +807,177 @@ export interface AppNotification {
   /** Short context line in the source data language; UI adds the localized title. */
   context: string;
 }
+
+/* ------------------------------------------------------------ contracts */
+
+/**
+ * Service contract (§17.5, §38.5). `number` is the document reference that a
+ * Listing carries in `contractId`. The UI never treats a button press as a
+ * qualified electronic signature (§38.5): the signature method is explicit.
+ */
+export type ContractKind = "owner_service" | "buyer_service" | "cooperation";
+
+/** `expiring` is derived from `endsAt`, never stored. */
+export type ContractStatus = "draft" | "awaiting_signature" | "active" | "expired" | "terminated";
+
+export type SignatureMethod = "paper" | "simple_electronic" | "qualified_electronic";
+
+export interface ContractSignature {
+  party: "customer" | "agent" | "organization_head" | "partner";
+  /** Person who signed: an agent id, or the customer's display name. */
+  signerName: string;
+  method: SignatureMethod;
+  signedAt: ISODateTime;
+}
+
+export interface ContractRemuneration {
+  kind: "percent" | "fixed";
+  /** Percent of the deal price when kind is "percent". */
+  percent?: number;
+  amount?: Money;
+  /** When and how the fee is paid, as agreed in the contract text. */
+  paymentTerms: string;
+}
+
+export interface Contract {
+  id: ID;
+  /** Human document number, e.g. "DR-2026-057"; equals Listing.contractId. */
+  number: string;
+  kind: ContractKind;
+  status: ContractStatus;
+  /** Template version the text was generated from (§39.3). */
+  templateVersion: string;
+  /** Description of the service (вид услуги). */
+  service: string;
+  customer: { kind: "owner"; id: ID } | { kind: "client"; id: ID } | { kind: "agent"; id: ID };
+  agentId: ID;
+  organizationId?: ID;
+  listingId?: ID;
+  requirementId?: ID;
+  dealId?: ID;
+  startsAt: ISODateTime;
+  endsAt: ISODateTime;
+  remuneration: ContractRemuneration;
+  /** Clauses the law requires (§38.5); `false` = missing from this contract. */
+  clauses: {
+    certificateDetails: boolean;
+    membershipDetails: boolean;
+    insuranceDetails: boolean;
+    rightsAndObligations: boolean;
+    liability: boolean;
+    terminationAndRefund: boolean;
+    confidentiality: boolean;
+  };
+  /**
+   * Art. 37: a property contract needs consent from every right holder.
+   * One entry per right holder; consent of one is not consent of the others.
+   */
+  rightHolderConsents: { ownerId: ID; status: "confirmed" | "missing"; consentId?: ID }[];
+  signatures: ContractSignature[];
+  terminatedAt?: ISODateTime;
+  terminationReason?: string;
+  createdAt: ISODateTime;
+}
+
+/* ------------------------------------------------------- communications */
+
+export type CommunicationChannel = "phone" | "telegram" | "whatsapp" | "instagram" | "email" | "meeting";
+
+/** Recording needs separate consent and a legal basis (§36.5). */
+export type RecordingConsent = "granted" | "refused" | "not_requested";
+
+export interface CallSummary {
+  /** AI output is an assistant draft until a person confirms it (§14.7). */
+  status: "draft" | "confirmed";
+  text: string;
+  /** Requirement-like phrase extracted from the call, if any (verbatim). */
+  extractedRequest?: string;
+  generatedAt: ISODateTime;
+  confirmedAt?: ISODateTime;
+  confirmedById?: ID;
+}
+
+export interface Call {
+  id: ID;
+  direction: "inbound" | "outbound";
+  /** Missed inbound calls have durationSeconds 0 and outcome "missed". */
+  outcome: "answered" | "missed" | "no_answer" | "busy";
+  /** Number as dialled or shown by the operator, kept verbatim. */
+  phone: string;
+  agentId: ID;
+  startedAt: ISODateTime;
+  durationSeconds: number;
+  leadId?: ID;
+  clientId?: ID;
+  ownerId?: ID;
+  listingId?: ID;
+  recording: { consent: RecordingConsent; available: boolean };
+  /** Transcript exists only when recording consent was granted. */
+  transcript?: string;
+  summary?: CallSummary;
+  /** Agent's own note, not AI. */
+  note?: string;
+  nextAction?: { text: string; dueAt?: ISODateTime };
+}
+
+/** One touchpoint on a client/owner timeline (§36.5): channel, time, result, next step. */
+export interface Communication {
+  id: ID;
+  channel: CommunicationChannel;
+  direction: "inbound" | "outbound";
+  at: ISODateTime;
+  agentId: ID;
+  clientId?: ID;
+  ownerId?: ID;
+  leadId?: ID;
+  callId?: ID;
+  summary: string;
+  nextStep?: string;
+  /** Link to the original message when the channel allows it. */
+  originalUrl?: string;
+}
+
+/* ------------------------------------------------------- teams & routing */
+
+export interface Team {
+  id: ID;
+  organizationId: ID;
+  name: string;
+  branchName?: string;
+  leadAgentId: ID;
+  memberIds: ID[];
+}
+
+export type AvailabilityStatus = "available" | "busy" | "away";
+
+export interface AgentAvailability {
+  agentId: ID;
+  status: AvailabilityStatus;
+  awayUntil?: ISODateTime;
+  /** New leads the agent can take per day (capacity, §36.5). */
+  dailyLeadCapacity: number;
+  specializations: PropertyType[];
+}
+
+/** How a matching rule picks the agent (§14.2). */
+export type RoutingStrategy = "manual" | "round_robin" | "least_loaded" | "fixed_agent";
+
+export interface RoutingRule {
+  id: ID;
+  organizationId: ID;
+  name: string;
+  /** Lower number = evaluated first. */
+  priority: number;
+  active: boolean;
+  /** Every listed dimension must match; an omitted dimension matches anything. */
+  when: {
+    sources?: LeadSource[];
+    languages?: Language[];
+    districts?: DistrictId[];
+    dealTypes?: DealType[];
+    propertyTypes?: PropertyType[];
+  };
+  strategy: RoutingStrategy;
+  /** Candidate agents; `fixed_agent` uses the first one. */
+  agentIds: ID[];
+}
