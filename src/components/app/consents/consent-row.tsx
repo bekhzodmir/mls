@@ -48,6 +48,7 @@ export function ConsentRow({
   }, [demoRevoked]);
 
   const revokable = canRevoke(item) && !consent.revokedAt;
+  const profileHref = subjectHref(locale, item);
   const responsible =
     item.responsibleAgent.id === viewerId ? `${item.responsibleAgent.name} (${t.row.you})` : item.responsibleAgent.name;
 
@@ -57,13 +58,17 @@ export function ConsentRow({
         <div className="min-w-0">
           <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle">{t.row.subject[item.subject.kind]}</p>
           <h2 id={titleId} className="text-body font-semibold text-fg">
-            <Link
-              href={subjectHref(locale, item.subject)}
-              className="hover:underline"
-              aria-label={format(t.row.open, { name: item.subject.name })}
-            >
-              {item.subject.name}
-            </Link>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="hover:underline"
+                aria-label={format(t.row.open, { name: item.subject.name })}
+              >
+                {item.subject.name}
+              </Link>
+            ) : (
+              item.subject.name
+            )}
           </h2>
           <p className="text-small font-medium text-fg">{purpose}</p>
         </div>

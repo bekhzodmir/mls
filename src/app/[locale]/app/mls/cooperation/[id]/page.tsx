@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowDownLeft, ArrowUpRight, Lock, Phone, UserRound } from "lucide-react";
 import { criteriaRows, termsLabels } from "@/components/app/mls/cooperation-labels";
@@ -8,6 +9,7 @@ import { listingTitle } from "@/components/app/mls/listing-labels";
 import { MlsListingCard } from "@/components/app/mls/mls-listing-card";
 import { RequirementCriteria } from "@/components/app/mls/requirement-criteria";
 import { PageHeader } from "@/components/app/page-header";
+import { professionalHref } from "@/components/app/partners/partner-model";
 import { Badge } from "@/components/ui/badge";
 import { format } from "@/i18n/define-messages";
 import { formatDateTime, formatRelative } from "@/i18n/format";
@@ -40,6 +42,7 @@ function Participant({
   isViewer,
   shared,
   role,
+  href,
 }: {
   locale: Locale;
   side: SplitSide;
@@ -47,6 +50,8 @@ function Participant({
   organization?: Organization;
   isViewer: boolean;
   shared: boolean;
+  /** The professional's card: team screens for a colleague, partner screens otherwise. */
+  href?: string;
   /** The requesting side's stated role; `null` = not stated (unknown), `undefined` = not applicable. */
   role?: CooperationInitiatorRole | null;
 }) {
@@ -61,7 +66,13 @@ function Participant({
       <p className="text-caption text-fg-muted">{side === "listing" ? t.role.listingHint : t.role.buyerHint}</p>
       <p className="flex items-center gap-2 pt-1 text-body font-semibold text-fg">
         <UserRound aria-hidden className="size-4 text-fg-muted" />
-        {agent.name}
+        {href ? (
+          <Link href={href} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">
+            {agent.name}
+          </Link>
+        ) : (
+          agent.name
+        )}
       </p>
       <p className="text-small text-fg">
         <span className="text-fg-muted">{t.detail.agency}: </span>
@@ -183,6 +194,7 @@ export default async function CooperationPage({ params }: PageProps<"/[locale]/a
             organization={view.toOrganization}
             isViewer={view.toAgent.id === viewerId}
             shared={shared}
+            href={professionalHref(locale, view.toAgent, viewer.agent)}
           />
           <Participant
             locale={locale}
@@ -191,6 +203,7 @@ export default async function CooperationPage({ params }: PageProps<"/[locale]/a
             organization={view.fromOrganization}
             isViewer={view.fromAgent.id === viewerId}
             shared={shared}
+            href={professionalHref(locale, view.fromAgent, viewer.agent)}
             role={request.initiatorRole ?? null}
           />
         </div>

@@ -92,6 +92,8 @@ export interface RoutingWorkspaceProps {
   rules: RoutingRule[];
   availability: AgentAvailability[];
   workloadToday: Record<ID, number>;
+  /** Per round-robin rule, who took its last lead: the simulator continues the real rotation. */
+  roundRobinCursor: Record<ID, number>;
   generatedAt: string;
   agents: { id: ID; name: string; href: string }[];
   /** Agents whose workload numbers the actor may see (§19 Reports). */
@@ -142,6 +144,7 @@ export function RoutingWorkspace(props: RoutingWorkspaceProps) {
     rules,
     availability: props.availability,
     workloadToday: props.workloadToday,
+    roundRobinCursor: props.roundRobinCursor,
     now,
   });
   const context: TraceContext = {

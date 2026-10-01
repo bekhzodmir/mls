@@ -39,6 +39,11 @@ export function newLeadHref(locale: Locale, phone: string): string {
   return `${appHref(locale, "leadsNew")}?${new URLSearchParams({ phone: normalizeUzPhone(phone) ?? phone })}`;
 }
 
+/** `/owners/new?phone=+998…` — an unknown caller may be an owner offering a property. */
+export function newOwnerHref(locale: Locale, phone: string): string {
+  return `${appHref(locale, "ownersNew")}?${new URLSearchParams({ phone: normalizeUzPhone(phone) ?? phone })}`;
+}
+
 /** `/clients/new?phone=+998…`, or `?leadId=` to qualify the call's lead into a client. */
 export function newClientHref(locale: Locale, phone: string, leadId?: string): string {
   const search = new URLSearchParams();

@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { FeedRow, type FeedRowData } from "@/components/app/today/feed-row";
-import { entityHref, listHref } from "@/components/app/today/links";
+import { listHref, notificationHref } from "@/components/app/today/links";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChipLink } from "@/components/ui/misc";
@@ -62,9 +62,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 function notificationRow(locale: Locale, item: AppNotification, at: Date): FeedRowData {
   const t = notifications[locale];
+  const href = notificationHref(locale, item);
   return {
     id: item.id,
-    href: item.related ? entityHref(locale, item.related) : undefined,
+    href,
     icon: kindIcon[item.kind],
     emphasis: !item.read,
     title: (
@@ -86,7 +87,7 @@ function notificationRow(locale: Locale, item: AppNotification, at: Date): FeedR
           {formatRelative(locale, item.at, at)}
         </time>
         {" · "}
-        {item.related ? format(t.open, { entity: today[locale].entity[item.related.kind] }) : t.noLink}
+        {item.related ? format(t.open, { entity: today[locale].entity[item.related.kind] }) : href ? t.openList : t.noLink}
       </>,
     ],
   };

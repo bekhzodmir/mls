@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { CircleCheck, Undo2 } from "lucide-react";
+import { assignmentErrors } from "@/components/app/team/routing-model";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import type { Locale } from "@/i18n/config";
@@ -21,7 +22,11 @@ export interface AgentOption {
   name: string;
 }
 
-/** Manual assignment within the agency (§14.2, §36.5). */
+/**
+ * Manual assignment within the agency (§14.2, §36.5). Choosing or changing
+ * the responsible agent by hand needs a reason: it goes to the journal with
+ * the assignment (same checks as the routing screen).
+ */
 export function LeadAssignForm({
   locale,
   agents,
@@ -34,52 +39,83 @@ export function LeadAssignForm({
   currentId?: string;
 }) {
   const t = leads[locale].assign;
-  const selectId = useId();
+  const ids = { agent: useId(), reason: useId(), hint: useId() };
   const [selected, setSelected] = useState(currentId ?? viewerId);
+  const [reason, setReason] = useState("");
   const [assigned, setAssigned] = useState(currentId);
-  const [message, setMessage] = useState<{ kind: "done" | "error"; text: string }>();
+  const [submitted, setSubmitted] = useState(false);
+  const [done, setDone] = useState<{ name: string; reason: string }>();
   const nameOf = (id: string | undefined) => agents.find((agent) => agent.id === id)?.name;
+
+  // No rule suggestion here: every pick on this screen is manual.
+  const draft = { agentId: selected, reason, currentAgentId: assigned };
+  const errors = submitted ? assignmentErrors(draft) : [];
+  const agentError = errors.find((error) => error === "agent_required" || error === "same_agent");
+  const reasonError = errors.find((error) => error === "reason_required" || error === "reason_short");
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (selected === assigned) {
-      setMessage({ kind: "error", text: t.unchanged });
-      return;
-    }
+    setSubmitted(true);
+    if (assignmentErrors(draft).length > 0) return;
     setAssigned(selected);
-    setMessage({ kind: "done", text: format(t.done, { name: nameOf(selected) ?? selected }) });
+    setDone({ name: nameOf(selected) ?? selected, reason: reason.trim() });
+    setReason("");
+    setSubmitted(false);
   }
 
   return (
     <form onSubmit={submit} className="space-y-3" noValidate>
       <p className="text-small text-fg">{format(t.current, { name: nameOf(assigned) ?? t.nobody })}</p>
       <div className="space-y-1.5">
-        <FieldLabel htmlFor={selectId}>{t.label}</FieldLabel>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            id={selectId}
-            value={selected}
-            onChange={(event) => {
-              setSelected(event.target.value);
-              setMessage(undefined);
-            }}
-            className={inputClasses}
-          >
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.id === viewerId ? format(t.me, { name: agent.name }) : agent.name}
-              </option>
-            ))}
-          </select>
-          <Button type="submit" variant="secondary">
-            {t.submit}
-          </Button>
-        </div>
+        <FieldLabel htmlFor={ids.agent}>{t.label}</FieldLabel>
+        <select
+          id={ids.agent}
+          value={selected}
+          aria-invalid={agentError ? true : undefined}
+          aria-describedby={agentError ? `${ids.agent}-error` : undefined}
+          onChange={(event) => {
+            setSelected(event.target.value);
+            setDone(undefined);
+          }}
+          className={inputClasses}
+        >
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.id === viewerId ? format(t.me, { name: agent.name }) : agent.name}
+            </option>
+          ))}
+        </select>
+        {agentError ? <FieldError id={`${ids.agent}-error`}>{t.errors[agentError]}</FieldError> : null}
         <FieldHint>{t.hint}</FieldHint>
       </div>
+      <div className="space-y-1.5">
+        <FieldLabel htmlFor={ids.reason}>{t.reason}</FieldLabel>
+        <textarea
+          id={ids.reason}
+          rows={2}
+          value={reason}
+          required
+          aria-invalid={reasonError ? true : undefined}
+          aria-describedby={[ids.hint, reasonError ? `${ids.reason}-error` : undefined].filter(Boolean).join(" ")}
+          onChange={(event) => {
+            setReason(event.target.value);
+            setDone(undefined);
+          }}
+          className={textareaClasses}
+        />
+        <FieldHint id={ids.hint}>{t.reasonHint}</FieldHint>
+        {reasonError ? <FieldError id={`${ids.reason}-error`}>{t.errors[reasonError]}</FieldError> : null}
+      </div>
+      <Button type="submit" variant="secondary">
+        {t.submit}
+      </Button>
       <div aria-live="polite">
-        {message?.kind === "done" ? <Notice kind="info">{message.text}</Notice> : null}
-        {message?.kind === "error" ? <FieldError>{message.text}</FieldError> : null}
+        {done ? (
+          <Notice kind="info">
+            <p>{format(t.done, { name: done.name })}</p>
+            <p className="mt-1">{format(t.journal, { reason: done.reason })}</p>
+          </Notice>
+        ) : null}
       </div>
     </form>
   );

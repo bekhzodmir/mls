@@ -946,6 +946,14 @@ export function scanDealTypeCues(folded: string): Cue<DealType>[] {
 
 /* ------------------------------------------------------- property type */
 
+/**
+ * Not right after a Russian preposition of place or direction, optionally
+ * with a possessive or demonstrative: «в офис», «в нашем офисе», «из
+ * офиса», «рядом с офисом». "под" is included because «под офис» is its own
+ * cue (a commercial use), so the word is not counted twice.
+ */
+const NOT_AFTER_PLACE_PREPOSITION = String.raw`(?<!${WORD_START}(?:в|во|из|с|со|к|ко|до|у|под|возле|около|напротив)\s+(?:(?:наш|ваш|их|его|ее|мо|тво|сво|эт|тот|том|той|главн|центральн|головн|нов|стар)\p{L}*\s+)?)`;
+
 export interface PropertyTypeCue extends Cue<PropertyType> {
   /** Confidence the cue alone gives; weak cues are hints (e.g. "новостройка" → apartment). */
   weight: number;
@@ -1009,10 +1017,23 @@ const PROPERTY_CUES: { re: RegExp; value: PropertyType; strong: boolean; weight:
     // "рядом магазин" is an amenity; only "под магазин" names a commercial use.
     re: pattern(
       wordOf(
-        ...["коммерческ", "нежил", "офис", "ofis", "склад", "sklad", "tijorat", "тижорат"].map((stem) => String.raw`${stem}\p{L}*`),
+        ...["коммерческ", "нежил", "склад", "sklad", "tijorat", "тижорат"].map((stem) => String.raw`${stem}\p{L}*`),
         String.raw`под\s+(?:магазин|кафе|бизнес|салон|офис)\p{L}*`,
         String.raw`помещени\p{L}*\s+под`,
       ),
+    ),
+    value: "commercial",
+    strong: true,
+    weight: 0.9,
+  },
+  {
+    // An office is the property type only when it is what is sought or offered
+    // («ищу офис», «офис 50 м²», «аренда офиса», «ofis ijaraga», «ofisni sotaman»),
+    // not a place someone went to or phoned («звонила в офис», «в нашем офисе»,
+    // «ofisga qo‘ng‘iroq qildi», «ofisimizda»). "под офис" is the cue above.
+    re: pattern(
+      String.raw`${NOT_AFTER_PLACE_PREPOSITION}${WORD_START}(?!офис(?:га|да|дан|имиз|ингиз)\p{L}*)офис\p{L}*${WORD_END}` +
+        String.raw`|${WORD_START}ofis(?:ni|lar|larni)?${WORD_END}`,
     ),
     value: "commercial",
     strong: true,

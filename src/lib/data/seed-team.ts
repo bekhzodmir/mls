@@ -1,4 +1,4 @@
-import type { AgentAvailability, RoutingRule, Team } from "@/lib/domain/types";
+import type { AgentAvailability, ID, RoutingRule, Team } from "@/lib/domain/types";
 import { day } from "./seed-time";
 
 /**
@@ -126,3 +126,15 @@ export const routingRules: RoutingRule[] = [
     agentIds: ["agent-01", "agent-02", "agent-03"],
   },
 ];
+
+/**
+ * Rotation state of the round-robin rules: the index in the rule's
+ * `agentIds` of the agent who took its last lead. It follows the latest
+ * automatic assignments in the org audit log — rule-01 gave lead-14 to
+ * agent-03 (index 1), rule-99 gave lead-03 to agent-01 (index 0) — so the
+ * routing simulator continues the same rotation.
+ */
+export const roundRobinCursors: Record<ID, number> = {
+  "rule-01": 1,
+  "rule-99": 0,
+};

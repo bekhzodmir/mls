@@ -1,4 +1,4 @@
-import type { Agent, ProfessionalStatus } from "./types";
+import type { ProfessionalStatus, VerificationItem } from "./types";
 
 /**
  * The professional status an agent may be presented with (§38.2). "Сертифицированный
@@ -7,7 +7,11 @@ import type { Agent, ProfessionalStatus } from "./types";
  * (or no check at all) leaves the status unconfirmed: Unknown is never shown
  * as verified (§16.4).
  */
-export function displayedProfessionalStatus(agent: Pick<Agent, "professionalStatus" | "verifications">): ProfessionalStatus {
+export function displayedProfessionalStatus(agent: {
+  professionalStatus: ProfessionalStatus;
+  /** Only the subject and status are read, so result-only facts (§19) work too. */
+  verifications: readonly Pick<VerificationItem, "subject" | "status">[];
+}): ProfessionalStatus {
   if (agent.professionalStatus !== "certified_realtor") return agent.professionalStatus;
   const certificate = agent.verifications.find((item) => item.subject === "agent_certificate");
   return certificate?.status === "confirmed" ? "certified_realtor" : "unconfirmed";

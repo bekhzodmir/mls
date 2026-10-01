@@ -98,6 +98,8 @@ export default defineMessages({
       newLeadLabel: "Создать лида с номером {phone}",
       newClient: "Новый клиент",
       newClientLabel: "Создать клиента с номером {phone}",
+      newOwner: "Создать собственника",
+      newOwnerLabel: "Создать собственника с номером {phone}",
       toClient: "В клиенты",
       toClientLabel: "Создать клиента из лида: {name}",
       openParty: "Открыть: {name}",
@@ -122,7 +124,7 @@ export default defineMessages({
       },
       unknownNumber: {
         title: "Неизвестный номер",
-        text: "Этого номера нет ни у ваших лидов, ни у клиентов, ни у собственников. Создайте лида или клиента, чтобы сохранить контекст разговора и следующий шаг — иначе звонок потеряется.",
+        text: "Этого номера нет ни у ваших лидов, ни у клиентов, ни у собственников. Создайте лида, клиента или собственника, чтобы сохранить контекст разговора и следующий шаг — иначе звонок потеряется.",
       },
       suggestions: {
         title: "Похоже на запись в CRM",
@@ -373,6 +375,8 @@ export default defineMessages({
       newLeadLabel: "{phone} raqami bilan lid yaratish",
       newClient: "Yangi mijoz",
       newClientLabel: "{phone} raqami bilan mijoz yaratish",
+      newOwner: "Mulkdor yaratish",
+      newOwnerLabel: "{phone} raqami bilan mulkdor yaratish",
       toClient: "Mijozga",
       toClientLabel: "Liddan mijoz yaratish: {name}",
       openParty: "Ochish: {name}",
@@ -397,7 +401,7 @@ export default defineMessages({
       },
       unknownNumber: {
         title: "Noma’lum raqam",
-        text: "Bu raqam lidlaringiz, mijozlaringiz va mulkdorlaringizda yo‘q. Suhbat konteksti va keyingi qadamni saqlash uchun lid yoki mijoz yarating — aks holda qo‘ng‘iroq yo‘qolib ketadi.",
+        text: "Bu raqam lidlaringiz, mijozlaringiz va mulkdorlaringizda yo‘q. Suhbat konteksti va keyingi qadamni saqlash uchun lid, mijoz yoki mulkdor yarating — aks holda qo‘ng‘iroq yo‘qolib ketadi.",
       },
       suggestions: {
         title: "CRM’dagi yozuvga o‘xshaydi",

@@ -11,6 +11,7 @@ import {
   ContractSection,
   ListingSection,
   MlsSection,
+  OffersSection,
   OwnerSection,
   PropertyHero,
   PropertySection,
@@ -187,6 +188,54 @@ describe("property profile sections", () => {
     );
     expect(bar).toContain('aria-label="Позвонить агенту"');
     expect(bar).toContain("bottom-[calc(4rem+env(safe-area-inset-bottom))]");
+  });
+});
+
+describe("property profile links", () => {
+  const at = now();
+
+  it("open the owner, the contract and the checks of the viewer's own listing", async () => {
+    const detail = await getListing("lst-01");
+    if (!detail?.owner || !detail.listing.contractId) throw new Error("lst-01 is the viewer's listing with an owner and a contract");
+    const owner = html(createElement(OwnerSection, { locale: "ru", detail }));
+    expect(owner).toContain(`href="/ru/app/owners/${detail.owner.id}"`);
+    const contract = html(createElement(ContractSection, { locale: "uz", view: detail, at }));
+    expect(contract).toContain(`href="/uz/app/contracts/${detail.listing.contractId}"`);
+    const checks = html(
+      createElement(VerificationSection, {
+        locale: "ru",
+        items: detail.listing.verifications,
+        detailed: true,
+        requestListingId: detail.listing.id,
+      }),
+    );
+    expect(checks).toContain('href="/ru/app/verification/request?listingId=lst-01"');
+    expect(checks).toContain('href="/ru/app/verification"');
+  });
+
+  it("offer to add the owner when none is linked, preselecting only the viewer's own listing", async () => {
+    const detail = await getListing("lst-01");
+    if (!detail) throw new Error("lst-01 missing");
+    const own = html(createElement(OwnerSection, { locale: "ru", detail: { ...detail, owner: undefined } }));
+    expect(own).toContain(properties.ru.detail.owner.notLinked);
+    expect(own).toContain('href="/ru/app/owners/new?listingId=lst-01"');
+    const managed = html(
+      createElement(OwnerSection, { locale: "ru", detail: { ...detail, owner: undefined, access: "agency" as const } }),
+    );
+    expect(managed).toContain('href="/ru/app/owners/new"');
+  });
+
+  it("link each offer, and the deal only when the viewer runs it", async () => {
+    const detail = await getListing("lst-05");
+    const view = detail?.offers.find((item) => item.offer.id === "offer-01");
+    if (!view?.deal) throw new Error("offer-01 belongs to the viewer's deal-02");
+    const markup = html(createElement(OffersSection, { locale: "ru", offers: [view] }));
+    expect(markup).toContain('href="/ru/app/offers/offer-01"');
+    expect(markup).toContain('href="/ru/app/deals/deal-02"');
+    // `offer.dealId` alone (someone else's deal) must not produce a link that 404s.
+    const foreign = html(createElement(OffersSection, { locale: "ru", offers: [{ ...view, deal: undefined }] }));
+    expect(foreign).toContain('href="/ru/app/offers/offer-01"');
+    expect(foreign).not.toContain("/ru/app/deals/");
   });
 });
 

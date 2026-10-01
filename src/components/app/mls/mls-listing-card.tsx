@@ -13,6 +13,8 @@ import {
   UserCheck,
   type LucideIcon,
 } from "lucide-react";
+import { partnerHref } from "@/components/app/partners/partner-model";
+import { memberHref } from "@/components/app/team/team-model";
 import { FreshnessBadge, MoneyText, VerificationBadge } from "@/components/domain/badges";
 import { Badge, type Tone } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -83,6 +85,9 @@ export function MlsListingCard({
   const ConfidentialityIcon = confidentialityIcon[listing.confidentiality];
   const deadline = request ? deadlineState(request.request, now) : undefined;
   const propertyHref = appPath(locale, `/properties/${encodeURIComponent(listing.id)}`);
+  // A colleague's card is on the team screens, anyone outside the organization is a partner.
+  const agentHref =
+    access === "agency" ? memberHref(locale, agent.id) : partner ? partnerHref(locale, agent.id) : undefined;
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   return (
@@ -134,7 +139,13 @@ export function MlsListingCard({
       {size ? <p className="text-small text-fg">{size}</p> : null}
 
       <p className="text-small text-fg">
-        {agentLine(locale, view)}
+        {agentHref ? (
+          <Link href={agentHref} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">
+            {agentLine(locale, view)}
+          </Link>
+        ) : (
+          agentLine(locale, view)
+        )}
         <span className="text-fg-muted"> · {d.professionalStatus[displayedProfessionalStatus(agent)]}</span>
       </p>
 

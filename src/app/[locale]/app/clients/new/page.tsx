@@ -21,11 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * New client (§21.4 #19, §35.3 step 6). `?leadId=` prefills the form from
  * the lead; the lead is not deleted and stays in the inbox history.
+ * `?phone=` (e.g. from a call) fills the number when the lead has none, and
+ * without a lead also sets the source to "phone".
  */
 export default async function NewClientPage({ searchParams }: PageProps<"/[locale]/app/clients/new">) {
   const locale = await getLocale();
   const t = clients[locale].form;
-  const leadId = firstParam((await searchParams).leadId);
+  const params = await searchParams;
+  const leadId = firstParam(params.leadId);
+  const phoneParam = firstParam(params.phone)?.slice(0, 32);
   const [leadView, all] = await Promise.all([leadId ? getLead(leadId) : undefined, listClients()]);
   const lead = leadView?.lead;
 
@@ -37,6 +41,10 @@ export default async function NewClientPage({ searchParams }: PageProps<"/[local
     if (lead.name) initial.name = lead.name;
     if (lead.phone) initial.phone = formatUzPhone(lead.phone);
     if (lead.telegramUsername) initial.telegram = lead.telegramUsername;
+  }
+  if (!initial.phone && phoneParam) {
+    initial.phone = formatUzPhone(phoneParam);
+    if (!lead) initial.source = "phone";
   }
 
   return (

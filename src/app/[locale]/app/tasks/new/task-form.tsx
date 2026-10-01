@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { CircleAlert, CircleCheck, Flag, FlaskConical, ListPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,20 @@ export interface ClientOption {
   name: string;
 }
 
+/** The lead or owner a task opened from that record is about (shown, not editable). */
+export interface RelatedRecord {
+  kind: "lead" | "owner";
+  name: string;
+  href: string;
+}
+
 interface DraftTask {
   id: string;
   title: string;
   dueAt: string;
   priority: Task["priority"];
   clientName?: string;
+  relatedText?: string;
 }
 
 type Field = "title" | "date" | "time";
@@ -44,12 +53,14 @@ export function TaskForm({
   clients,
   today,
   defaultClientId,
+  related,
 }: {
   locale: Locale;
   clients: ClientOption[];
   /** Tashkent calendar date "YYYY-MM-DD" from the app clock, so SSR and hydration agree. */
   today: string;
   defaultClientId?: string;
+  related?: RelatedRecord;
 }) {
   const t = tasks[locale].form;
   const tt = tasks[locale];
@@ -102,6 +113,7 @@ export function TaskForm({
     };
     const client = clients.find((option) => option.id === clientId);
     if (client) draft.clientName = client.name;
+    if (related) draft.relatedText = `${t.relatedKind[related.kind]} · ${related.name}`;
     setCreated((list) => [draft, ...list]);
     setLastTitle(cleanTitle);
     setTitle("");
@@ -231,6 +243,22 @@ export function TaskForm({
             </div>
           </fieldset>
 
+          {related ? (
+            <div className="space-y-1">
+              <p className="text-small font-semibold text-fg">{t.related}</p>
+              <p className="text-small text-fg">
+                <span className="text-fg-muted">{t.relatedKind[related.kind]} · </span>
+                <Link
+                  href={related.href}
+                  className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  {related.name}
+                </Link>
+              </p>
+              <p className="text-caption text-fg-muted">{t.relatedHint}</p>
+            </div>
+          ) : null}
+
           <div className="space-y-1.5">
             <label htmlFor={ids.client} className="block text-small font-semibold text-fg">
               {t.client} <span className="font-normal text-fg-muted">· {t.clientHint}</span>
@@ -279,6 +307,7 @@ export function TaskForm({
                     <p className="text-caption text-fg-muted">
                       {format(tt.due, { date: formatDateTime(locale, task.dueAt) })}
                       {task.clientName ? ` · ${task.clientName}` : null}
+                      {task.relatedText ? ` · ${task.relatedText}` : null}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       <Badge tone="warning" icon={FlaskConical}>

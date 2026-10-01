@@ -13,6 +13,7 @@ import {
   reasonText,
   targetKindLabel,
   targetLabel,
+  targetHref,
   targetOptions,
   visibleEvents,
 } from "./audit-model";
@@ -111,6 +112,15 @@ describe("audit labels", () => {
     expect(doc && targetLabel("ru", doc)).toBe("Документ: Копия паспорта (doc-deal-03-3)");
     const contract = events.find((view) => view.event.target.kind === "contract");
     expect(contract && targetLabel("uz", contract)).toMatch(/^Shartnoma: (DR|DRB|CO)-2026-\d{3}$/);
+  });
+
+  it("opens each target kind on its own screen", () => {
+    expect(targetHref("ru", { route: "contract", id: "ctr-dr-2026-041" })).toBe("/ru/app/contracts/ctr-dr-2026-041");
+    expect(targetHref("uz", { route: "owner", id: "owner-34" })).toBe("/uz/app/owners/owner-34");
+    expect(targetHref("ru", { route: "call", id: "call-02" })).toBe("/ru/app/calls/call-02");
+    expect(targetHref("ru", { route: "partner", id: "agent-08" })).toBe("/ru/app/partners/agent-08");
+    expect(targetHref("ru", { route: "member", id: "agent-02" })).toBe("/ru/app/team/agent-02");
+    expect(targetHref("uz", { route: "consents", subject: "owner" })).toBe("/uz/app/consents?subject=owner");
   });
 
   it("localizes machine-written reasons and replaces agent ids with names", async () => {

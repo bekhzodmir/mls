@@ -497,6 +497,12 @@ export interface DealDetailView extends DealView {
   viewings: ViewingView[];
   cooperation?: CooperationView;
   tasks: TaskView[];
+  /**
+   * The organization's contracts concluded for this deal (`contract.dealId`):
+   * the client's service contract and a co-broking agreement, in contract-list
+   * order. A partner's contracts are never included.
+   */
+  contracts: ContractView[];
 }
 
 /* ----------------------------------------------------- tasks & signals */
@@ -543,6 +549,8 @@ export interface TodayFeed {
   priceDrops: PriceDropView[];
   /** Missing documents, overdue next action or MLS report due. */
   dealsNeedingAttention: DealView[];
+  /** The viewer's own missed calls, newest first: someone is waiting for a call back (§14.7). */
+  missedCalls: CallView[];
 }
 
 /* --------------------------------------------------------------- search */
@@ -877,6 +885,12 @@ export interface RoutingContextView {
   availability: AgentAvailability[];
   /** New leads assigned today (Tashkent) per agent id. */
   workloadToday: Record<ID, number>;
+  /**
+   * Per round-robin rule: the index in `agentIds` of the agent who took the
+   * rule's last lead, as recorded; 0 when nothing is recorded. Passed to
+   * `routeLead`, so the simulator continues the real rotation.
+   */
+  roundRobinCursor: Record<ID, number>;
   /** Per-agent status, capacity and today's load for display, same order as `agents`. */
   workload: AgentWorkload[];
   /** Open leads nobody is assigned to, earliest SLA deadline first. */
@@ -978,7 +992,24 @@ export interface AuditEventView {
    * A label safe to show in a list: names and massifs, never a phone, full
    * address, cadastral number or document content. In the data's language.
    */
-  target: { kind: string; id: ID; label: string; documentType?: Deal["documents"][number]["type"] };
+  target: {
+    kind: string;
+    id: ID;
+    label: string;
+    documentType?: Deal["documents"][number]["type"];
+    /** Where the record opens, present only when the viewer may open it. */
+    link?: AuditTargetLink;
+  };
   sensitive: boolean;
   scope: AuditScope;
 }
+
+/**
+ * The screen an audit target opens on: the record's own page, or — for a
+ * consent, which has no page of its own — the consent registry filtered to
+ * its subject. An agent is a `member` (the viewer's organization, team
+ * screens) or a `partner` (anyone outside it).
+ */
+export type AuditTargetLink =
+  | { route: "contract" | "owner" | "call" | "member" | "partner"; id: ID }
+  | { route: "consents"; subject: "client" | "owner" };

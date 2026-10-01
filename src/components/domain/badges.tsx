@@ -77,7 +77,7 @@ export function VerificationBadge({
   const { tone, icon } = verificationStyle[item.status];
   const method = d.verificationMethod[item.method];
   return (
-    <Badge tone={tone} icon={icon} title={showSource ? `${method} · ${item.source}` : method}>
+    <Badge tone={tone} icon={icon} title={showSource ? `${method} · ${item.source}` : method} wrap>
       {d.verificationSubject[item.subject]}: {d.verificationStatus[item.status]}
     </Badge>
   );

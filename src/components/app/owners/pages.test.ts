@@ -116,6 +116,7 @@ describe.each(["ru", "uz"] as const)("owner pages (%s)", (locale) => {
     const html = await render(await pages.owner(), withId("owner-06"));
     expect(html).toContain(`/${locale}/app/calls/call-06`);
     expect(html).toContain(`/${locale}/app/calls/timeline?ownerId=owner-06`);
+    expect(html).toContain(`href="/${locale}/app/consents?subject=owner"`);
   });
 
   it("runs the duplicate check on a prefilled number before saving", async () => {

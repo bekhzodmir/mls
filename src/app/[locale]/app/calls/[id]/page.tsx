@@ -105,10 +105,10 @@ export default async function CallPage({ params }: PageProps<"/[locale]/app/call
     search.set("q", call.summary.extractedRequest);
     requirementHref = `${appHref(locale, "requirementsNew")}?${search}`;
   }
-  const taskHref =
-    party?.kind === "client"
-      ? `${appHref(locale, "tasksNew")}?clientId=${encodeURIComponent(party.id)}`
-      : appHref(locale, "tasksNew");
+  // The new-task form reads `?clientId=`, `?leadId=` and `?ownerId=`.
+  const taskHref = party
+    ? `${appHref(locale, "tasksNew")}?${new URLSearchParams({ [`${party.kind}Id`]: party.id })}`
+    : appHref(locale, "tasksNew");
   const leadOpen = view.lead && view.lead.lead.status !== "converted" && view.lead.lead.status !== "lost";
   const phone = formatUzPhone(call.phone);
 

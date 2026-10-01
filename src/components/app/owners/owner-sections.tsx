@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { consentListHref } from "@/components/app/consents/registry";
 import { ConsentStateBadge } from "@/components/app/crm/badges";
 import { CrmSection } from "@/components/app/crm/layout-parts";
 import { listingHref, propertyLabel } from "@/components/app/crm/object-label";
@@ -79,7 +80,17 @@ export function ConsentsSection({ locale, detail }: { locale: Locale; detail: Ow
   const withHolders = detail.contracts.filter((view) => view.rightHolders.length > 0);
 
   return (
-    <CrmSection id="consents" title={t.sections.consents} description={t.consents.text}>
+    <CrmSection
+      id="consents"
+      title={t.sections.consents}
+      description={t.consents.text}
+      action={
+        <ButtonLink href={consentListHref(locale, { subject: "owner" })} variant="secondary">
+          {t.consents.registry}
+          <ArrowRight aria-hidden className="size-4" />
+        </ButtonLink>
+      }
+    >
       {owner.consents.length > 0 ? (
         <ul className="space-y-2">
           {owner.consents.map((consent) => (

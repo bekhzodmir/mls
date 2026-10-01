@@ -27,6 +27,9 @@ import {
 } from "@/lib/data/repository";
 import { appHref, appPath } from "@/lib/routes";
 
+/** Longer text is cut: the field is one or two sentences, not a document. */
+const MAX_QUERY_LENGTH = 500;
+
 export async function generateMetadata({ searchParams }: PageProps<"/[locale]/app/requirements/new">): Promise<Metadata> {
   const locale = await getLocale();
   const editing = firstParam((await searchParams).requirementId);
@@ -35,7 +38,9 @@ export async function generateMetadata({ searchParams }: PageProps<"/[locale]/ap
 
 /**
  * New requirement (§14.4, §22.4, §35.4). `?clientId=` sets the client,
- * `?leadId=` starts from the lead's message, and `?requirementId=` opens one
+ * `?leadId=` starts from the lead's message, `?q=` from a phrase (e.g. the
+ * request a call summary extracted; it wins over the lead's message, which
+ * stays shown above), and `?requirementId=` opens one
  * of the viewer's requirements for editing (its client wins over `clientId`;
  * an unknown id falls back to a new requirement). The server sends the editor the
  * match candidates the viewer may see (access rules applied by the
@@ -47,6 +52,7 @@ export default async function NewRequirementPage({ searchParams }: PageProps<"/[
   const params = await searchParams;
   const requirementId = firstParam(params.requirementId);
   const leadId = firstParam(params.leadId);
+  const query = firstParam(params.q)?.slice(0, MAX_QUERY_LENGTH);
   const edited = requirementId ? (await getRequirement(requirementId))?.requirement : undefined;
   const clientId = edited?.clientId ?? firstParam(params.clientId);
 
@@ -123,7 +129,7 @@ export default async function NewRequirementPage({ searchParams }: PageProps<"/[
       <RequirementEditor
         locale={locale}
         candidates={editorCandidates(listings, posts)}
-        initialText={edited?.naturalLanguageInput ?? lead?.message ?? ""}
+        initialText={edited?.naturalLanguageInput ?? query ?? lead?.message ?? ""}
         agentId={viewer.agent.id}
         organizationId={viewer.agent.organizationId}
         client={detail ? { id: detail.client.id, name: detail.client.name } : undefined}

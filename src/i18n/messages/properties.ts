@@ -211,6 +211,8 @@ export default defineMessages({
         consents: "Согласия",
         noConsents: "Согласий не записано",
         consentSince: "{purpose} — с {date}",
+        open: "Карточка собственника",
+        add: "Добавить собственника",
         notLinked:
           "Собственник ещё не привязан к объекту. Добавьте его — контакты увидят только агент объекта и руководство агентства.",
         maskedTitle: "Контакты собственника скрыты",
@@ -226,6 +228,7 @@ export default defineMessages({
       },
       contract: {
         number: "Номер договора",
+        open: "Открыть договор {number}",
         expires: "Действует до",
         daysLeft: { one: "Договор заканчивается через {n} день", few: "Договор заканчивается через {n} дня", many: "Договор заканчивается через {n} дней" },
         expiringText: "Продлите договор заранее, иначе предложение нельзя будет держать в MLS.",
@@ -250,6 +253,8 @@ export default defineMessages({
         none: "Проверок пока нет.",
         unavailableNote: "«Не удалось проверить» значит, что источник не ответил. Это не подтверждение.",
         resultOnly: "Источник и комментарий проверки видят агент объекта и руководство его агентства — здесь показан результат.",
+        request: "Запросить проверку",
+        center: "Центр проверок",
       },
       mls: {
         terms: "Условия сотрудничества",
@@ -293,6 +298,7 @@ export default defineMessages({
         none: "Предложений о цене пока нет.",
         by: { buyer: "Покупатель", owner: "Собственник" },
         version: "Версия {n}",
+        open: "Открыть предложение",
         openDeal: "Открыть сделку",
       },
       stale: {
@@ -633,6 +639,8 @@ export default defineMessages({
         consents: "Roziliklar",
         noConsents: "Roziliklar qayd etilmagan",
         consentSince: "{purpose} — {date} dan",
+        open: "Mulkdor kartasi",
+        add: "Mulkdor qo‘shish",
         notLinked:
           "Mulkdor hali ob’yektga bog‘lanmagan. Uni qo‘shing — kontaktlarni faqat ob’yekt agenti va agentlik rahbariyati ko‘radi.",
         maskedTitle: "Mulkdor kontaktlari yashirin",
@@ -648,6 +656,7 @@ export default defineMessages({
       },
       contract: {
         number: "Shartnoma raqami",
+        open: "{number} shartnomasini ochish",
         expires: "Amal qiladi",
         daysLeft: {
           one: "Shartnoma {n} kundan keyin tugaydi",
@@ -676,6 +685,8 @@ export default defineMessages({
         none: "Hozircha tekshiruvlar yo‘q.",
         unavailableNote: "«Tekshirib bo‘lmadi» — manba javob bermadi degani. Bu tasdiq emas.",
         resultOnly: "Tekshiruv manbasi va izohini ob’yekt agenti va uning agentligi rahbariyati ko‘radi — bu yerda natija ko‘rsatilgan.",
+        request: "Tekshiruv so‘rash",
+        center: "Tekshiruvlar markazi",
       },
       mls: {
         terms: "Hamkorlik shartlari",
@@ -719,6 +730,7 @@ export default defineMessages({
         none: "Hozircha narx takliflari yo‘q.",
         by: { buyer: "Xaridor", owner: "Mulkdor" },
         version: "{n}-versiya",
+        open: "Taklifni ochish",
         openDeal: "Bitimni ochish",
       },
       stale: {

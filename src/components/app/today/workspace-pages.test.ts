@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Locale } from "@/i18n/config";
 import search from "@/i18n/messages/search";
+import tasks from "@/i18n/messages/tasks";
 
 /**
  * Server-renders the W1 workspace pages (Today, search, notifications, tasks,
@@ -56,6 +57,7 @@ describe.each(["ru", "uz"] as const)("W1 pages (%s)", (locale) => {
       await render(pages.tasks),
       await render(pages.tasks, { status: "done" }),
       await render(pages.newTask, { clientId: "cl-02" }),
+      await render(pages.newTask, { leadId: "lead-01", ownerId: "owner-06" }),
       await render(pages.more),
     ];
     for (const page of html) expect(page).not.toMatch(BROKEN);
@@ -67,6 +69,26 @@ describe.each(["ru", "uz"] as const)("W1 pages (%s)", (locale) => {
     expect(html).toContain(`href="/${locale}/app/tasks?status=overdue"`);
     expect(html).toContain(`href="/${locale}/app/mls/cooperation?direction=incoming"`);
     expect(html).toContain(`href="/${locale}/app/properties?scope=mine&amp;freshness=needs_confirmation"`);
+    expect(html).toContain(`href="/${locale}/app/calls?filter=missed"`);
+    expect(html).toContain(`href="/${locale}/app/calls/call-10"`);
+    expect(html).toContain(`href="/${locale}/app/contracts?status=expiring"`);
+    // Each expiring contract opens the contract itself (by the number the listing carries).
+    expect(html).toContain(`href="/${locale}/app/contracts/DR-2026-055"`);
+  });
+
+  it("notifications open the record they are about", async () => {
+    const html = await render(pages.notifications);
+    expect(html).toContain(`href="/${locale}/app/contracts/ctr-dr-2026-055"`);
+  });
+
+  it("a new task shows the lead or owner it was opened for", async () => {
+    const forLead = await render(pages.newTask, { leadId: "lead-12" });
+    expect(forLead).toContain(`href="/${locale}/app/leads/lead-12"`);
+    expect(forLead).toContain("Мадина Эргашева");
+    const forOwner = await render(pages.newTask, { ownerId: "owner-06" });
+    expect(forOwner).toContain(`href="/${locale}/app/owners/owner-06"`);
+    const unknown = await render(pages.newTask, { ownerId: "owner-404" });
+    expect(unknown).toContain(tasks[locale].form.relatedNotFound);
   });
 
   it("search turns a phrase into property filters but leaves the currency to the user", async () => {

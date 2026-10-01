@@ -217,6 +217,23 @@ describe("/app/deals/[id]", () => {
     expect(html).toContain("Сделка не через MLS");
   });
 
+  it("links offers, the deal's contracts and the journal filtered to deals", async () => {
+    const html = await render(DealPage(props({ id: "deal-01" })));
+    // The buyer's service contract of deal-01, from the checklist and from the documents.
+    expect(html).toContain('href="/ru/app/contracts/ctr-drb-2026-014"');
+    expect(html).toContain("Договор DRB-2026-014");
+    expect(html).toContain("Открыть договор DRB-2026-014");
+    expect(html).toContain('href="/ru/app/audit?target=deal"');
+
+    const negotiation = await render(DealPage(props({ id: "deal-02" })));
+    expect(negotiation).toContain('href="/ru/app/offers/offer-01"');
+
+    // deal-06 has a co-broking agreement but no service contract: listed, not offered as the service contract.
+    const mls = await render(DealPage(props({ id: "deal-06" })));
+    expect(mls).toContain('href="/ru/app/contracts/ctr-co-2026-004"');
+    expect(mls).not.toContain("Договор CO-2026-004");
+  });
+
   it("renders every deal in Uzbek without leftovers", async () => {
     state.locale = "uz";
     for (const id of ["deal-01", "deal-02", "deal-03", "deal-04", "deal-05", "deal-06"]) {

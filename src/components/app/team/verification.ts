@@ -1,6 +1,5 @@
 import type { VerificationResult } from "@/lib/data/views";
-import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
-import type { ProfessionalStatus, VerificationItem, VerificationSubject } from "@/lib/domain/types";
+import type { VerificationItem, VerificationSubject } from "@/lib/domain/types";
 
 /**
  * Checked facts as people screens show them (§16.4, §38.2). A partner's
@@ -13,21 +12,6 @@ import type { ProfessionalStatus, VerificationItem, VerificationSubject } from "
  */
 export function badgeItem(fact: VerificationResult): VerificationItem {
   return { ...fact, source: fact.source ?? "" };
-}
-
-/**
- * `displayedProfessionalStatus` for result-only facts: it reads only the
- * certificate's subject and status, which a result keeps. "Certified" stays
- * only while that check is confirmed.
- */
-export function displayedStatus(agent: {
-  professionalStatus: ProfessionalStatus;
-  verifications: readonly VerificationResult[];
-}): ProfessionalStatus {
-  return displayedProfessionalStatus({
-    professionalStatus: agent.professionalStatus,
-    verifications: agent.verifications.map(badgeItem),
-  });
 }
 
 /** The fact on one subject, if any was ever recorded. */

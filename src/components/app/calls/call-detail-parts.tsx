@@ -4,6 +4,7 @@ import {
   ArrowRight,
   FileText,
   History,
+  Home,
   Lightbulb,
   Mic,
   NotebookPen,
@@ -11,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { propertyTitle, textLang } from "@/components/app/inventory/labels";
+import { ButtonLink } from "@/components/ui/button";
 import { Card, Field } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import type { Locale } from "@/i18n/config";
@@ -24,6 +26,7 @@ import type { Call, ISODateTime } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 import { CallKindBadge, RecordingBadge, durationText } from "./call-badges";
 import { callKind, recordingExplanation, subjectHref, transcriptLines } from "./call-list";
+import { newOwnerHref } from "./call-list-view";
 import { subjectName, subjectRefText } from "./labels";
 import { timelineHref, type TimelineEntry } from "./timeline";
 import { TimelineList } from "./timeline-view";
@@ -170,7 +173,21 @@ export function CallFactsSection({
       </dl>
 
       {view.unknownNumber ? (
-        <Notice kind="warning" title={t.unknownNumber.title}>
+        <Notice
+          kind="warning"
+          title={t.unknownNumber.title}
+          action={
+            // Lead and client are in the action bar; an owner offering a property is the third case.
+            <ButtonLink
+              href={newOwnerHref(locale, call.phone)}
+              variant="secondary"
+              aria-label={format(t.newOwnerLabel, { phone: formatUzPhone(call.phone) })}
+            >
+              <Home aria-hidden className="size-4" />
+              {t.newOwner}
+            </ButtonLink>
+          }
+        >
           {t.unknownNumber.text}
         </Notice>
       ) : null}

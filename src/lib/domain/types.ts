@@ -769,7 +769,12 @@ export type EntityRef =
   | { kind: "deal"; id: ID }
   | { kind: "viewing"; id: ID }
   | { kind: "cooperation"; id: ID }
-  | { kind: "telegram"; id: ID };
+  | { kind: "telegram"; id: ID }
+  | { kind: "offer"; id: ID }
+  /** A contract id or its document number: contract pages accept either. */
+  | { kind: "contract"; id: ID }
+  | { kind: "owner"; id: ID }
+  | { kind: "call"; id: ID };
 
 export interface Task {
   id: ID;

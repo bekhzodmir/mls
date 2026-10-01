@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Building2, ChevronRight, Clock, Handshake, Lock, LockOpen, Network } from "lucide-react";
 import { ProfessionalStatusBadge } from "@/components/app/team/badges";
-import { badgeItem, displayedStatus } from "@/components/app/team/verification";
+import { badgeItem } from "@/components/app/team/verification";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import { VerificationBadge } from "@/components/domain/badges";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export function PartnerCard({ locale, item, now, href }: { locale: Locale; item:
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <ProfessionalStatusBadge locale={locale} status={displayedStatus(agent)} />
+        <ProfessionalStatusBadge locale={locale} status={displayedProfessionalStatus(agent)} />
         {item.contactsShared ? (
           <Badge tone="success" icon={LockOpen}>
             {t.contactsShared}

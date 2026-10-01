@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as repo from "./repository";
 import { seed, VIEWER_AGENT_ID } from "./seed";
-import { SYSTEM_ACTOR_ID } from "./views";
+import { SYSTEM_ACTOR_ID, type AuditTargetLink } from "./views";
 
 /**
  * Contracts, consents, owners, calls, verification, team, partners, audit
@@ -514,6 +514,64 @@ describe("audit", () => {
     expect(assigned.every((view) => view.event.action === "lead_assigned" && view.event.reason)).toBe(true);
     const contracts = await repo.listAuditEvents({ targetKind: "contract" });
     expect(contracts.every((view) => view.target.label.match(/^(DR|DRB|CO)-2026-\d{3}$/))).toBe(true);
+  });
+});
+
+describe("audit target links", () => {
+  it("link contracts, owners, consents and agents only where the viewer may open them", async () => {
+    const events = await repo.listAuditEvents();
+    const linkOf = (kind: string, id: string) =>
+      events.find((view) => view.event.target.kind === kind && view.event.target.id === id)?.target.link;
+    expect(linkOf("contract", "ctr-drb-2026-014")).toEqual({ route: "contract", id: "ctr-drb-2026-014" });
+    expect(linkOf("owner", "owner-34")).toEqual({ route: "owner", id: "owner-34" });
+    expect(linkOf("consent", "cons-cl-11-contact")).toEqual({ route: "consents", subject: "client" });
+    // A partner opens on the partner screens, a colleague on the team screens.
+    expect(linkOf("agent", "agent-08")).toEqual({ route: "partner", id: "agent-08" });
+    expect(linkOf("agent", "agent-02")).toEqual({ route: "member", id: "agent-02" });
+    // Every link points at something the matching screen returns.
+    const opens = async (link: AuditTargetLink, targetId: string): Promise<unknown> => {
+      switch (link.route) {
+        case "contract":
+          return repo.getContract(link.id);
+        case "owner":
+          return repo.getOwner(link.id);
+        case "call":
+          return repo.getCall(link.id);
+        case "partner":
+          return repo.getPartner(link.id);
+        case "member":
+          return repo.getTeamMember(link.id);
+        case "consents":
+          return (await repo.listConsents({ subject: link.subject })).find((item) => item.consent.id === targetId);
+      }
+    };
+    for (const view of events) {
+      const link = view.target.link;
+      if (link) expect(await opens(link, view.event.target.id), `${view.event.id} → ${JSON.stringify(link)}`).toBeDefined();
+    }
+    // Kinds without a screen of their own stay plain text.
+    expect(events.filter((view) => ["session", "export", "document"].includes(view.target.kind)).every((view) => !view.target.link)).toBe(true);
+  });
+});
+
+describe("deal contracts and missed calls", () => {
+  it("attach the organization's contracts concluded for a deal", async () => {
+    expect((await repo.getDeal("deal-01"))?.contracts.map((view) => view.contract.number)).toEqual(["DRB-2026-014"]);
+    expect((await repo.getDeal("deal-06"))?.contracts.map((view) => view.contract.number)).toEqual(["CO-2026-004"]);
+    const all = await Promise.all(seed.deals.map((deal) => repo.getDeal(deal.id)));
+    for (const detail of all) {
+      for (const view of detail?.contracts ?? []) {
+        expect(view.contract.dealId).toBe(detail?.deal.id);
+        expect(view.contract.organizationId).toBe("org-01");
+      }
+    }
+  });
+
+  it("put the viewer's missed calls on Today, the same set as the missed-calls filter", async () => {
+    const feed = await repo.getTodayFeed();
+    const missed = await repo.listCalls({ outcome: "missed" });
+    expect(feed.missedCalls.map((view) => view.call.id)).toEqual(missed.map((view) => view.call.id));
+    expect(feed.missedCalls.every((view) => view.agent.id === VIEWER_AGENT_ID)).toBe(true);
   });
 });
 

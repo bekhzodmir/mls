@@ -21,6 +21,7 @@ function emptyFeed(base: TodayFeed): TodayFeed {
     staleListings: [],
     priceDrops: [],
     dealsNeedingAttention: [],
+    missedCalls: [],
   };
 }
 
@@ -82,6 +83,30 @@ describe("planTodayBlocks", () => {
     const ids = deals?.key === "deals" ? deals.items.map((view) => view.deal.id) : [];
     expect(ids.slice(0, 2)).toEqual(["deal-04", "deal-06"]);
     expect(ids).toHaveLength(base.dealsNeedingAttention.length);
+  });
+});
+
+describe("missed calls block", () => {
+  it("lists the viewer's missed calls right after the leads waiting for an answer", async () => {
+    const base = await feed();
+    expect(base.missedCalls.map((view) => view.call.id)).toEqual(["call-10", "call-01"]);
+    expect(base.missedCalls.every((view) => view.call.outcome === "missed")).toBe(true);
+    expect(TODAY_BLOCK_ORDER.indexOf("calls")).toBe(TODAY_BLOCK_ORDER.indexOf("leads") + 1);
+    const plan = planTodayBlocks({ ...emptyFeed(base), missedCalls: base.missedCalls }, now());
+    expect(plan).toEqual([{ key: "calls", urgency: "today", items: base.missedCalls }]);
+  });
+
+  it("is overdue once a promised call-back time has passed", async () => {
+    const base = await feed();
+    const late = base.missedCalls.map((view) =>
+      view.call.nextAction
+        ? { ...view, call: { ...view.call, nextAction: { ...view.call.nextAction, dueAt: "2026-09-30T05:00:00.000Z" } } }
+        : view,
+    );
+    expect(planTodayBlocks({ ...emptyFeed(base), missedCalls: late }, now())[0]).toMatchObject({
+      key: "calls",
+      urgency: "overdue",
+    });
   });
 });
 

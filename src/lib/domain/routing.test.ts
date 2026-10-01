@@ -439,6 +439,18 @@ describe("routingInputFromLead", () => {
     });
   });
 
+  it("does not read a visit to the office as a commercial request (lead-12)", () => {
+    const message = "Звонила в офис, спрашивала 2-комнатную в Алмазаре. Записала Нигора.";
+    const input = routingInputFromLead(lead(message, { source: "manual" }));
+    expect(input).toEqual({ source: "manual", language: "ru", district: "olmazor" });
+    const rules = [
+      rule("commercial", { priority: 1, when: { propertyTypes: ["commercial"] }, agentIds: ["a1"] }),
+      rule("fallback", { priority: 99, agentIds: ["a2"] }),
+    ];
+    expect(route(input, { rules })).toMatchObject({ agentId: "a2", ruleId: "fallback" });
+    expect(routingInputFromLead(lead("Ищу офис 60 м² в Юнусабаде")).propertyType).toBe("commercial");
+  });
+
   it("does not pick one of several districts", () => {
     const message = "Интересует аренда 1-комнатной в Яккасарае или Мирабаде, до 6 млн сум, с мебелью.";
     expect(routingInputFromLead(lead(message))).toEqual({ source: "telegram", language: "ru", dealType: "rent" });

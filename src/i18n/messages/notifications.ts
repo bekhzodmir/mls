@@ -14,6 +14,7 @@ export default defineMessages({
     filter: { label: "Категории уведомлений", all: "Все" },
     unread: "Новое",
     open: "Открыть: {entity}",
+    openList: "Открыть список",
     noLink: "Без связанной записи",
     empty: {
       title: "Уведомлений пока нет",
@@ -36,6 +37,7 @@ export default defineMessages({
     filter: { label: "Bildirishnoma toifalari", all: "Barchasi" },
     unread: "Yangi",
     open: "Ochish: {entity}",
+    openList: "Ro‘yxatni ochish",
     noLink: "Bog‘langan yozuv yo‘q",
     empty: {
       title: "Hozircha bildirishnomalar yo‘q",

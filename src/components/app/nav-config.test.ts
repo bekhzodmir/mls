@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import shell from "@/i18n/messages/shell";
+import { loginPath, onboardingPath } from "@/components/auth/auth-routes";
 import { appRoutes, authHref } from "@/lib/routes";
 import { activeSidebarKey, bottomNav, isActive, sidebarGroups, sidebarNav } from "./nav-config";
 
@@ -45,5 +46,10 @@ describe("workspace navigation", () => {
   it("builds sign-in links outside the workspace", () => {
     expect(authHref("uz", "login")).toBe("/uz/login");
     expect(authHref("ru", "onboarding")).toBe("/ru/onboarding");
+    // The auth screens' own helpers are the same single source.
+    for (const locale of ["ru", "uz"] as const) {
+      expect(loginPath(locale)).toBe(authHref(locale, "login"));
+      expect(onboardingPath(locale)).toBe(authHref(locale, "onboarding"));
+    }
   });
 });

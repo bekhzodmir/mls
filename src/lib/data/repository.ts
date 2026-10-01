@@ -59,6 +59,7 @@ import {
   type AuditEventView,
   type AuditFilter,
   type AuditScope,
+  type AuditTargetLink,
   type CallDetailView,
   type CallFilter,
   type CallView,
@@ -1694,13 +1695,48 @@ function auditTarget(target: AuditEvent["target"]): AuditEventView["target"] {
   }
 }
 
+/** Where an audit target opens, only when the viewer may open it (same rules as the record's own screen). */
+function auditTargetLink(target: AuditEvent["target"]): AuditTargetLink | undefined {
+  switch (target.kind) {
+    case "contract": {
+      const contract = contractsById.get(target.id);
+      return contract && isVisibleContract(contract) ? { route: "contract", id: contract.id } : undefined;
+    }
+    case "owner":
+      return ownerLinks.has(target.id) ? { route: "owner", id: target.id } : undefined;
+    case "call": {
+      const call = callsById.get(target.id);
+      return call && visibleCall(call) ? { route: "call", id: call.id } : undefined;
+    }
+    case "agent": {
+      const agent = agentsById.get(target.id);
+      if (!agent) return undefined;
+      return { route: isPartnerAgent(agent) ? "partner" : "member", id: agent.id };
+    }
+    case "consent": {
+      // The registry lists the organization's clients' consents and those of the owners it knows.
+      const subject = consentSubject(target.id);
+      if (subject?.kind === "client" && inViewerOrganization(subject.client.responsibleAgentId)) {
+        return { route: "consents", subject: "client" };
+      }
+      if (subject?.kind === "owner" && ownerLinks.has(subject.owner.id)) return { route: "consents", subject: "owner" };
+      return undefined;
+    }
+    default:
+      return undefined;
+  }
+}
+
 function toAuditEventView(event: AuditEvent, log: AuditEventView["log"], dealId?: ID): AuditEventView {
   const system = event.actorId === SYSTEM_ACTOR_ID;
+  const target: AuditEventView["target"] = auditTarget(event.target);
+  const link = auditTargetLink(event.target);
+  if (link) target.link = link;
   const view: AuditEventView = {
     event,
     log,
     system,
-    target: auditTarget(event.target),
+    target,
     sensitive: SENSITIVE_AUDIT_ACTIONS.has(event.action),
     scope: auditScope(event),
   };
@@ -2065,6 +2101,9 @@ export async function getDeal(id: ID): Promise<DealDetailView | undefined> {
       (viewing) => viewing.listingId === deal.listingId && viewing.clientId === deal.clientId,
     ),
     tasks: taskViews(at, (task) => task.related?.kind === "deal" && task.related.id === id),
+    contracts: sortContractViews(
+      visibleContracts.filter((contract) => contract.dealId === id).map((contract) => toContractView(contract, at)),
+    ),
   };
   const cooperation = cooperationRequest ? toCooperationView(cooperationRequest, at) : undefined;
   if (cooperation) detail.cooperation = cooperation;
@@ -2180,6 +2219,7 @@ export async function getTodayFeed(): Promise<TodayFeed> {
           isoAsc(a.deal.nextAction?.dueAt ?? "9999", b.deal.nextAction?.dueAt ?? "9999") ||
           byIdAsc(a.deal, b.deal),
       ),
+    missedCalls: callViews(at, (call) => call.outcome === "missed"),
   };
   const organization = viewer.organizationId ? organizationsById.get(viewer.organizationId) : undefined;
   if (organization) feedView.viewer.organization = organization;
@@ -2560,6 +2600,11 @@ export async function getRoutingContext(): Promise<RoutingContextView> {
     agents,
     availability: agents.map((agent) => availabilityOf(agent.id)),
     workloadToday: Object.fromEntries(workload.map((entry) => [entry.agentId, entry.assignedToday])),
+    roundRobinCursor: Object.fromEntries(
+      organizationRules()
+        .filter((rule) => rule.strategy === "round_robin")
+        .map((rule) => [rule.id, seed.roundRobinCursors[rule.id] ?? 0]),
+    ),
     workload,
     unassignedLeads: seed.leads
       .filter((lead) => lead.assignedAgentId === undefined && isOpenLead(lead))

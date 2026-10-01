@@ -127,6 +127,7 @@ export default defineMessages({
       empty: "Предложений по цене ещё не было.",
       by: { buyer: "от покупателя", owner: "от собственника" },
       version: "версия {n}",
+      open: "Открыть предложение",
     },
     deals: {
       empty: "Сделок пока нет.",
@@ -148,6 +149,7 @@ export default defineMessages({
       revoked: "Отозвано {date}",
       granted: "Дано {date}",
       version: "Текст согласия: {version}",
+      registry: "Реестр согласий",
     },
     memory: {
       text: "То, что клиент говорил о своих предпочтениях. У каждой записи — источник и дата; исправьте, если вывод неверный.",
@@ -177,6 +179,7 @@ export default defineMessages({
       memory: "Запомнено: {text}",
       lastContact: "Последний контакт",
       showAll: "Показать всю историю ({n})",
+      communications: "Вся история коммуникаций",
     },
     form: {
       title: "Новый клиент",
@@ -340,6 +343,7 @@ export default defineMessages({
       empty: "Narx bo‘yicha takliflar hali bo‘lmagan.",
       by: { buyer: "xaridordan", owner: "mulkdordan" },
       version: "{n}-versiya",
+      open: "Taklifni ochish",
     },
     deals: {
       empty: "Hozircha bitimlar yo‘q.",
@@ -362,6 +366,7 @@ export default defineMessages({
       revoked: "Qaytarib olingan: {date}",
       granted: "Berilgan: {date}",
       version: "Rozilik matni: {version}",
+      registry: "Roziliklar reyestri",
     },
     memory: {
       text: "Mijoz o‘z xohishlari haqida aytganlari. Har bir yozuvning manbasi va sanasi bor; xulosa noto‘g‘ri bo‘lsa, tuzating.",
@@ -392,6 +397,7 @@ export default defineMessages({
       memory: "Eslab qolindi: {text}",
       lastContact: "Oxirgi aloqa",
       showAll: "Butun tarixni ko‘rsatish ({n})",
+      communications: "To‘liq muloqot tarixi",
     },
     form: {
       title: "Yangi mijoz",

@@ -11,11 +11,18 @@ import {
   Home,
   Lock,
   ShieldCheck,
+  ShieldPlus,
   Sparkles,
+  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { contractHref } from "@/components/app/contracts/contract-rules";
+import { crmHref } from "@/components/app/crm/filters";
+import { offerHref } from "@/components/app/offers/offer-list";
+import { ownerHref } from "@/components/app/owners/owner-model";
+import { queueHref, requestHref } from "@/components/app/verification/queue";
 import { BandBadge, FreshnessBadge, MoneyText, SourceBadge, VerificationBadge } from "@/components/domain/badges";
 import { summarizeMatch } from "@/components/domain/match-explanation";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +51,9 @@ import {
   VerificationSummaryBadges,
 } from "./listing-badges";
 import { listingHref } from "./property-card";
+
+const linkClasses =
+  "inline-flex min-h-11 items-center gap-1 text-small font-medium text-primary underline-offset-2 hover:underline";
 
 /**
  * Sections of the property / listing profile (§22.6, §36.3). The physical
@@ -377,6 +387,10 @@ export function OwnerSection({ locale, detail }: { locale: Locale; detail: Listi
             }
           />
         </dl>
+        <Link href={ownerHref(locale, owner.id)} className={linkClasses}>
+          {t.owner.open}
+          <ArrowRight aria-hidden className="size-4" />
+        </Link>
         <div className="space-y-1">
           <h3 className="text-small font-semibold text-fg">{t.owner.consents}</h3>
           {owner.consents.length === 0 ? (
@@ -400,7 +414,19 @@ export function OwnerSection({ locale, detail }: { locale: Locale; detail: Listi
       </>
     );
   } else if (detail.ownerData) {
-    body = <p className="text-small text-fg-muted">{t.owner.notLinked}</p>;
+    // The new-owner form preselects only the viewer's own listings.
+    const addHref = crmHref(locale, "/owners/new", {
+      listingId: detail.access === "owner" ? detail.listing.id : undefined,
+    });
+    body = (
+      <>
+        <p className="text-small text-fg-muted">{t.owner.notLinked}</p>
+        <ButtonLink href={addHref} variant="secondary">
+          <UserPlus aria-hidden className="size-4" />
+          {t.owner.add}
+        </ButtonLink>
+      </>
+    );
   } else if (detail.access === "agency") {
     body = (
       <Notice kind="permission" title={t.owner.agencyTitle}>
@@ -492,7 +518,13 @@ export function ContractSection({ locale, view, at }: { locale: Locale; view: Li
             label={t.number}
             value={
               <>
-                <span className="tabular">{listing.contractId}</span>
+                <Link
+                  href={contractHref(locale, listing.contractId)}
+                  aria-label={format(t.open, { number: listing.contractId })}
+                  className="tabular text-primary underline-offset-2 hover:underline"
+                >
+                  {listing.contractId}
+                </Link>
                 <Restricted locale={locale} />
               </>
             }
@@ -516,15 +548,31 @@ export function VerificationSection({
   locale,
   items,
   detailed,
+  requestListingId,
 }: {
   locale: Locale;
   items: VerificationItem[];
   detailed: boolean;
+  /** The viewer's own listing: a new check can be requested for it. */
+  requestListingId?: string;
 }) {
   const t = properties[locale].detail.verification;
   const d = domain[locale];
   return (
-    <DetailSection id="verification" icon={ShieldCheck} title={properties[locale].detail.sections.verification} hint={t.hint}>
+    <DetailSection
+      id="verification"
+      icon={ShieldCheck}
+      title={properties[locale].detail.sections.verification}
+      hint={t.hint}
+      action={
+        requestListingId ? (
+          <ButtonLink href={requestHref(locale, { listingId: requestListingId })} variant="soft">
+            <ShieldPlus aria-hidden className="size-4" />
+            {t.request}
+          </ButtonLink>
+        ) : undefined
+      }
+    >
       {items.length === 0 ? (
         <p className="text-small text-fg-muted">{t.none}</p>
       ) : (
@@ -562,6 +610,10 @@ export function VerificationSection({
       )}
       {!detailed && items.length > 0 ? <p className="text-caption text-fg-muted">{t.resultOnly}</p> : null}
       {items.some((item) => item.status === "unavailable") ? <Notice kind="info">{t.unavailableNote}</Notice> : null}
+      <Link href={queueHref(locale)} className={linkClasses}>
+        {t.center}
+        <ArrowRight aria-hidden className="size-4" />
+      </Link>
     </DetailSection>
   );
 }
@@ -780,15 +832,19 @@ export function OffersSection({ locale, offers }: { locale: Locale; offers: Offe
                 {t.by[view.latest.by]} · {view.client.name} · {format(t.version, { n: view.latest.version })} ·{" "}
                 {formatDate(locale, view.latest.at)}
               </p>
-              {view.offer.dealId ? (
-                <Link
-                  href={appPath(locale, `/deals/${encodeURIComponent(view.offer.dealId)}`)}
-                  className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-primary underline-offset-2 hover:underline"
-                >
-                  {t.openDeal}
+              <div className="flex flex-wrap gap-x-4">
+                <Link href={offerHref(locale, view.offer.id)} className={linkClasses}>
+                  {t.open}
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
-              ) : null}
+                {/* Only a deal the viewer runs opens; `offer.dealId` alone may name someone else's. */}
+                {view.deal ? (
+                  <Link href={appPath(locale, `/deals/${encodeURIComponent(view.deal.id)}`)} className={linkClasses}>
+                    {t.openDeal}
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>

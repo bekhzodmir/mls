@@ -198,9 +198,12 @@ export default defineMessages({
       acceptedDone: "Предложение принято: {amount} — теперь это согласованная цена.",
       counteredDone: "Добавлена версия {n}: {amount}.",
       demo: "Демо: изменения видны только на этой странице и не отправлены сторонам.",
+      open: "Открыть предложение",
+      openLabel: "Открыть предложение {id}",
     },
     checklist: {
       progress: "Выполнено {done} из {total} обязательных пунктов",
+      openContract: "Договор {number}",
       required: "Обязательно",
       optional: "По желанию",
       done: "Выполнено {date} · {who}",
@@ -230,6 +233,9 @@ export default defineMessages({
       reupload: "Загрузить новый",
       uploadLabel: "Загрузить документ: {type}",
       uploaded: "{type}: отмечен как загруженный. Демо — файл никуда не отправлен.",
+      contracts: "Договоры по сделке",
+      contractsNone: "Договоров по этой сделке в реестре агентства нет.",
+      openContract: "Открыть договор {number}",
     },
     verification: {
       empty: "По объекту ещё нет проверок. Запросите проверку права собственности и запретов.",
@@ -284,6 +290,7 @@ export default defineMessages({
     },
     audit: {
       appendOnly: "Журнал только дополняется: записи не удаляются и не редактируются.",
+      journal: "Журнал действий по сделкам",
       empty: "Действий по сделке ещё не было.",
       demo: "демо, не сохранено",
       reason: "Причина: {reason}",
@@ -512,9 +519,12 @@ export default defineMessages({
       acceptedDone: "Taklif qabul qilindi: {amount} — endi bu kelishilgan narx.",
       counteredDone: "{n}-versiya qo‘shildi: {amount}.",
       demo: "Demo: o‘zgarishlar faqat shu sahifada ko‘rinadi va tomonlarga yuborilmagan.",
+      open: "Taklifni ochish",
+      openLabel: "{id} taklifini ochish",
     },
     checklist: {
       progress: "{total} ta majburiy banddan {done} tasi bajarildi",
+      openContract: "{number} shartnomasi",
       required: "Majburiy",
       optional: "Ixtiyoriy",
       done: "Bajarildi {date} · {who}",
@@ -544,6 +554,9 @@ export default defineMessages({
       reupload: "Yangisini yuklash",
       uploadLabel: "Hujjat yuklash: {type}",
       uploaded: "{type}: yuklangan deb belgilandi. Demo — fayl hech qayerga yuborilmadi.",
+      contracts: "Bitim bo‘yicha shartnomalar",
+      contractsNone: "Agentlik reyestrida bu bitim bo‘yicha shartnomalar yo‘q.",
+      openContract: "{number} shartnomasini ochish",
     },
     verification: {
       empty: "Ob’yekt bo‘yicha hali tekshiruvlar yo‘q. Mulk huquqi va taqiqlar tekshiruvini so‘rang.",
@@ -598,6 +611,7 @@ export default defineMessages({
     },
     audit: {
       appendOnly: "Jurnal faqat to‘ldiriladi: yozuvlar o‘chirilmaydi va tahrirlanmaydi.",
+      journal: "Bitimlar bo‘yicha harakatlar jurnali",
       empty: "Bitim bo‘yicha hali harakatlar bo‘lmagan.",
       demo: "demo, saqlanmagan",
       reason: "Sabab: {reason}",

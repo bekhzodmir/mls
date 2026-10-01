@@ -76,6 +76,23 @@ describe.each(["ru", "uz"] as const)("CRM pages (%s)", (locale) => {
     expect(revoked).toContain(locale === "ru" ? "Клиент отозвал согласие на связь" : "roziligini qaytarib olgan");
   });
 
+  it("links the client's communication history, offers and the consent registry", async () => {
+    state.locale = locale;
+    const html = await render(await pages.client(), withId("cl-06"));
+    expect(html).toContain(`href="/${locale}/app/calls/timeline?clientId=cl-06"`);
+    expect(html).toContain(`href="/${locale}/app/offers/offer-01"`);
+    expect(html).toContain(`href="/${locale}/app/consents?subject=client"`);
+  });
+
+  it("links a lead's communication history and the routing simulator, and asks for an assignment reason", async () => {
+    state.locale = locale;
+    const html = await render(await pages.lead(), withId("lead-12"));
+    expect(html).toContain(`href="/${locale}/app/calls/timeline?leadId=lead-12"`);
+    expect(html).toContain(`href="/${locale}/app/team/routing#simulator"`);
+    expect(html).toContain(locale === "ru" ? "Причина назначения" : "Biriktirish sababi");
+    expect(html).toMatch(/<textarea[^>]*required=""/);
+  });
+
   it("searches clients by a phone fragment", async () => {
     state.locale = locale;
     const html = await render(await pages.clients(), query({ q: "0000302" }));
@@ -88,7 +105,34 @@ describe.each(["ru", "uz"] as const)("CRM pages (%s)", (locale) => {
     const html = await render(await pages.newClient(), query({ leadId: "lead-06" }));
     expect(html).toContain("Гульнара Сафарова");
     expect(html).toContain(locale === "ru" ? "Похоже, этот человек уже есть в CRM" : "CRM’da allaqachon bor");
-    await render(await pages.newLead());
+    await render(await pages.newLead(), query());
+  });
+
+  it("prefills the number of a call: new lead with source phone, new client with or without a lead", async () => {
+    state.locale = locale;
+    const lead = await render(await pages.newLead(), query({ phone: "+998930000311" }));
+    expect(lead).toContain('value="+998 93 000 03 11"');
+    expect(lead).toMatch(/<option value="phone" selected="">/);
+    const blank = await render(await pages.newLead(), query());
+    expect(blank).not.toContain('value="+998 93 000 03 11"');
+
+    const client = await render(await pages.newClient(), query({ phone: "+998930000311" }));
+    expect(client).toContain('value="+998 93 000 03 11"');
+    expect(client).toMatch(/<option value="phone" selected="">/);
+    // The lead's own number wins; its source stays the lead's.
+    const fromLead = await render(await pages.newClient(), query({ leadId: "lead-06", phone: "+998900000000" }));
+    expect(fromLead).not.toContain('value="+998 90 000 00 00"');
+  });
+
+  it("starts a requirement from a phrase in ?q= and parses it", async () => {
+    state.locale = locale;
+    const html = await render(
+      await pages.newRequirement(),
+      query({ leadId: "lead-01", q: "3 комнаты в Юнусабаде до 90 000 $" }),
+    );
+    expect(html).toContain("3 комнаты в Юнусабаде до 90 000 $</textarea>");
+    expect(html).toContain(locale === "ru" ? "Юнусабад" : "Yunusobod");
+    expect(html).not.toContain(locale === "ru" ? "Выберите валюту" : "Valyutani tanlang");
   });
 
   it("asks for the currency when the lead's sentence has none", async () => {

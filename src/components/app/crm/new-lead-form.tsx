@@ -36,11 +36,14 @@ export function NewLeadForm({
   clients,
   agents,
   viewerId,
+  initial = {},
 }: {
   locale: Locale;
   clients: ContactCard[];
   agents: AgentOption[];
   viewerId: string;
+  /** Prefill from the URL (e.g. `?phone=` from an unknown call); every field stays editable. */
+  initial?: { phone?: string; source?: LeadSource };
 }) {
   const t = leads[locale];
   const d = domain[locale];
@@ -56,8 +59,8 @@ export function NewLeadForm({
   };
   const summaryRef = useRef<HTMLDivElement>(null);
 
-  const [source, setSource] = useState<LeadSource | "">("");
-  const [phone, setPhone] = useState("");
+  const [source, setSource] = useState<LeadSource | "">(initial.source ?? "");
+  const [phone, setPhone] = useState(initial.phone ?? "");
   const [telegram, setTelegram] = useState("");
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");

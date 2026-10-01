@@ -31,7 +31,8 @@ import { actingRole, DEMO_ROLE_PARAM, parseDemoRole } from "@/components/app/tea
 import { FactRow } from "@/components/app/team/fact-row";
 import { PermissionNote } from "@/components/app/team/permission-note";
 import { teamHref } from "@/components/app/team/team-model";
-import { AGENT_FACT_SUBJECTS, displayedStatus, extraFactSubjects, factOf } from "@/components/app/team/verification";
+import { AGENT_FACT_SUBJECTS, extraFactSubjects, factOf } from "@/components/app/team/verification";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import { MoneyText } from "@/components/domain/badges";
 import { Badge } from "@/components/ui/badge";
 import { ButtonAnchor, ButtonLink } from "@/components/ui/button";
@@ -136,7 +137,7 @@ export default async function PartnerPage({ params, searchParams }: PageProps<"/
       >
         <div className="flex flex-wrap items-center gap-2">
           <Avatar name={agent.name} className="size-12 text-body" />
-          <ProfessionalStatusBadge locale={locale} status={displayedStatus(agent)} />
+          <ProfessionalStatusBadge locale={locale} status={displayedProfessionalStatus(agent)} />
           {detail.contactsShared ? (
             <Badge tone="success" icon={LockOpen}>
               {partners[locale].card.contactsShared}
@@ -175,7 +176,7 @@ export default async function PartnerPage({ params, searchParams }: PageProps<"/
               </div>
               <div className="flex items-baseline justify-between gap-4 py-2">
                 <dt className="text-small text-fg-muted">{t.status}</dt>
-                <dd className="text-right text-small font-medium text-fg">{d.professionalStatus[displayedStatus(agent)]}</dd>
+                <dd className="text-right text-small font-medium text-fg">{d.professionalStatus[displayedProfessionalStatus(agent)]}</dd>
               </div>
               <div className="flex items-baseline justify-between gap-4 py-2">
                 <dt className="text-small text-fg-muted">{t.languages}</dt>

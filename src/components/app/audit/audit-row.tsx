@@ -8,7 +8,7 @@ import audit from "@/i18n/messages/audit";
 import type { AuditEventView, AuditScope } from "@/lib/data/views";
 import type { ID } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
-import { actionLabel, actorLabel, reasonText, targetLabel } from "./audit-model";
+import { actionLabel, actorLabel, reasonText, targetHref, targetLabel } from "./audit-model";
 
 const scopeIcon: Record<AuditScope, LucideIcon> = {
   own: UserRound,
@@ -64,7 +64,18 @@ export function AuditRow({
         )}
         {actorLabel(locale, view, viewerId)}
       </p>
-      <p className="text-small text-fg">{targetLabel(locale, view)}</p>
+      <p className="text-small text-fg">
+        {view.target.link ? (
+          <Link
+            href={targetHref(locale, view.target.link)}
+            className="inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline"
+          >
+            {targetLabel(locale, view)}
+          </Link>
+        ) : (
+          targetLabel(locale, view)
+        )}
+      </p>
       {reason ? <p className="text-caption text-fg-muted">{format(t.row.reason, { reason })}</p> : null}
       {view.log === "deal" && view.dealId ? (
         <Link

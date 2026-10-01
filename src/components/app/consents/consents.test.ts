@@ -80,8 +80,22 @@ describe("registry rules", () => {
     expect(parseConsentFilters({ subject: "lead", purpose: "x", state: "" })).toEqual({});
     expect(consentListHref("ru", { state: "active", subject: "client" })).toBe("/ru/app/consents?subject=client&state=active");
     expect(consentListHref("uz")).toBe("/uz/app/consents");
-    expect(subjectHref("ru", { kind: "owner", id: "owner-06" })).toBe("/ru/app/owners/owner-06");
-    expect(subjectHref("ru", { kind: "client", id: "cl-02" })).toBe("/ru/app/clients/cl-02");
+    expect(subjectHref("ru", { subject: { kind: "owner", id: "owner-06" }, scope: "agency" })).toBe(
+      "/ru/app/owners/owner-06",
+    );
+    expect(subjectHref("ru", { subject: { kind: "client", id: "cl-02" }, scope: "own" })).toBe("/ru/app/clients/cl-02");
+    // A colleague's client profile is not open to the viewer, so there is no link to a 404.
+    expect(subjectHref("ru", { subject: { kind: "client", id: "cl-17" }, scope: "agency" })).toBeUndefined();
+  });
+
+  it("links only to profiles the viewer can open", async () => {
+    for (const item of await repo.listConsents()) {
+      const href = subjectHref("ru", item);
+      if (!href) continue;
+      const opened =
+        item.subject.kind === "client" ? await repo.getClient(item.subject.id) : await repo.getOwner(item.subject.id);
+      expect(opened, href).toBeDefined();
+    }
   });
 
   it("filters exactly like the repository", async () => {

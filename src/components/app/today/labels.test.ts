@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getTelegramListing, listListings } from "@/lib/data/repository";
 import type { PropertyView } from "@/lib/data/views";
 import { firstName, listingTitle, telegramTitle } from "./labels";
-import { entityHref, listHref, matchHref } from "./links";
+import { entityHref, listHref, matchHref, notificationHref } from "./links";
 
 const flat = {
   id: "p",
@@ -61,6 +61,18 @@ describe("links", () => {
     expect(entityHref("ru", { kind: "cooperation", id: "coop-03" })).toBe("/ru/app/mls/cooperation/coop-03");
     expect(entityHref("ru", { kind: "telegram", id: "tg-13" })).toBe("/ru/app/radar/tg-13");
     expect(matchHref("ru", "req-03--lst-16")).toBe("/ru/app/matches/req-03--lst-16");
+    expect(entityHref("ru", { kind: "offer", id: "off-01" })).toBe("/ru/app/offers/off-01");
+    expect(entityHref("uz", { kind: "contract", id: "DR-2026-041" })).toBe("/uz/app/contracts/DR-2026-041");
+    expect(entityHref("ru", { kind: "owner", id: "owner-01" })).toBe("/ru/app/owners/owner-01");
+    expect(entityHref("ru", { kind: "call", id: "call-02" })).toBe("/ru/app/calls/call-02");
+  });
+
+  it("leads a notification to its record, or an expiring-contract notice to the filtered contracts", () => {
+    expect(
+      notificationHref("ru", { kind: "contract_expiring", related: { kind: "contract", id: "ctr-dr-2026-055" } }),
+    ).toBe("/ru/app/contracts/ctr-dr-2026-055");
+    expect(notificationHref("uz", { kind: "contract_expiring" })).toBe("/uz/app/contracts?status=expiring");
+    expect(notificationHref("ru", { kind: "security" })).toBeUndefined();
   });
 
   it("builds filtered list URLs and skips empty values", () => {

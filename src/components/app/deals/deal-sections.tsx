@@ -287,10 +287,13 @@ export function ChecklistSection({
   locale,
   items,
   agentNames,
+  serviceContract,
 }: {
   locale: Locale;
   items: readonly ChecklistItem[];
   agentNames: Record<ID, string>;
+  /** The deal's service contract, linked from the "contract signed" item. */
+  serviceContract?: { number: string; href: string };
 }) {
   const t = deals[locale].checklist;
   const required = items.filter((item) => item.required);
@@ -329,6 +332,15 @@ export function ChecklistSection({
                       <span className="font-medium text-warning-fg">{t.open}</span>
                     )}
                   </p>
+                  {item.labelKey === "checklist.service_contract" && serviceContract ? (
+                    <Link
+                      href={serviceContract.href}
+                      className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      {format(t.openContract, { number: serviceContract.number })}
+                      <ArrowRight aria-hidden className="size-4" />
+                    </Link>
+                  ) : null}
                 </div>
               </li>
             );

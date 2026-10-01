@@ -53,6 +53,10 @@ metadata, hreflang alternates, `sitemap.xml`, `robots.txt`, Open Graph image and
 It states only facts the master document marks as public; internal metrics, tariffs and
 market-share estimates are deliberately left out (§41).
 
+**Sign-in** — `/{locale}/login` validates Telegram Mini App `initData` on the server; the
+phone + code path is a demo (SMS is not connected). `/{locale}/onboarding` is a five-step
+wizard. No session is created yet.
+
 **Workspace (demo)** — `/{locale}/app`, a mobile-first realtor workspace:
 
 | Area | Routes |
@@ -63,7 +67,10 @@ market-share estimates are deliberately left out (§41).
 | Matching | `/app/matches`, `/app/matches/[id]` — explained by reasons, never a bare score |
 | Telegram Radar | `/app/radar`, `/app/radar/[id]` (raw vs parsed with confidence), `/app/radar/import` (listing copilot) |
 | MLS | `/app/mls` (shared base, my listings, buyer requests), `/app/mls/cooperation` (versioned commission terms) |
-| Transactions | `/app/viewings` (agenda, conflicts, feedback), `/app/deals` (pipeline, stage guards, documents, 3-working-day MLS deadline) |
+| Transactions | `/app/viewings` (agenda, conflicts, feedback), `/app/offers` (negotiation history), `/app/deals` (pipeline, stage guards, documents, 3-working-day MLS deadline) |
+| Calls | `/app/calls` (missed and unknown numbers first), `/app/calls/[id]` (recording consent, AI summary as a draft), `/app/calls/timeline` |
+| Owners & documents | `/app/owners`, `/app/contracts` (required clauses, consent of every right holder), `/app/consents`, `/app/verification` and `/app/verification/request` |
+| Team & network | `/app/team`, `/app/team/routing` (lead routing simulator), `/app/partners`, `/app/audit` (append-only journal); `?demoRole=team_lead\|agency_owner\|agency_admin` previews the manager view |
 
 The workspace runs on a seeded, clearly fictional dataset (`src/lib/data/seed-*.ts`) behind
 an async repository (`src/lib/data/repository.ts`) that a real backend can replace.
@@ -94,6 +101,9 @@ Domain modules in `src/lib/domain/` are framework-free and unit-tested:
 - `dedup.ts` — multi-signal duplicate candidates; merging is always a human decision
 - `commission.ts` — split presets with explicit roles, validation, exact split, immutable term versions
 - `lifecycle.ts` — listing, deal, cooperation and offer transitions with explicit unmet prerequisites
+- `permissions.ts` — the §19 role matrix: scopes, grants, mandatory audit and who can grant access
+- `routing.ts` — lead routing rules with an explainable step-by-step trace
+- `contracts.ts` — contract status, required clauses, right-holder consent and signature rules
 - `freshness.ts`, `working-days.ts`, `phone.ts`, `geo.ts`
 
 ## Conventions

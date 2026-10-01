@@ -9,11 +9,14 @@ import {
   Inbox,
   Languages,
   MessageSquareQuote,
+  MessagesSquare,
   Phone,
+  Route,
   Send,
   UserPlus,
   UserRoundCheck,
 } from "lucide-react";
+import { timelineHref } from "@/components/app/calls/timeline";
 import { CrmTabs } from "@/components/app/crm-tabs";
 import { LeadSourceBadge, LeadStatusBadge, SlaBadge } from "@/components/app/crm/badges";
 import { DuplicateNotice } from "@/components/app/crm/duplicate-notice";
@@ -23,6 +26,7 @@ import { telegramHref } from "@/components/app/crm/lead-card";
 import { CrmSection, StickyActionBar, StickyBarSpacer, stickyActionClasses } from "@/components/app/crm/layout-parts";
 import { describeSla } from "@/components/app/crm/sla";
 import { PageHeader } from "@/components/app/page-header";
+import { routingHref } from "@/components/app/team/team-model";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
@@ -393,6 +397,13 @@ export default async function LeadPage({ params }: PageProps<"/[locale]/app/lead
                   </div>
                 ) : null}
               </dl>
+              <Link
+                href={timelineHref(locale, { kind: "lead", id: lead.id })}
+                className="mt-2 inline-flex min-h-11 items-center gap-2 text-small font-medium text-primary underline-offset-2 hover:underline"
+              >
+                <MessagesSquare aria-hidden className="size-4" />
+                {t.detail.communications}
+              </Link>
             </Card>
           </CrmSection>
 
@@ -405,6 +416,13 @@ export default async function LeadPage({ params }: PageProps<"/[locale]/app/lead
                   viewerId={viewer.agent.id}
                   currentId={view.assignedAgent?.id}
                 />
+                <Link
+                  href={routingHref(locale, undefined, "simulator")}
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 text-small font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  <Route aria-hidden className="size-4" />
+                  {t.assign.routing}
+                </Link>
               </Card>
             </CrmSection>
           ) : null}

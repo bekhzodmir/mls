@@ -188,6 +188,14 @@ describe.each(["ru", "uz"] as const)("team, partners and audit pages (%s)", (loc
     expect(admin).not.toContain("Дильноза Рахимова");
   });
 
+  it("opens journal targets on their own screens", async () => {
+    const agent = await render(pages.audit);
+    expect(agent).toContain(`href="/${locale}/app/contracts/ctr-drb-2026-014"`);
+    expect(agent).toContain(`href="/${locale}/app/partners/agent-08"`);
+    expect(agent).toContain(`href="/${locale}/app/consents?subject=client"`);
+    expect(agent).toContain(`href="/${locale}/app/owners/owner-34"`);
+  });
+
   it("limits the journal to the role's audit level and keeps it read-only", async () => {
     const agent = await render(pages.audit);
     expect(agent).not.toContain("export-2026-09-24-02");

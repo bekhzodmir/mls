@@ -88,11 +88,21 @@ describe.each(["ru", "uz"] as const)("call screens (%s)", (locale) => {
     expect(html).toContain(t.detail.unknownNumber.title);
     expect(html).toContain(`/${locale}/app/leads/new?phone=%2B998940000451`);
     expect(html).toContain(`/${locale}/app/clients/new?phone=%2B998940000451`);
+    // An unknown caller may also be an owner offering a property.
+    expect(html).toContain(`/${locale}/app/owners/new?phone=%2B998940000451`);
+    expect(html).toContain(t.detail.newOwner);
     expect(html).toContain(t.detail.summary.draftTitle);
     expect(html).toContain(t.detail.summary.confirm);
     expect(html).toContain(`/${locale}/app/requirements/new?q=`);
     expect(html).toContain("data-sticky-actions");
     expect(html).toContain('lang="ru"');
+  });
+
+  it("opens a new task for the call's lead and offers no owner record for a linked call", async () => {
+    state.locale = locale;
+    const html = decode(await render(await pages.call(), withId("call-01")));
+    expect(html).toContain(`/${locale}/app/tasks/new?leadId=lead-02`);
+    expect(html).not.toContain(`/${locale}/app/owners/new?phone=`);
   });
 
   it("suggests the matching lead without linking it, and explains a refused recording", async () => {

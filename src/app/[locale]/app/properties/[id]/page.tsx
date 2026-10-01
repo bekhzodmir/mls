@@ -129,7 +129,12 @@ export default async function PropertyPage({ params }: PageProps<"/[locale]/app/
         </div>
         <div className="space-y-4">
           <ListingSection locale={locale} view={detail} at={at} />
-          <VerificationSection locale={locale} items={listing.verifications} detailed={detail.ownerData} />
+          <VerificationSection
+            locale={locale}
+            items={listing.verifications}
+            detailed={detail.ownerData}
+            requestListingId={detail.access === "owner" ? listing.id : undefined}
+          />
           <MlsSection locale={locale} detail={detail} />
         </div>
       </div>

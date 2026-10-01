@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMyTeam, getRoutingContext } from "@/lib/data/repository";
+import { getLead, getMyTeam, getRoutingContext } from "@/lib/data/repository";
 import { routeLead, routingInputFromLead, type RoutingResult } from "@/lib/domain/routing";
 import type { AgentAvailability, RoutingRule } from "@/lib/domain/types";
 import type { LeadView, TeamMemberView } from "@/lib/data/views";
@@ -29,7 +29,8 @@ import {
 } from "./routing-model";
 import { routingOutcome, traceLines, type TraceContext } from "./routing-trace";
 import { availabilityState, capacityState, memberHref, routingHref, teamExceptions, teamHref } from "./team-model";
-import { badgeItem, displayedStatus, extraFactSubjects } from "./verification";
+import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
+import { badgeItem, extraFactSubjects } from "./verification";
 
 const NOW = new Date("2026-09-30T06:00:00.000Z");
 
@@ -408,6 +409,32 @@ describe("routing trace in human language", () => {
     expect(routingOutcome(result, context(false)).kind).toBe("nobody");
   });
 
+  it("continues the recorded round-robin rotation", async () => {
+    const routing = await getRoutingContext();
+    // Last automatic picks in the journal: rule-01 → agent-03 (index 1), rule-99 → agent-01 (index 0).
+    expect(routing.roundRobinCursor).toEqual({ "rule-01": 1, "rule-99": 0 });
+    const lead = routing.unassignedLeads[0].lead;
+    const result = routeLead(routingInputFromLead(lead), { ...routing, now: NOW });
+    // rule-99 starts after agent-01: agent-02 is busy and agent-03 away, so agent-01 is next again.
+    expect(result).toMatchObject({ agentId: "agent-01", ruleId: "rule-99", roundRobinCursor: 0 });
+  });
+
+  it("does not send lead-12 («Звонила в офис…») to the commercial rule", async () => {
+    const routing = await getRoutingContext();
+    const view = await getLead("lead-12");
+    expect(view).toBeDefined();
+    if (!view) return;
+    const input = routingInputFromLead(view.lead);
+    expect(input.propertyType).toBeUndefined();
+    const result = routeLead(input, { ...routing, now: NOW });
+    expect(result.trace).toContainEqual({
+      kind: "rule_not_matched",
+      ruleId: "rule-03",
+      mismatches: [{ dimension: "propertyType", reason: "unknown_value", expected: ["commercial"] }],
+    });
+    expect(result.ruleId).toBe("rule-99");
+  });
+
   it("speaks Uzbek with the same facts", async () => {
     const { lines, outcome } = await simulate(2, "uz");
     expect(lines[1].text).toBe(
@@ -457,14 +484,14 @@ describe("result-only facts", () => {
       status,
       method: "official_source" as const,
     });
-    expect(displayedStatus({ professionalStatus: "certified_realtor", verifications: [certificate("confirmed")] })).toBe(
+    expect(displayedProfessionalStatus({ professionalStatus: "certified_realtor", verifications: [certificate("confirmed")] })).toBe(
       "certified_realtor",
     );
-    expect(displayedStatus({ professionalStatus: "certified_realtor", verifications: [certificate("unavailable")] })).toBe(
+    expect(displayedProfessionalStatus({ professionalStatus: "certified_realtor", verifications: [certificate("unavailable")] })).toBe(
       "unconfirmed",
     );
-    expect(displayedStatus({ professionalStatus: "certified_realtor", verifications: [] })).toBe("unconfirmed");
-    expect(displayedStatus({ professionalStatus: "real_estate_agent", verifications: [] })).toBe("real_estate_agent");
+    expect(displayedProfessionalStatus({ professionalStatus: "certified_realtor", verifications: [] })).toBe("unconfirmed");
+    expect(displayedProfessionalStatus({ professionalStatus: "real_estate_agent", verifications: [] })).toBe("real_estate_agent");
     expect(badgeItem(certificate("pending")).source).toBe("");
   });
 

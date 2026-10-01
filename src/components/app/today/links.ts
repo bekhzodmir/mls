@@ -1,4 +1,4 @@
-import type { EntityRef, ID } from "@/lib/domain/types";
+import type { AppNotification, EntityRef, ID } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 
 /**
@@ -18,11 +18,26 @@ const entityPaths: Record<EntityRef["kind"], string> = {
   viewing: "/viewings",
   cooperation: "/mls/cooperation",
   telegram: "/radar",
+  offer: "/offers",
+  // Contract pages take the id ("ctr-dr-2026-041") or the number ("DR-2026-041").
+  contract: "/contracts",
+  owner: "/owners",
+  call: "/calls",
 };
 
 /** Detail page of any record a task or notification can point at. */
 export function entityHref(locale: string, ref: EntityRef): string {
   return appPath(locale, `${entityPaths[ref.kind]}/${encodeURIComponent(ref.id)}`);
+}
+
+/**
+ * Where a notification leads: the record it is about, or — for a kind that
+ * names no record — the list that kind is about, already filtered.
+ */
+export function notificationHref(locale: string, item: Pick<AppNotification, "kind" | "related">): string | undefined {
+  if (item.related) return entityHref(locale, item.related);
+  if (item.kind === "contract_expiring") return listHref(locale, "/contracts", { status: "expiring" });
+  return undefined;
 }
 
 /** Match ids look like `req-03--lst-16` and are safe in a path segment. */

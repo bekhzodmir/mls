@@ -104,6 +104,8 @@ describe("demo seed integrity", () => {
     const offers = ids(seed.offers);
     const deals = ids(seed.deals);
     const documents = new Set(seed.deals.flatMap((deal) => deal.documents.map((doc) => doc.id)));
+    const contracts = ids(seed.contracts);
+    const calls = ids(seed.calls);
     // Match ids are `${requirementId}--${targetId}`; that the pair still matches is checked below.
     const matchRefs = new Set(
       [...seed.tasks, ...seed.notifications]
@@ -127,6 +129,9 @@ describe("demo seed integrity", () => {
       telegram: posts,
       offer: offers,
       document: documents,
+      contract: contracts,
+      owner: owners,
+      call: calls,
     };
 
     const missing: string[] = [];

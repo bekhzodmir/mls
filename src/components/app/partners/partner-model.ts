@@ -1,8 +1,9 @@
 import { isOpen } from "@/components/app/mls/cooperation-model";
 import { firstParam, type SearchParamsRecord } from "@/components/app/mls/url";
 import { withDemoRole, type DemoRole } from "@/components/app/team/demo-role";
+import { memberHref } from "@/components/app/team/team-model";
 import type { PartnerCooperationView, PartnerDetailView, PartnerListingView } from "@/lib/data/views";
-import type { ID } from "@/lib/domain/types";
+import type { Agent, ID } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
 
 /**
@@ -31,6 +32,21 @@ export function partnersHref(locale: string, params: PartnerParams = {}, demoRol
 
 export function partnerHref(locale: string, agentId: ID, demoRole?: DemoRole): string {
   return withDemoRole(appPath(locale, `/partners/${encodeURIComponent(agentId)}`), demoRole);
+}
+
+/**
+ * Where another professional's card lives: a colleague (the viewer's
+ * organization) on the team screens, anyone outside it on the partner
+ * screens — the repository's organization rule. Undefined for the viewer.
+ */
+export function professionalHref(
+  locale: string,
+  agent: Pick<Agent, "id" | "organizationId">,
+  viewer: Pick<Agent, "id" | "organizationId">,
+): string | undefined {
+  if (agent.id === viewer.id) return undefined;
+  const colleague = viewer.organizationId !== undefined && agent.organizationId === viewer.organizationId;
+  return colleague ? memberHref(locale, agent.id) : partnerHref(locale, agent.id);
 }
 
 /* ------------------------------------------------------------- contacts */

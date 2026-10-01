@@ -1,6 +1,8 @@
+import { nextActionState } from "@/components/app/calls/call-list";
 import { DISPLAY_TIME_ZONE } from "@/i18n/config";
 import { tashkentDateKey } from "@/lib/domain/working-days";
 import type {
+  CallView,
   CooperationView,
   DealView,
   ExpiringContractView,
@@ -22,6 +24,7 @@ import type {
 
 export type TodayBlockKey =
   | "leads"
+  | "calls"
   | "overdueTasks"
   | "viewings"
   | "todayTasks"
@@ -37,12 +40,14 @@ export const todayUrgencies = ["overdue", "today", "soon", "later"] as const;
 export type TodayUrgency = (typeof todayUrgencies)[number];
 
 /**
- * §9.4 priority: clients waiting for an answer, viewings today, expiring
- * contracts, new matches, cooperation requests, stale objects, price drops,
- * deals and missing documents. Tasks (§36.2) sit next to the SLA queue.
+ * §9.4 priority: clients waiting for an answer (new leads, then missed
+ * calls), viewings today, expiring contracts, new matches, cooperation
+ * requests, stale objects, price drops, deals and missing documents. Tasks
+ * (§36.2) sit next to the SLA queue.
  */
 export const TODAY_BLOCK_ORDER: readonly TodayBlockKey[] = [
   "leads",
+  "calls",
   "overdueTasks",
   "viewings",
   "todayTasks",
@@ -59,6 +64,7 @@ export const CONTRACT_TODAY_DAYS = 1;
 
 export type TodayBlock =
   | { key: "leads"; urgency: TodayUrgency; items: LeadView[] }
+  | { key: "calls"; urgency: TodayUrgency; items: CallView[] }
   | { key: "overdueTasks"; urgency: TodayUrgency; items: TaskView[] }
   | { key: "viewings"; urgency: TodayUrgency; items: ViewingView[] }
   | { key: "todayTasks"; urgency: TodayUrgency; items: TaskView[] }
@@ -71,6 +77,11 @@ export type TodayBlock =
 
 function leadsUrgency(items: LeadView[]): TodayUrgency {
   return items.some((view) => view.sla.state === "breached") ? "overdue" : "today";
+}
+
+/** A missed call is someone waiting today; a call-back promised for earlier is already late. */
+function callsUrgency(items: CallView[], now: Date): TodayUrgency {
+  return items.some((view) => nextActionState(view, now) === "overdue") ? "overdue" : "today";
 }
 
 function cooperationUrgency(items: CooperationView[], now: Date): TodayUrgency {
@@ -101,6 +112,7 @@ function contractsUrgency(items: ExpiringContractView[]): TodayUrgency {
 export function planTodayBlocks(feed: TodayFeed, now: Date): TodayBlock[] {
   const candidates: TodayBlock[] = [
     { key: "leads", urgency: leadsUrgency(feed.slaLeads), items: feed.slaLeads },
+    { key: "calls", urgency: callsUrgency(feed.missedCalls, now), items: feed.missedCalls },
     { key: "overdueTasks", urgency: "overdue", items: feed.overdueTasks },
     { key: "viewings", urgency: "today", items: feed.todayViewings },
     { key: "todayTasks", urgency: "today", items: feed.todayTasks },

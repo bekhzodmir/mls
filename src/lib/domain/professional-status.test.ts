@@ -23,6 +23,19 @@ describe("displayedProfessionalStatus (§16.4, §38.2)", () => {
     expect(displayedProfessionalStatus({ professionalStatus: "certified_realtor", verifications: [] })).toBe("unconfirmed");
   });
 
+  it("reads result-only facts (§19): subject and status are enough", () => {
+    const resultOnly = [{ subject: "agent_certificate", status: "confirmed" }] as const;
+    expect(displayedProfessionalStatus({ professionalStatus: "certified_realtor", verifications: resultOnly })).toBe(
+      "certified_realtor",
+    );
+    expect(
+      displayedProfessionalStatus({
+        professionalStatus: "certified_realtor",
+        verifications: [{ subject: "agent_certificate", status: "unavailable" }],
+      }),
+    ).toBe("unconfirmed");
+  });
+
   it("leaves other statuses as recorded", () => {
     expect(displayedProfessionalStatus({ professionalStatus: "real_estate_agent", verifications: [] })).toBe(
       "real_estate_agent",

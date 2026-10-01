@@ -39,6 +39,8 @@ export function blockListHref(locale: Locale, key: TodayBlockKey): string {
   switch (key) {
     case "leads":
       return listHref(locale, "/leads", { status: "new" });
+    case "calls":
+      return listHref(locale, "/calls", { filter: "missed" });
     case "overdueTasks":
       return listHref(locale, "/tasks", { status: "overdue" });
     case "todayTasks":
@@ -46,7 +48,7 @@ export function blockListHref(locale: Locale, key: TodayBlockKey): string {
     case "viewings":
       return listHref(locale, "/viewings", { range: "today" });
     case "contracts":
-      return listHref(locale, "/properties", { scope: "mine" });
+      return listHref(locale, "/contracts", { status: "expiring" });
     case "matches":
       return listHref(locale, "/matches", { status: "new" });
     case "cooperation":

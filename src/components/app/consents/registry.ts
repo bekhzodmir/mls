@@ -43,8 +43,18 @@ export function consentListHref(locale: string, filter: ConsentFilter = {}): str
   return `${appPath(locale, "/consents")}${query ? `?${query}` : ""}`;
 }
 
-/** Client profile or owner profile of the person who gave the consent. */
-export function subjectHref(locale: string, subject: Pick<ConsentRegistryItem["subject"], "kind" | "id">): string {
+/**
+ * Client profile or owner profile of the person who gave the consent, when the
+ * viewer may open it. A client profile belongs to its responsible agent only
+ * (§19 "Own/assigned"), so a colleague's client has no link; owner profiles
+ * are open to the whole agency.
+ */
+export function subjectHref(
+  locale: string,
+  item: { subject: Pick<ConsentRegistryItem["subject"], "kind" | "id">; scope: ConsentRegistryItem["scope"] },
+): string | undefined {
+  const { subject } = item;
+  if (subject.kind === "client" && item.scope !== "own") return undefined;
   return appPath(locale, `/${subject.kind === "client" ? "clients" : "owners"}/${encodeURIComponent(subject.id)}`);
 }
 

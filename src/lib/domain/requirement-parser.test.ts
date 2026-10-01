@@ -138,6 +138,39 @@ describe("property types", () => {
   });
 });
 
+describe("office as a property type", () => {
+  it.each([
+    ["ищу офис в Юнусабаде"],
+    ["офис 50 м² на Мирзо-Улугбеке"],
+    ["аренда офиса до 1500$"],
+    ["сдам в аренду офис"],
+    ["Yunusobodda ofis ijaraga kerak"],
+    ["ofisni sotib olaman"],
+  ])("«%s» → commercial", (text) => {
+    const field = parseRequirementText(text).propertyTypes;
+    expect(field.value).toEqual(["commercial"]);
+    expect(field.confidence).toBeGreaterThanOrEqual(MIN_APPLY_CONFIDENCE);
+  });
+
+  // Regression (lead-12): the office is where the person called, not what they want.
+  it.each([
+    ["Звонила в офис, спрашивала 2-комнатную в Алмазаре. Записала Нигора."],
+    ["Пришла в офис, ищет квартиру на Чиланзаре"],
+    ["Приходила в офис вчера"],
+    ["Встретились в нашем офисе, нужна двушка"],
+    ["Ofisga qo‘ng‘iroq qildi, Chilonzorda 2 xonali kvartira kerak"],
+    ["Ofisimizda uchrashdik"],
+  ])("«%s» is not a commercial request", (text) => {
+    expect(parseRequirementText(text).propertyTypes.value ?? []).not.toContain("commercial");
+  });
+
+  it("keeps the room count as the only hint for lead-12, below the apply threshold", () => {
+    const field = parseRequirementText("Звонила в офис, спрашивала 2-комнатную в Алмазаре. Записала Нигора.").propertyTypes;
+    expect(field.value).toEqual(["apartment"]);
+    expect(field.confidence).toBeLessThan(MIN_APPLY_CONFIDENCE);
+  });
+});
+
 describe("districts", () => {
   it.each<[string, DistrictId]>([
     ["в Юнусабаде", "yunusabad"],

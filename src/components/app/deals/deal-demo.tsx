@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   createContext,
   useContext,
@@ -27,6 +28,7 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
+import { offerHref } from "@/components/app/offers/offer-list";
 import { MoneyText } from "@/components/domain/badges";
 import { Badge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -148,6 +150,9 @@ export function DealDemoProvider({
   };
   return <DealWorkspaceContext.Provider value={value}>{children}</DealWorkspaceContext.Provider>;
 }
+
+const linkClasses =
+  "inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-primary underline-offset-2 hover:underline";
 
 function DemoNote({ locale, text }: { locale: Locale; text: string }) {
   return (
@@ -531,6 +536,14 @@ export function DealFinancials() {
                 ) : (
                   <p className="text-small text-fg-muted">{format(t.offers.decided, { status: d.offerStatus[offer.status] })}</p>
                 )}
+                <Link
+                  href={offerHref(locale, offer.id)}
+                  aria-label={format(t.offers.openLabel, { id: offer.id })}
+                  className={linkClasses}
+                >
+                  {t.offers.open}
+                  <ArrowRight aria-hidden className="size-4" />
+                </Link>
               </li>
             );
           })}
@@ -549,8 +562,23 @@ const documentStyle: Record<DealDocument["status"], { tone: Tone; icon: LucideIc
   rejected: { tone: "danger", icon: FileX },
 };
 
-/** Documents with status, sensitivity and a demo upload (§16.3, §18.2). */
-export function DealDocuments() {
+/** A contract concluded for the deal, as the documents section links it. */
+export interface DealContractLink {
+  id: ID;
+  number: string;
+  href: string;
+  /** «С покупателем», «Сотрудничество»… — the contract kind in the page language. */
+  kindLabel: string;
+  /** A client or owner service contract (not a co-broking agreement). */
+  service: boolean;
+}
+
+/**
+ * Documents with status, sensitivity and a demo upload (§16.3, §18.2), and
+ * the contracts concluded for the deal; the service contract document links
+ * to its contract.
+ */
+export function DealDocuments({ contracts = [] }: { contracts?: DealContractLink[] }) {
   const { locale, state, dispatch } = useDealWorkspace();
   const t = deals[locale].documents;
   const d = domain[locale];
@@ -558,6 +586,7 @@ export function DealDocuments() {
   const missing = docs.filter((doc) => doc.status === "missing" || doc.status === "rejected").length;
   const anyRestricted = docs.some((doc) => doc.sensitivity === "restricted");
   const notice = state.notice?.kind === "uploaded" ? state.notice : undefined;
+  const serviceContract = contracts.find((contract) => contract.service);
 
   return (
     <DealSection
@@ -588,6 +617,12 @@ export function DealDocuments() {
                   <p className="text-caption text-fg-muted">
                     {doc.uploadedAt ? format(t.uploadedAt, { date: formatDateTime(locale, doc.uploadedAt) }) : t.notUploaded}
                   </p>
+                  {doc.type === "service_contract" && serviceContract ? (
+                    <Link href={serviceContract.href} className={linkClasses}>
+                      {format(t.openContract, { number: serviceContract.number })}
+                      <ArrowRight aria-hidden className="size-4" />
+                    </Link>
+                  ) : null}
                 </div>
                 {canUpload ? (
                   <Button
@@ -609,14 +644,41 @@ export function DealDocuments() {
           {t.restrictedText}
         </Notice>
       ) : null}
+      <div className="space-y-1">
+        <h3 className="text-body font-semibold text-fg">{t.contracts}</h3>
+        {contracts.length === 0 ? (
+          <p className="text-small text-fg-muted">{t.contractsNone}</p>
+        ) : (
+          <ul>
+            {contracts.map((contract) => (
+              <li key={contract.id}>
+                <Link
+                  href={contract.href}
+                  aria-label={format(t.openContract, { number: contract.number })}
+                  className={linkClasses}
+                >
+                  <FileText aria-hidden className="size-4 shrink-0" />
+                  <span>
+                    {contract.kindLabel} · <span className="tabular">{contract.number}</span>
+                  </span>
+                  <ArrowRight aria-hidden className="size-4 shrink-0" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </DealSection>
   );
 }
 
 /* --------------------------------------------------------------- audit */
 
-/** Append-only audit trail (§17.6): stored events, then this page's demo events. */
-export function DealAudit() {
+/**
+ * Append-only audit trail (§17.6): stored events, then this page's demo
+ * events; `journalHref` opens the organization journal filtered to deals.
+ */
+export function DealAudit({ journalHref }: { journalHref?: string }) {
   const { locale, state, agentNames } = useDealWorkspace();
   const t = deals[locale].audit;
   const entries: (AuditEvent & { demo?: boolean })[] = [
@@ -649,6 +711,12 @@ export function DealAudit() {
           ))}
         </ol>
       )}
+      {journalHref ? (
+        <Link href={journalHref} className={linkClasses}>
+          {t.journal}
+          <ArrowRight aria-hidden className="size-4" />
+        </Link>
+      ) : null}
     </DealSection>
   );
 }

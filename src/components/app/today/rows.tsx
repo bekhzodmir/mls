@@ -13,6 +13,7 @@ import {
   Hourglass,
   Inbox,
   Lock,
+  PhoneMissed,
   Sparkles,
   Timer,
   TimerOff,
@@ -20,16 +21,22 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
+import { CallKindBadge, dueText } from "@/components/app/calls/call-badges";
+import { callKind, nextActionState } from "@/components/app/calls/call-list";
+import { partyCaption, partyTitle } from "@/components/app/calls/labels";
+import { contractHref } from "@/components/app/contracts/contract-rules";
 import { BandBadge, FreshnessBadge, MoneyText, SourceBadge } from "@/components/domain/badges";
 import { summarizeMatch } from "@/components/domain/match-explanation";
 import { Badge, type Tone } from "@/components/ui/badge";
 import { format, plural } from "@/i18n/define-messages";
 import type { Locale } from "@/i18n/config";
 import { formatDate, formatDateTime, formatRelative, formatTime } from "@/i18n/format";
+import calls from "@/i18n/messages/calls";
 import domain from "@/i18n/messages/domain";
 import tasks from "@/i18n/messages/tasks";
 import today from "@/i18n/messages/today";
 import type {
+  CallView,
   CooperationView,
   DealView,
   ExpiringContractView,
@@ -167,15 +174,67 @@ export function viewingRow(locale: Locale, view: ViewingView): FeedRowData {
   };
 }
 
+/**
+ * A missed call: who called (or the number), when, and the call-back step —
+ * a missing step is a warning, since an unknown caller must not get lost (§14.7).
+ */
+export function missedCallRow(locale: Locale, view: CallView, at: Date): FeedRowData {
+  const t = calls[locale].next;
+  const { call } = view;
+  const state = nextActionState(view, at);
+  const next = call.nextAction?.text.trim() ? call.nextAction : undefined;
+  return {
+    id: call.id,
+    href: entityHref(locale, { kind: "call", id: call.id }),
+    icon: PhoneMissed,
+    title: partyTitle(locale, view),
+    lines: [
+      <>
+        {/* No number for a linked person: an owner's contact may be restricted (§34.2). */}
+        {view.linked ? calls[locale].subjectKind[view.linked.kind] : partyCaption(locale, view)} ·{" "}
+        <time dateTime={call.startedAt} title={formatDateTime(locale, call.startedAt)}>
+          {formatRelative(locale, call.startedAt, at)}
+        </time>
+      </>,
+      next ? (
+        <>
+          {t.label}: {next.text}
+          {next.dueAt ? ` · ${dueText(locale, next.dueAt, state)}` : null}
+        </>
+      ) : null,
+    ],
+    badges: (
+      <>
+        <CallKindBadge locale={locale} kind={callKind(call)} />
+        {state === "overdue" ? (
+          <Badge tone="danger" icon={AlarmClock}>
+            {t.overdue}
+          </Badge>
+        ) : state === "today" ? (
+          <Badge tone="info" icon={Clock}>
+            {t.today}
+          </Badge>
+        ) : state === "missing" ? (
+          <Badge tone="warning" icon={TriangleAlert}>
+            {t.none}
+          </Badge>
+        ) : null}
+      </>
+    ),
+  };
+}
+
 export function contractRow(locale: Locale, item: ExpiringContractView): FeedRowData {
   const t = today[locale].contract;
   const left =
     item.daysLeft === 0
       ? t.lastDay
       : format(plural(locale, item.daysLeft, t.daysLeft), { n: item.daysLeft });
+  // The listing carries its contract's document number; contract pages accept it.
+  const contractId = item.view.listing.contractId;
   return {
     id: item.view.listing.id,
-    href: entityHref(locale, { kind: "listing", id: item.view.listing.id }),
+    href: contractId ? contractHref(locale, contractId) : entityHref(locale, { kind: "listing", id: item.view.listing.id }),
     icon: FileClock,
     title: listingTitle(locale, item.view.property),
     lines: [format(t.endsAt, { date: formatDate(locale, item.expiresAt) })],
@@ -337,6 +396,8 @@ export function blockRows(locale: Locale, block: TodayBlock, at: Date): FeedRowD
   switch (block.key) {
     case "leads":
       return block.items.map((view) => leadRow(locale, view, at));
+    case "calls":
+      return block.items.map((view) => missedCallRow(locale, view, at));
     case "overdueTasks":
     case "todayTasks":
       return block.items.map((view) => taskRow(locale, view));

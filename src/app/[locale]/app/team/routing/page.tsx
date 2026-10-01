@@ -136,6 +136,7 @@ export default async function RoutingPage({ searchParams }: PageProps<"/[locale]
         rules={context.rules}
         availability={context.availability}
         workloadToday={context.workloadToday}
+        roundRobinCursor={context.roundRobinCursor}
         generatedAt={context.generatedAt}
         agents={context.agents.map((agent) => ({
           id: agent.id,

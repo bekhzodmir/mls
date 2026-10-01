@@ -911,7 +911,7 @@ export const notifications: AppNotification[] = [
     kind: "contract_expiring",
     at: day(0, "08:00"),
     read: false,
-    related: { kind: "listing", id: "lst-06" },
+    related: { kind: "contract", id: "ctr-dr-2026-055" },
     context: "Чиланзар-9, 2 комнаты — договор с собственником заканчивается",
   },
   {

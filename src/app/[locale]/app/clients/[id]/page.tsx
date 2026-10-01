@@ -9,6 +9,7 @@ import {
   Handshake,
   History,
   ListPlus,
+  MessagesSquare,
   Phone,
   Plus,
   Quote,
@@ -18,6 +19,8 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
+import { timelineHref } from "@/components/app/calls/timeline";
+import { consentListHref } from "@/components/app/consents/registry";
 import { CrmTabs } from "@/components/app/crm-tabs";
 import { ClientStatusBadge, ConsentStateBadge, LeadSourceBadge } from "@/components/app/crm/badges";
 import { leadingRequirement, NextAction } from "@/components/app/crm/client-card";
@@ -35,6 +38,7 @@ import {
 } from "@/components/app/crm/layout-parts";
 import { listingHref, matchTargetHref, matchTargetLabel, propertyLabel } from "@/components/app/crm/object-label";
 import { requirementChips } from "@/components/app/crm/requirement-summary";
+import { offerHref } from "@/components/app/offers/offer-list";
 import { PageHeader } from "@/components/app/page-header";
 import { BandBadge, FreshnessBadge, MoneyText, SourceBadge } from "@/components/domain/badges";
 import { summarizeMatch } from "@/components/domain/match-explanation";
@@ -579,6 +583,13 @@ export default async function ClientPage({ params }: PageProps<"/[locale]/app/cl
                       <p className="text-caption text-fg-muted">
                         {format(t.offers.version, { n: latest.version })} · {formatDateTime(locale, latest.at)}
                       </p>
+                      <Link
+                        href={offerHref(locale, offer.id)}
+                        className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-primary hover:underline"
+                      >
+                        {t.offers.open}
+                        <ChevronRight aria-hidden className="size-4" />
+                      </Link>
                     </div>
                     <Badge
                       tone={
@@ -687,7 +698,17 @@ export default async function ClientPage({ params }: PageProps<"/[locale]/app/cl
           )}
         </CrmSection>
 
-        <CrmSection id="consents" title={t.sections.consents} description={t.consents.text}>
+        <CrmSection
+          id="consents"
+          title={t.sections.consents}
+          description={t.consents.text}
+          action={
+            <ButtonLink href={consentListHref(locale, { subject: "client" })} variant="secondary">
+              {t.consents.registry}
+              <ChevronRight aria-hidden className="size-4" />
+            </ButtonLink>
+          }
+        >
           {client.consents.length > 0 ? (
             <ul className="space-y-2">
               {client.consents.map((consent) => (
@@ -719,7 +740,16 @@ export default async function ClientPage({ params }: PageProps<"/[locale]/app/cl
           <ClientMemory locale={locale} items={client.memory} />
         </CrmSection>
 
-        <CrmSection id="timeline" title={t.sections.timeline}>
+        <CrmSection
+          id="timeline"
+          title={t.sections.timeline}
+          action={
+            <ButtonLink href={timelineHref(locale, { kind: "client", id: client.id })} variant="soft">
+              <MessagesSquare aria-hidden className="size-4" />
+              {t.timeline.communications}
+            </ButtonLink>
+          }
+        >
           {timeline.length > 0 ? (
             <div className="space-y-3">
               <ol className="space-y-3">{timeline.slice(0, TIMELINE_PREVIEW).map(renderTimelineItem)}</ol>

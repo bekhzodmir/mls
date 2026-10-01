@@ -4,7 +4,7 @@ import { contracts } from "./seed-contracts";
 import { leads, clients, requirements } from "./seed-crm";
 import { listings, properties } from "./seed-inventory";
 import { agents, organizations, owners, VIEWER_AGENT_ID } from "./seed-people";
-import { agentAvailability, routingRules, teams } from "./seed-team";
+import { agentAvailability, roundRobinCursors, routingRules, teams } from "./seed-team";
 import { telegramListings, telegramSources } from "./seed-telegram";
 import {
   cooperationRequests,
@@ -62,6 +62,7 @@ export const seed = deepFreeze({
   teams,
   agentAvailability,
   routingRules,
+  roundRobinCursors,
   /** Demo Realty's organization journal; deal histories stay on each deal. */
   orgAuditLog,
 });

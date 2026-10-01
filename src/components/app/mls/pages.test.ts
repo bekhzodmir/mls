@@ -119,6 +119,17 @@ describe.each(["ru", "uz"] as const)("W4 pages (%s)", (locale) => {
     }
   });
 
+  it("links professionals: partners to the partner screens, colleagues to the team, never the viewer", async () => {
+    const mlsHome = await render(pages.mls);
+    expect(mlsHome).toMatch(new RegExp(`href="/${locale}/app/partners/agent-0[4-9]"`));
+    expect(mlsHome).toMatch(new RegExp(`href="/${locale}/app/team/agent-(02|03|10)"`));
+    expect(mlsHome).not.toContain(`/${locale}/app/partners/agent-0${"1"}"`);
+    const coop = await render(pages.cooperationDetail, {}, { id: "coop-01" });
+    expect(coop).toContain(`href="/${locale}/app/partners/agent-04"`);
+    expect(coop).not.toContain(`href="/${locale}/app/team/agent-01"`);
+    expect(coop).not.toContain(`href="/${locale}/app/partners/agent-01"`);
+  });
+
   it("keeps a partner's client and contacts hidden before acceptance", async () => {
     const incoming = await render(pages.cooperationDetail, {}, { id: "coop-03" });
     expect(incoming).toContain("*** **");

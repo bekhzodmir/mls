@@ -24,6 +24,7 @@ function quiet(feed: TodayFeed): TodayFeed {
     staleListings: [],
     priceDrops: [],
     dealsNeedingAttention: [],
+    missedCalls: [],
   };
 }
 

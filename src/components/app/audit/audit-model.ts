@@ -1,7 +1,10 @@
+import { consentListHref } from "@/components/app/consents/registry";
 import { auditActionText as dealActionText, auditReasonText as dealReasonText } from "@/components/app/deals/rules-text";
 import { firstParam, type SearchParamsRecord } from "@/components/app/mls/url";
+import { partnerHref } from "@/components/app/partners/partner-model";
 import { auditCheck } from "@/components/app/team/access";
 import { withDemoRole, type DemoRole } from "@/components/app/team/demo-role";
+import { memberHref } from "@/components/app/team/team-model";
 import type { Locale } from "@/i18n/config";
 import { format } from "@/i18n/define-messages";
 import audit from "@/i18n/messages/audit";
@@ -13,6 +16,7 @@ import {
   ORG_AUDIT_TARGET_KINDS,
   SYSTEM_ACTOR_ID,
   type AuditEventView,
+  type AuditTargetLink,
 } from "@/lib/data/views";
 import type { Actor } from "@/lib/domain/permissions";
 import { tashkentDateKey } from "@/lib/domain/working-days";
@@ -191,6 +195,27 @@ export function actorLabel(locale: Locale, view: AuditEventView, viewerId: ID): 
   if (view.system || view.event.actorId === SYSTEM_ACTOR_ID) return t.system;
   if (!view.actor) return t.unknownActor;
   return view.actor.id === viewerId ? `${view.actor.name} (${t.you})` : view.actor.name;
+}
+
+/**
+ * Where a target opens. The repository sets `target.link` only for records
+ * the viewer may open, so a link never leads to a "not found" page.
+ */
+export function targetHref(locale: string, link: AuditTargetLink): string {
+  switch (link.route) {
+    case "contract":
+      return appPath(locale, `/contracts/${encodeURIComponent(link.id)}`);
+    case "owner":
+      return appPath(locale, `/owners/${encodeURIComponent(link.id)}`);
+    case "call":
+      return appPath(locale, `/calls/${encodeURIComponent(link.id)}`);
+    case "member":
+      return memberHref(locale, link.id);
+    case "partner":
+      return partnerHref(locale, link.id);
+    case "consents":
+      return consentListHref(locale, { subject: link.subject });
+  }
 }
 
 /* ----------------------------------------------------------------- days */

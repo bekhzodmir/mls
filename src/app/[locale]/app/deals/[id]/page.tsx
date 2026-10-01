@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { auditHref } from "@/components/app/audit/audit-model";
+import { contractHref } from "@/components/app/contracts/contract-rules";
 import { CrmTabs } from "@/components/app/crm-tabs";
 import { propertyTitle } from "@/components/app/inventory/labels";
 import { PageHeader } from "@/components/app/page-header";
@@ -11,6 +13,7 @@ import {
   DealDocuments,
   DealFinancials,
   DealStagePanel,
+  type DealContractLink,
 } from "@/components/app/deals/deal-demo";
 import {
   ActSection,
@@ -23,6 +26,7 @@ import {
 } from "@/components/app/deals/deal-sections";
 import { dealListHref } from "@/components/app/deals/pipeline";
 import { format } from "@/i18n/define-messages";
+import contracts from "@/i18n/messages/contracts";
 import deals from "@/i18n/messages/deals";
 import domain from "@/i18n/messages/domain";
 import { getLocale } from "@/i18n/server";
@@ -61,6 +65,14 @@ export default async function DealPage({ params }: PageProps<"/[locale]/app/deal
   const agentNames = Object.fromEntries(agents.map((agent) => [agent.id, agent.name]));
   const partyAgents = [view.agent, view.listing.agent, ...(view.partner ? [view.partner] : [])];
   const organizationIds = [...new Set(partyAgents.map((agent) => agent.organizationId).filter((org): org is string => Boolean(org)))];
+  const contractLinks: DealContractLink[] = view.contracts.map(({ contract }) => ({
+    id: contract.id,
+    number: contract.number,
+    href: contractHref(locale, contract.id),
+    kindLabel: contracts[locale].kind[contract.kind],
+    service: contract.kind !== "cooperation",
+  }));
+  const serviceContract = contractLinks.find((link) => link.service);
   const organizations = Object.fromEntries(
     (await Promise.all(organizationIds.map((orgId) => getOrganization(orgId))))
       .filter((org): org is Organization => org !== undefined)
@@ -102,8 +114,13 @@ export default async function DealPage({ params }: PageProps<"/[locale]/app/deal
           <div className="space-y-4">
             <NextActionSection locale={locale} view={view} now={at} />
             <DealFinancials />
-            <DealDocuments />
-            <ChecklistSection locale={locale} items={view.deal.checklist} agentNames={agentNames} />
+            <DealDocuments contracts={contractLinks} />
+            <ChecklistSection
+              locale={locale}
+              items={view.deal.checklist}
+              agentNames={agentNames}
+              serviceContract={serviceContract}
+            />
           </div>
           <div className="space-y-4">
             <PartiesSection locale={locale} view={view} viewerId={viewer.id} organizations={organizations} />
@@ -117,7 +134,7 @@ export default async function DealPage({ params }: PageProps<"/[locale]/app/deal
             <ActSection locale={locale} view={view} />
           </div>
         </div>
-        <DealAudit />
+        <DealAudit journalHref={auditHref(locale, { target: "deal" })} />
         <DealActionBar />
       </DealDemoProvider>
     </div>
