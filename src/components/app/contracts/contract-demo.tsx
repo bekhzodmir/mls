@@ -23,6 +23,7 @@ import {
   TriangleAlert,
   Undo2,
 } from "lucide-react";
+import { stickyActionClasses } from "@/components/app/crm/layout-parts";
 import { DealSection } from "@/components/app/deals/deal-section";
 import { Hint, InlineError, Label, textareaClasses } from "@/components/app/viewings/form-parts";
 import { Button } from "@/components/ui/button";
@@ -172,7 +173,17 @@ function noticeText(locale: Locale, contract: Contract, notice: ContractDemoNoti
   }
 }
 
-function IssueList({ locale, issues, names }: { locale: Locale; issues: readonly ContractIssue[]; names: Record<ID, string> }) {
+function IssueList({
+  locale,
+  issues,
+  names,
+  kind,
+}: {
+  locale: Locale;
+  issues: readonly ContractIssue[];
+  names: Record<ID, string>;
+  kind: Contract["kind"];
+}) {
   return (
     <ul className="space-y-1.5">
       {issues.map((issue, index) => {
@@ -186,7 +197,7 @@ function IssueList({ locale, issues, names }: { locale: Locale; issues: readonly
             )}
           >
             <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
-            <span>{issueText(locale, issue, names)}</span>
+            <span>{issueText(locale, issue, names, kind)}</span>
           </li>
         );
       })}
@@ -218,7 +229,7 @@ function ContractCheck({ contract }: { contract: Contract }) {
     ) : (
       <div className="space-y-2">
         <p className="text-small font-semibold text-fg">{t.activeIssues}</p>
-        <IssueList locale={locale} issues={issues} names={holderNames} />
+        <IssueList locale={locale} issues={issues} names={holderNames} kind={contract.kind} />
       </div>
     );
   }
@@ -233,13 +244,13 @@ function ContractCheck({ contract }: { contract: Contract }) {
       ) : (
         <>
           <p className="text-small font-semibold text-fg">{t.cannotActivate}</p>
-          <IssueList locale={locale} issues={check.issues} names={holderNames} />
+          <IssueList locale={locale} issues={check.issues} names={holderNames} kind={contract.kind} />
         </>
       )}
       {check.warnings.length > 0 ? (
         <>
           <p className="text-small font-semibold text-fg">{t.warnings}</p>
-          <IssueList locale={locale} issues={check.warnings} names={holderNames} />
+          <IssueList locale={locale} issues={check.warnings} names={holderNames} kind={contract.kind} />
         </>
       ) : null}
     </div>
@@ -308,7 +319,7 @@ export function ContractStatusPanel() {
               <OctagonAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
               {t.actions.sendBlocked}
             </p>
-            <IssueList locale={locale} issues={blocked} names={holderNames} />
+            <IssueList locale={locale} issues={blocked} names={holderNames} kind={contract.kind} />
           </div>
         ) : null}
       </div>
@@ -376,36 +387,51 @@ function RenewalCard({ renewal }: { renewal: Contract }) {
   );
 }
 
+const barPrimary = "bg-primary text-primary-fg hover:bg-primary-hover";
+const barSecondary = "border border-border bg-surface text-fg hover:bg-surface-muted";
+
+/**
+ * The actions the status allows. Full buttons in the status section on
+ * desktop; in the phone bar, icon over a short label so they fit one row.
+ */
 function ActionButtons({ compact = false, onPick }: { compact?: boolean; onPick?: () => void }) {
   const { locale, state, dispatch, setMode } = useContractDemo();
   const t = contracts[locale].actions;
-  const actions = useActions();
-  const classes = cn(compact && "min-w-0 flex-1");
+  const available = useActions();
   const run = (action: ContractAction) => {
     if (action === "terminate") setMode("terminate");
-    else dispatch({ type: action === "send" ? "send" : "renew" });
+    else dispatch({ type: action });
     onPick?.();
   };
+  const sendLabel = state.contract.status === "awaiting_signature" ? t.resend : t.send;
+  const actions: { key: ContractAction; icon: typeof Send; label: string; short: string; primary: boolean }[] = [
+    { key: "send", icon: Send, label: sendLabel, short: t.sendShort, primary: true },
+    { key: "renew", icon: CopyPlus, label: t.renew, short: t.renew, primary: true },
+    { key: "terminate", icon: FileX, label: t.terminate, short: t.terminate, primary: false },
+  ];
   return (
     <>
-      {actions.includes("send") ? (
-        <Button className={classes} onClick={() => run("send")}>
-          <Send aria-hidden className="size-4 shrink-0" />
-          <span className="truncate">{state.contract.status === "awaiting_signature" ? t.resend : t.send}</span>
-        </Button>
-      ) : null}
-      {actions.includes("renew") ? (
-        <Button className={classes} onClick={() => run("renew")}>
-          <CopyPlus aria-hidden className="size-4 shrink-0" />
-          <span className="truncate">{t.renew}</span>
-        </Button>
-      ) : null}
-      {actions.includes("terminate") ? (
-        <Button variant="secondary" className={classes} onClick={() => run("terminate")}>
-          <FileX aria-hidden className="size-4 shrink-0" />
-          <span className="truncate">{t.terminate}</span>
-        </Button>
-      ) : null}
+      {actions
+        .filter((action) => available.includes(action.key))
+        .map(({ key, icon: Icon, label, short, primary }) =>
+          compact ? (
+            <button
+              key={key}
+              type="button"
+              aria-label={label}
+              className={cn(stickyActionClasses, primary ? barPrimary : barSecondary)}
+              onClick={() => run(key)}
+            >
+              <Icon aria-hidden className="size-5 shrink-0" />
+              {short}
+            </button>
+          ) : (
+            <Button key={key} variant={primary ? "primary" : "secondary"} onClick={() => run(key)}>
+              <Icon aria-hidden className="size-4 shrink-0" />
+              {label}
+            </Button>
+          ),
+        )}
     </>
   );
 }

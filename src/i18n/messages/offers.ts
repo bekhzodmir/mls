@@ -59,7 +59,6 @@ export default defineMessages({
       decided: "Решение принято — новых версий не будет",
     },
     detail: {
-      subtitle: "{client} · {place}",
       sections: {
         state: "Текущее состояние",
         timeline: "История переговоров",
@@ -87,7 +86,6 @@ export default defineMessages({
       you: "вы",
       openClient: "Открыть клиента",
       openDeal: "Открыть сделку",
-      dealStage: "Этап: {stage}",
       dealNone: "Сделки по этому предложению ещё нет. Её открывают, когда стороны договорились о цене.",
       dealHidden:
         "Предложение относится к сделке другого агента. Подробности сделки видят её агент и руководитель агентства.",
@@ -117,6 +115,7 @@ export default defineMessages({
       declineCommentRequired: "обязательно для «Другое»",
       declineConfirm: "Отклонить предложение",
       counter: "Встречное предложение",
+      counterShort: "Встречное",
       counterTitle: "Встречное предложение от стороны «{side}»",
       counterAmount: "Сумма",
       counterAmountHint: "Цифрами, например 220000. Последнее предложение: {amount}.",
@@ -208,7 +207,6 @@ export default defineMessages({
       decided: "Qaror qabul qilingan — yangi versiyalar bo‘lmaydi",
     },
     detail: {
-      subtitle: "{client} · {place}",
       sections: {
         state: "Joriy holat",
         timeline: "Muzokaralar tarixi",
@@ -236,7 +234,6 @@ export default defineMessages({
       you: "siz",
       openClient: "Mijozni ochish",
       openDeal: "Bitimni ochish",
-      dealStage: "Bosqich: {stage}",
       dealNone: "Bu taklif bo‘yicha hali bitim yo‘q. U tomonlar narx bo‘yicha kelishganda ochiladi.",
       dealHidden:
         "Taklif boshqa agentning bitimiga tegishli. Bitim tafsilotlarini uning agenti va agentlik rahbari ko‘radi.",
@@ -267,6 +264,7 @@ export default defineMessages({
       declineCommentRequired: "«Boshqa» uchun majburiy",
       declineConfirm: "Taklifni rad etish",
       counter: "Qarshi taklif",
+      counterShort: "Qarshi taklif",
       counterTitle: "«{side}» tomonidan qarshi taklif",
       counterAmount: "Summa",
       counterAmountHint: "Raqamlarda, masalan 220000. So‘nggi taklif: {amount}.",

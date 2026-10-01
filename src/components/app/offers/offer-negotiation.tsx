@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { BadgeCheck, CheckCheck, CircleX, Flag, History, Undo2 } from "lucide-react";
+import { stickyActionClasses } from "@/components/app/crm/layout-parts";
 import { DealSection } from "@/components/app/deals/deal-section";
 import {
   answeringSide,
@@ -285,31 +286,57 @@ export function OfferStatePanel() {
   );
 }
 
+const barPrimary = "bg-primary text-primary-fg hover:bg-primary-hover";
+const barSecondary = "border border-border bg-surface text-fg hover:bg-surface-muted";
+
+/**
+ * The three answers. Full buttons in the state section on desktop; in the
+ * phone bar, icon over a short label so all three fit one thumb row.
+ */
 function ActionButtons({ compact = false, onPick }: { compact?: boolean; onPick?: () => void }) {
   const { locale, setMode } = useNegotiation();
   const t = offers[locale].actions;
   const { latest, expired } = useTurn();
   if (!latest) return null;
-  const pick = (mode: Mode) => {
-    setMode(mode);
-    onPick?.();
-  };
+  const actions: { mode: Mode; icon: typeof BadgeCheck; label: string; short: string; primary: boolean }[] = [
+    ...(expired
+      ? []
+      : [
+          {
+            mode: "accept" as const,
+            icon: BadgeCheck,
+            label: format(t.accept, { amount: formatMoney(locale, latest.amount) }),
+            short: t.acceptShort,
+            primary: true,
+          },
+        ]),
+    { mode: "counter", icon: History, label: t.counter, short: t.counterShort, primary: false },
+    { mode: "decline", icon: CircleX, label: t.decline, short: t.decline, primary: false },
+  ];
   return (
     <>
-      {expired ? null : (
-        <Button className={cn(compact && "min-w-0 flex-1")} onClick={() => pick("accept")}>
-          <BadgeCheck aria-hidden className="size-4 shrink-0" />
-          <span className="truncate">{compact ? t.acceptShort : format(t.accept, { amount: formatMoney(locale, latest.amount) })}</span>
-        </Button>
+      {actions.map(({ mode, icon: Icon, label, short, primary }) =>
+        compact ? (
+          <button
+            key={mode}
+            type="button"
+            aria-label={label}
+            className={cn(stickyActionClasses, primary ? barPrimary : barSecondary)}
+            onClick={() => {
+              setMode(mode);
+              onPick?.();
+            }}
+          >
+            <Icon aria-hidden className="size-5 shrink-0" />
+            {short}
+          </button>
+        ) : (
+          <Button key={mode} variant={primary ? "primary" : "secondary"} onClick={() => setMode(mode)}>
+            <Icon aria-hidden className="size-4 shrink-0" />
+            {label}
+          </Button>
+        ),
       )}
-      <Button variant="secondary" className={cn(compact && "min-w-0 flex-1")} onClick={() => pick("counter")}>
-        <History aria-hidden className="size-4 shrink-0" />
-        <span className="truncate">{t.counter}</span>
-      </Button>
-      <Button variant="secondary" className={cn(compact && "min-w-0 flex-1")} onClick={() => pick("decline")}>
-        <CircleX aria-hidden className="size-4 shrink-0" />
-        <span className="truncate">{t.decline}</span>
-      </Button>
     </>
   );
 }
@@ -681,12 +708,13 @@ export function OfferTimeline() {
 /**
  * Sticky answer actions on phones (§14.3, §22.6). Each opens its form in
  * the state section, which scrolls into view. Hidden when the viewer has
- * nothing to answer.
+ * nothing to answer or a form is already open.
  */
 export function OfferActionBar() {
-  const { locale } = useNegotiation();
+  const { locale, mode } = useNegotiation();
   const { canAnswer } = useTurn();
-  if (!canAnswer) return null;
+  // While a form is open its own buttons take over, and the bar would cover them.
+  if (!canAnswer || mode !== "idle") return null;
   return (
     <div
       role="group"

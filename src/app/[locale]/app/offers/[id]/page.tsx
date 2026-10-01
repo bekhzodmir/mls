@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CrmTabs } from "@/components/app/crm-tabs";
-import { locationLine, propertyTitle } from "@/components/app/inventory/labels";
+import { propertyTitle } from "@/components/app/inventory/labels";
 import { offerListHref } from "@/components/app/offers/offer-list";
 import {
   OfferActionBar,
@@ -49,7 +49,7 @@ export default async function OfferPage({ params }: PageProps<"/[locale]/app/off
       <PageHeader
         locale={locale}
         title={propertyTitle(locale, property)}
-        subtitle={format(t.detail.subtitle, { client: view.client.name, place: locationLine(locale, property) })}
+        subtitle={format(t.card.client, { name: view.client.name })}
         backHref={offerListHref(locale)}
         className="mb-0"
       >

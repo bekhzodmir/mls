@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/config";
 import { formatDate, formatNumber } from "@/i18n/format";
 import contracts from "@/i18n/messages/contracts";
 import type { ContractClause, ContractDisplayStatus, ContractIssue } from "@/lib/domain/contracts";
-import type { ContractSignature, ContractStatus, ID } from "@/lib/domain/types";
+import type { ContractKind, ContractSignature, ContractStatus, ID } from "@/lib/domain/types";
 
 /**
  * Words for the contract rule codes and statuses (RU/UZ). Every
@@ -70,8 +70,17 @@ function field(issue: ContractIssue): Field {
   return value === "percent" || value === "amount" ? value : "paymentTerms";
 }
 
-/** One sentence per issue, in the order the rules returned them. */
-export function issueText(locale: Locale, issue: ContractIssue, holderNames: Record<ID, string> = {}): string {
+/**
+ * One sentence per issue, in the order the rules returned them. With the
+ * contract's kind, the customer side of a co-broking agreement is named the
+ * partner, who signs for it.
+ */
+export function issueText(
+  locale: Locale,
+  issue: ContractIssue,
+  holderNames: Record<ID, string> = {},
+  kind?: ContractKind,
+): string {
   const t = contracts[locale];
   switch (issue.code) {
     case "period_invalid":
@@ -96,7 +105,8 @@ export function issueText(locale: Locale, issue: ContractIssue, holderNames: Rec
     case "right_holder_consent_unlinked":
       return format(t.issue.right_holder_consent_unlinked, { name: holderName(locale, issue, holderNames) });
     case "signature_missing":
-      return param(issue, "party") === "customer" ? t.issue.signature_missing.customer : t.issue.signature_missing.agent;
+      if (param(issue, "party") !== "customer") return t.issue.signature_missing.agent;
+      return kind === "cooperation" ? t.issue.signature_missing.partner : t.issue.signature_missing.customer;
     case "signature_method_unverified": {
       const party = param(issue, "party") as ContractSignature["party"] | undefined;
       return format(t.issue.signature_method_unverified, {

@@ -117,7 +117,7 @@ export default async function ContractsPage({ searchParams }: PageProps<"/[local
               {contractStatusFilters.map((code) => (
                 <li key={code}>
                   <ChipLink href={contractListHref(locale, { status: code, kind, q })} active={status === code}>
-                    {t.status[code]}{" "}
+                    {t.list.statusChip[code]}{" "}
                     <ChipCount n={byKind.filter((view) => statusOf.get(view.contract.id) === code).length} />
                   </ChipLink>
                 </li>

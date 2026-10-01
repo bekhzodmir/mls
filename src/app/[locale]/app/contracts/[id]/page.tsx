@@ -79,7 +79,7 @@ export default async function ContractPage({ params }: PageProps<"/[locale]/app/
       <PageHeader
         locale={locale}
         title={format(t.detail.title, { number: contract.number })}
-        subtitle={format(t.detail.subtitle, { kind: t.kind[contract.kind], customer: view.customer.name })}
+        subtitle={format(t.card.customer[view.customer.kind], { name: view.customer.name })}
         backHref={contractListHref(locale)}
         className="mb-0"
       >

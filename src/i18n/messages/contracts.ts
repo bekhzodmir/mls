@@ -36,6 +36,14 @@ export default defineMessages({
       title: "Договоры",
       subtitle: "Истекают в ближайшие 14 дней: {expiring} · ждут подписи: {awaiting} · с замечаниями: {issues}",
       statusFilter: "Статус договора",
+      statusChip: {
+        expiring: "Истекают",
+        awaiting_signature: "Ждут подписи",
+        draft: "Черновики",
+        active: "Действуют",
+        expired: "Истекли",
+        terminated: "Расторгнуты",
+      },
       kindFilter: "Вид договора",
       all: "Все",
       allKinds: "Все виды",
@@ -79,7 +87,6 @@ export default defineMessages({
     },
     detail: {
       title: "Договор {number}",
-      subtitle: "{kind} · {customer}",
       legalTitle: "Шаблоны и юридическая сила требуют проверки юриста",
       legalText:
         "Шаблоны договоров, перечень обязательных условий и способы подписи нужно проверить у юриста до использования в работе (§38.5). Binor не даёт юридических заключений.",
@@ -182,6 +189,7 @@ export default defineMessages({
       signed: "{method} · {date}",
       none: "Подписей пока нет.",
       missingCustomer: "Нет подписи заказчика",
+      missingPartner: "Нет подписи партнёра",
       missingAgent: "Нет подписи агента или руководителя организации",
       simpleTitle: "Простая электронная подпись",
       simpleText:
@@ -193,7 +201,7 @@ export default defineMessages({
       activeOk: "Договор действует, замечаний нет.",
       activeIssues: "Договор действует, но есть замечания:",
       canActivate: "Все условия выполнены — договор может вступить в силу.",
-      cannotActivate: "Чтобы договор вступил в силу, нужно:",
+      cannotActivate: "Не выполнены условия вступления в силу:",
       warnings: "Обратите внимание:",
       closed: "Договор закрыт — вступить в силу он не может.",
     },
@@ -217,6 +225,7 @@ export default defineMessages({
       right_holder_consent_unlinked: "Согласие правообладателя {name} не подтверждено документом.",
       signature_missing: {
         customer: "Нет подписи заказчика.",
+        partner: "Нет подписи партнёра.",
         agent: "Нет подписи агента или руководителя организации.",
       },
       signature_method_unverified:
@@ -228,7 +237,6 @@ export default defineMessages({
     links: {
       property: "Объект",
       deal: "Сделка",
-      dealStage: "Этап: {stage}",
       requirement: "Запрос клиента",
       openRequirement: "Открыть запрос",
       cooperation: "Запрос на сотрудничество",
@@ -246,6 +254,7 @@ export default defineMessages({
       terminate: "Расторгнуть",
       send: "Отправить на подпись",
       resend: "Отправить на подпись повторно",
+      sendShort: "На подпись",
       bar: "Действия с договором",
       permission:
         "Договор ведёт {agent}. Продлить, расторгнуть или отправить его на подпись может ответственный агент или руководитель агентства.",
@@ -263,8 +272,7 @@ export default defineMessages({
       terminateConfirm: "Расторгнуть договор",
       terminateMissing: "Укажите причину расторжения — хотя бы несколько слов.",
       cancel: "Отмена",
-      sendBlocked: "Отправить на подпись пока нельзя — сначала нужно:",
-      sendTitle: "Кто ещё должен подписать",
+      sendBlocked: "Отправить на подпись пока нельзя:",
       demo: "Демо: изменение видно только на этой странице — на сервер не отправлено, стороны ничего не получили.",
       reset: "Вернуть как было",
     },
@@ -307,6 +315,14 @@ export default defineMessages({
       title: "Shartnomalar",
       subtitle: "Yaqin 14 kunda tugaydi: {expiring} · imzo kutilmoqda: {awaiting} · eslatmalar bilan: {issues}",
       statusFilter: "Shartnoma holati",
+      statusChip: {
+        expiring: "Muddati tugayotganlar",
+        awaiting_signature: "Imzo kutayotganlar",
+        draft: "Qoralamalar",
+        active: "Amaldagilar",
+        expired: "Muddati tugaganlar",
+        terminated: "Bekor qilinganlar",
+      },
       kindFilter: "Shartnoma turi",
       all: "Barchasi",
       allKinds: "Barcha turlar",
@@ -350,7 +366,6 @@ export default defineMessages({
     },
     detail: {
       title: "Shartnoma {number}",
-      subtitle: "{kind} · {customer}",
       legalTitle: "Shablonlar va yuridik kuch yurist tekshiruvini talab qiladi",
       legalText:
         "Shartnoma shablonlari, majburiy shartlar ro‘yxati va imzolash usullarini ishda qo‘llashdan oldin yurist tekshirishi kerak (§38.5). Binor yuridik xulosa bermaydi.",
@@ -453,18 +468,19 @@ export default defineMessages({
       signed: "{method} · {date}",
       none: "Hozircha imzolar yo‘q.",
       missingCustomer: "Buyurtmachi imzosi yo‘q",
+      missingPartner: "Hamkor imzosi yo‘q",
       missingAgent: "Agent yoki tashkilot rahbari imzosi yo‘q",
       simpleTitle: "Oddiy elektron imzo",
       simpleText:
         "Oddiy elektron imzoning qog‘ozdagi imzoga tengligini yurist tasdiqlashi kerak. Bu malakali elektron imzo emas.",
-      buttonNote: "Binor’dagi tugmani bosish malakali elektron imzo hisoblanmaydi.",
+      buttonNote: "Binorda tugmani bosish malakali elektron imzo hisoblanmaydi.",
     },
     check: {
       title: "Shartnomani tekshirish",
       activeOk: "Shartnoma amalda, eslatmalar yo‘q.",
       activeIssues: "Shartnoma amalda, lekin eslatmalar bor:",
       canActivate: "Barcha shartlar bajarilgan — shartnoma kuchga kirishi mumkin.",
-      cannotActivate: "Shartnoma kuchga kirishi uchun kerak:",
+      cannotActivate: "Kuchga kirish shartlari bajarilmagan:",
       warnings: "E’tibor bering:",
       closed: "Shartnoma yopilgan — u kuchga kira olmaydi.",
     },
@@ -488,6 +504,7 @@ export default defineMessages({
       right_holder_consent_unlinked: "Huquq egasi {name} roziligi hujjat bilan tasdiqlanmagan.",
       signature_missing: {
         customer: "Buyurtmachi imzosi yo‘q.",
+        partner: "Hamkor imzosi yo‘q.",
         agent: "Agent yoki tashkilot rahbari imzosi yo‘q.",
       },
       signature_method_unverified:
@@ -499,7 +516,6 @@ export default defineMessages({
     links: {
       property: "Ob’yekt",
       deal: "Bitim",
-      dealStage: "Bosqich: {stage}",
       requirement: "Mijoz so‘rovi",
       openRequirement: "So‘rovni ochish",
       cooperation: "Hamkorlik so‘rovi",
@@ -517,6 +533,7 @@ export default defineMessages({
       terminate: "Bekor qilish",
       send: "Imzoga yuborish",
       resend: "Imzoga qayta yuborish",
+      sendShort: "Imzoga",
       bar: "Shartnoma bilan amallar",
       permission:
         "Shartnomani {agent} olib boradi. Uni uzaytirish, bekor qilish yoki imzoga yuborishni mas’ul agent yoki agentlik rahbari bajara oladi.",
@@ -534,8 +551,7 @@ export default defineMessages({
       terminateConfirm: "Shartnomani bekor qilish",
       terminateMissing: "Bekor qilish sababini kiriting — hech bo‘lmaganda bir necha so‘z.",
       cancel: "Yopish",
-      sendBlocked: "Hozircha imzoga yuborib bo‘lmaydi — avval kerak:",
-      sendTitle: "Yana kim imzolashi kerak",
+      sendBlocked: "Hozircha imzoga yuborib bo‘lmaydi:",
       demo: "Demo: o‘zgarish faqat shu sahifada ko‘rinadi — serverga yuborilmagan, tomonlar hech narsa olmagan.",
       reset: "Avvalgi holatga qaytarish",
     },

@@ -45,6 +45,7 @@ export default async function ConsentsPage({ searchParams }: PageProps<"/[locale
   const [all, viewer] = await Promise.all([listConsents(), getViewer()]);
   const shown = all.filter((item) => matchesConsentFilter(item, filter));
   const filtered = Boolean(filter.subject || filter.purpose || filter.state);
+  const nowIso = now().toISOString();
   // Each chip row counts within the other two filters, so a count is what the chip would show.
   const countFor = (next: typeof filter) => all.filter((item) => matchesConsentFilter(item, next)).length;
 
@@ -120,7 +121,7 @@ export default async function ConsentsPage({ searchParams }: PageProps<"/[locale
           <ul aria-label={t.list.listLabel} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {shown.map((item) => (
               <li key={consentKey(item)}>
-                <ConsentRow locale={locale} item={item} viewerId={viewer.agent.id} nowIso={now().toISOString()} />
+                <ConsentRow locale={locale} item={item} viewerId={viewer.agent.id} nowIso={nowIso} />
               </li>
             ))}
           </ul>

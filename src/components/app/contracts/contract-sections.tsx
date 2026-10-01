@@ -381,7 +381,7 @@ export function ContractSignaturesSection({
           {missing.map((side) => (
             <li key={side} className="flex items-start gap-2 text-small text-danger-fg">
               <CircleX aria-hidden className="mt-0.5 size-4 shrink-0" />
-              {side === "customer" ? t.missingCustomer : t.missingAgent}
+              {side === "agent" ? t.missingAgent : contract.kind === "cooperation" ? t.missingPartner : t.missingCustomer}
             </li>
           ))}
         </ul>
