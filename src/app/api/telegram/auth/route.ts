@@ -89,7 +89,10 @@ export async function POST(request: Request): Promise<Response> {
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
     return failure(413, "payload_too_large", defaultLocale);
   }
-  if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+  // Compare the media type itself: a substring test would let a CORS-safelisted
+  // "text/plain;application/json" through without a preflight.
+  const mediaType = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
     return failure(415, "unsupported_media_type", defaultLocale);
   }
 

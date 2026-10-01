@@ -89,3 +89,26 @@ describe("POST /api/telegram/auth body limit", () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe("POST /api/telegram/auth media type", () => {
+  const post = (contentType: string) =>
+    POST(
+      new Request("http://localhost/api/telegram/auth", {
+        method: "POST",
+        headers: { "content-type": contentType },
+        body: JSON.stringify({ initData: "x" }),
+      }),
+    );
+
+  it("rejects a CORS-safelisted type that only mentions application/json", async () => {
+    const response = await post("text/plain;application/json");
+    expect(response.status).toBe(415);
+    expect(await response.json()).toMatchObject({ error: "unsupported_media_type" });
+  });
+
+  it("accepts application/json with parameters", async () => {
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
+    const response = await post("Application/JSON; charset=utf-8");
+    expect(response.status).not.toBe(415);
+  });
+});
