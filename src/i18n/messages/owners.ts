@@ -64,7 +64,7 @@ export default defineMessages({
       lastContact: "Ваш последний контакт",
       noContact: "Вы ещё не связывались",
       safeStep:
-        "попросите {name} связаться с собственником или передать вам объект — передача записывается в журнал. Объекты, договоры и результаты проверок доступны ниже.",
+        "попросите ответственного агента ({name}) связаться с собственником или передать вам объект — передача записывается в журнал. Объекты, договоры и результаты проверок доступны ниже.",
       rightHolderNote:
         "Человек связан с объектом как правообладатель по договору, а не как зарегистрированный собственник. Его согласие — отдельное, оно не следует из согласия собственника.",
       consentRevoked:
@@ -74,6 +74,12 @@ export default defineMessages({
       gapOther: "По договору {number} нет согласия: {names}. Пока его нет, договор не подписывается (ст. 37).",
       openContract: "Открыть договор",
       sectionsLabel: "Разделы профиля",
+      staleTitle: "Объявление требует подтверждения",
+      staleText:
+        "{label}: последнее подтверждение — {ago}. Уточните у собственника, актуально ли предложение; молчание не считается подтверждением.",
+      staleExpiredTitle: "Срок предложения истёк",
+      staleExpired: "{label}: предложение не участвует в подборе. Продлите договор или снимите объявление — история сохранится.",
+      staleOpen: "Открыть объект",
     },
     actions: {
       label: "Действия с собственником",
@@ -173,9 +179,9 @@ export default defineMessages({
       request: "Запросить проверку",
     },
     history: {
-      text: "Что известно из записей: публикация, изменения цены, подтверждения и статус на дату последнего изменения. Промежуточные смены статуса не хранятся.",
+      text: "Что известно из записей: добавление в Binor, изменения цены, подтверждения и статус на дату последнего изменения. Промежуточные смены статуса не хранятся.",
       empty: "Объявлений нет — истории цен тоже.",
-      published: "Опубликовано · {price}",
+      published: "Добавлено в Binor · {price}",
       price: "Цена изменена: {price}",
       confirmed: "Актуальность подтверждена",
       status: "Статус: {status}",
@@ -339,6 +345,12 @@ export default defineMessages({
       gapOther: "{number} shartnoma bo‘yicha rozilik yo‘q: {names}. U bo‘lmaguncha shartnoma imzolanmaydi (37-modda).",
       openContract: "Shartnomani ochish",
       sectionsLabel: "Profil bo‘limlari",
+      staleTitle: "E’lon tasdiq talab qiladi",
+      staleText:
+        "{label}: oxirgi tasdiq — {ago}. Taklif dolzarbligini mulkdordan aniqlang; sukut tasdiq hisoblanmaydi.",
+      staleExpiredTitle: "Taklif muddati tugagan",
+      staleExpired: "{label}: taklif tanlovda qatnashmaydi. Shartnomani uzaytiring yoki e’lonni olib tashlang — tarix saqlanadi.",
+      staleOpen: "Ob’yektni ochish",
     },
     actions: {
       label: "Mulkdor bilan amallar",
@@ -438,9 +450,9 @@ export default defineMessages({
       request: "Tekshiruv so‘rash",
     },
     history: {
-      text: "Yozuvlardan ma’lum bo‘lganlar: e’lon qilinishi, narx o‘zgarishlari, tasdiqlar va oxirgi o‘zgarish sanasidagi holat. Oraliq holat o‘zgarishlari saqlanmaydi.",
+      text: "Yozuvlardan ma’lum bo‘lganlar: Binor’ga qo‘shilishi, narx o‘zgarishlari, tasdiqlar va oxirgi o‘zgarish sanasidagi holat. Oraliq holat o‘zgarishlari saqlanmaydi.",
       empty: "E’lonlar yo‘q — narx tarixi ham yo‘q.",
-      published: "E’lon qilingan · {price}",
+      published: "Binor’ga qo‘shilgan · {price}",
       price: "Narx o‘zgardi: {price}",
       confirmed: "Dolzarbligi tasdiqlandi",
       status: "Holat: {status}",

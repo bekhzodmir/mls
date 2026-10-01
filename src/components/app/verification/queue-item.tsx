@@ -156,7 +156,7 @@ export function QueueItemCard({
       </dl>
 
       {hint ? <p className="text-caption text-fg-muted">{hint}</p> : null}
-      {!entry.detailed ? <p className="text-caption text-fg-subtle">{t.resultOnlyHint}</p> : null}
+      {!entry.detailed ? <p className="text-caption text-fg-subtle">{t.resultOnlyHint[entry.target.kind]}</p> : null}
 
       {canRequestAgain(entry) && entry.target.kind === "listing" ? (
         <ButtonLink

@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { Lock } from "lucide-react";
 import { CrmTabs } from "@/components/app/crm-tabs";
 import { contactRevokedAt } from "@/components/app/crm/duplicates";
+import { listingHref, propertyLabel } from "@/components/app/crm/object-label";
 import { ChipRow, StickyBarSpacer } from "@/components/app/crm/layout-parts";
 import { OwnerActions } from "@/components/app/owners/owner-actions";
 import { OwnerScopeBadge, RestrictedBadge, RightHolderBadge } from "@/components/app/owners/owner-badges";
-import { callsTimelineHref, consentGaps, contractHref, propertyGroups } from "@/components/app/owners/owner-model";
+import { callsTimelineHref, consentGaps, contractHref, ownerFacts, propertyGroups } from "@/components/app/owners/owner-model";
 import {
   ConsentsSection,
   ContractsSection,
@@ -30,8 +31,8 @@ import owners from "@/i18n/messages/owners";
 import { getLocale } from "@/i18n/server";
 import { now } from "@/lib/clock";
 import { loadOwner } from "@/lib/data/cached";
-import { getViewer, listAgents } from "@/lib/data/repository";
-import type { ListingView } from "@/lib/data/views";
+import { getViewer, listAgents, listVerificationQueue } from "@/lib/data/repository";
+import { needsAttention } from "@/lib/domain/freshness";
 import { formatUzPhone, telHref } from "@/lib/domain/phone";
 import { tashkentDateKey } from "@/lib/domain/working-days";
 import { appHref } from "@/lib/routes";
@@ -63,8 +64,12 @@ export default async function OwnerPage({ params }: PageProps<"/[locale]/app/own
   const revokedAt = contactRevokedAt(owner);
   const gaps = consentGaps(detail.contracts, owner.id);
   const groups = propertyGroups(detail);
+  const facts = groups.some((group) => group.viaContract)
+    ? ownerFacts(detail.verification, await listVerificationQueue({ target: "listing" }), groups)
+    : detail.verification;
   const listings = [...new Map(groups.flatMap((group) => group.listings).map((view) => [view.listing.id, view])).values()];
-  const ownListing = listings.find((view: ListingView) => view.access === "owner");
+  const ownListing = listings.find((view) => view.access === "owner");
+  const stale = listings.filter((view) => needsAttention(view.freshness));
   const verificationRequest = ownListing ? requestHref(locale, { listingId: ownListing.listing.id }) : undefined;
   const performers = Object.fromEntries(agents.map((agent) => [agent.id, agent.name]));
   const callHintId = "owner-call-hint";
@@ -123,6 +128,33 @@ export default async function OwnerPage({ params }: PageProps<"/[locale]/app/own
                 })}
           </Notice>
         ))}
+
+        {stale.map((view) => {
+          const expired = view.freshness.state === "expired";
+          const label = propertyLabel(locale, view.property);
+          return (
+            <Notice
+              key={view.listing.id}
+              kind="warning"
+              title={expired ? t.profile.staleExpiredTitle : t.profile.staleTitle}
+              action={
+                <Link
+                  href={listingHref(locale, view.listing.id)}
+                  className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2"
+                >
+                  {t.profile.staleOpen}
+                </Link>
+              }
+            >
+              {expired
+                ? format(t.profile.staleExpired, { label })
+                : format(t.profile.staleText, {
+                    label,
+                    ago: formatRelative(locale, view.listing.lastConfirmedAt ?? view.listing.publishedAt, at),
+                  })}
+            </Notice>
+          );
+        })}
 
         <dl className="grid grid-cols-1 gap-3 text-small sm:grid-cols-2">
           <div>
@@ -214,7 +246,7 @@ export default async function OwnerPage({ params }: PageProps<"/[locale]/app/own
         <ContractsSection locale={locale} contracts={detail.contracts} />
         <OwnerVerificationSection
           locale={locale}
-          detail={detail}
+          items={facts}
           at={at}
           viewerId={viewer.agent.id}
           performers={performers}

@@ -49,7 +49,11 @@ export default defineMessages({
       notChecked: "Ещё не проверялось",
       noExpiry: "Срок не указан",
       resultOnly: "Только результат",
-      resultOnlyHint: "Источник, исполнителя и примечание видят агент объекта и руководство агентства.",
+      resultOnlyHint: {
+        listing: "Источник, исполнителя и примечание видят агент объекта и руководство агентства.",
+        agent: "Подробности проверки видят сам агент и руководство агентства.",
+        organization: "Подробности проверки видит руководство агентства.",
+      },
       expiredAgo: { one: "истёк {n} день назад", few: "истёк {n} дня назад", many: "истёк {n} дней назад" },
       expiredToday: "истёк сегодня",
       expiringIn: { one: "истекает через {n} день", few: "истекает через {n} дня", many: "истекает через {n} дней" },
@@ -130,7 +134,7 @@ export default defineMessages({
         noneText:
           "Запрос направляет риэлторская организация или агент по недвижимости из Единого реестра. Сертифицированный риэлтор работает в составе организации.",
         yourStatus: "Ваш статус: {status}",
-        registry: "Включение в Единый реестр",
+        registry: "Проверка полномочий (ст. 31)",
         registryMissing: "Проверка включения в Единый реестр не записана — статус неизвестен.",
       },
       object: "Объект",
@@ -298,7 +302,11 @@ export default defineMessages({
       notChecked: "Hali tekshirilmagan",
       noExpiry: "Muddat ko‘rsatilmagan",
       resultOnly: "Faqat natija",
-      resultOnlyHint: "Manba, ijrochi va izohni ob’yekt agenti va agentlik rahbariyati ko‘radi.",
+      resultOnlyHint: {
+        listing: "Manba, ijrochi va izohni ob’yekt agenti va agentlik rahbariyati ko‘radi.",
+        agent: "Tekshiruv tafsilotlarini agentning o‘zi va agentlik rahbariyati ko‘radi.",
+        organization: "Tekshiruv tafsilotlarini agentlik rahbariyati ko‘radi.",
+      },
       expiredAgo: { one: "{n} kun oldin tugagan", few: "{n} kun oldin tugagan", many: "{n} kun oldin tugagan" },
       expiredToday: "bugun tugadi",
       expiringIn: { one: "{n} kundan keyin tugaydi", few: "{n} kundan keyin tugaydi", many: "{n} kundan keyin tugaydi" },
@@ -379,7 +387,7 @@ export default defineMessages({
         noneText:
           "So‘rovni Yagona reestrdagi rieltorlik tashkiloti yoki ko‘chmas mulk agenti yuboradi. Sertifikatlangan rieltor tashkilot tarkibida ishlaydi.",
         yourStatus: "Maqomingiz: {status}",
-        registry: "Yagona reestrga kiritilganlik",
+        registry: "Vakolatlar tekshiruvi (31-modda)",
         registryMissing: "Yagona reestrga kiritilganlik tekshiruvi yozilmagan — holati noma’lum.",
       },
       object: "Ob’yekt",

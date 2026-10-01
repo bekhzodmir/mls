@@ -18,7 +18,7 @@ import {
 
 const at = now();
 
-function entry(overrides: Partial<VerificationQueueItem> & { item?: Partial<VerificationQueueItem["item"]> }) {
+function entry(overrides: Omit<Partial<VerificationQueueItem>, "item"> & { item?: Partial<VerificationQueueItem["item"]> }) {
   const base = {
     key: "listing:lst-x:ver-x",
     item: { id: "ver-x", subject: "ownership", status: "confirmed", method: "official_source" },

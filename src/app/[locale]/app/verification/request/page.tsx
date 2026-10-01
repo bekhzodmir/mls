@@ -57,7 +57,7 @@ export default async function VerificationRequestPage({
   const { agent, organization } = viewer;
   const standing = requesterStanding(agent, organization);
   const listings = mine
-    .map((view) => requestListing(view, propertyLabel(locale, view.property)))
+    .map((view) => requestListing(view, `${propertyLabel(locale, view.property)} · ${view.listing.id}`))
     .sort((a, b) => compareText(locale, a.label, b.label) || a.id.localeCompare(b.id));
   // The viewer files the request, so only their own contracts can be its basis.
   const options = contracts.filter((view) => view.scope === "own").map(requestContract);

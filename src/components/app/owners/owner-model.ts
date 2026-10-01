@@ -6,6 +6,7 @@ import type {
   OwnerDetailView,
   PropertyView,
   RightHolderView,
+  VerificationQueueItem,
 } from "@/lib/data/views";
 import type { ID, ISODateTime, Listing, ListingStatus, Money } from "@/lib/domain/types";
 import { appPath } from "@/lib/routes";
@@ -70,6 +71,27 @@ export function propertyGroups(
     });
     return { property, listings: viaContract, viaContract: viaContract.length > 0 };
   });
+}
+
+/**
+ * Checked facts for the profile: the repository's facts on the owner's own
+ * listings, plus — for a co-owner reached through a contract — the facts on
+ * that contract's listing taken from the queue (same access rules, same
+ * order). A fact is never listed twice.
+ */
+export function ownerFacts(
+  own: readonly VerificationQueueItem[],
+  queue: readonly VerificationQueueItem[],
+  groups: readonly OwnerPropertyGroup[],
+): VerificationQueueItem[] {
+  const viaContract = new Set(
+    groups.filter((group) => group.viaContract).flatMap((group) => group.listings.map((view) => view.listing.id)),
+  );
+  const seen = new Set(own.map((entry) => entry.key));
+  const extra = queue.filter(
+    (entry) => entry.target.kind === "listing" && viaContract.has(entry.target.view.listing.id) && !seen.has(entry.key),
+  );
+  return [...own, ...extra];
 }
 
 /* -------------------------------------------------------- right holders */

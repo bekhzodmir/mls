@@ -35,7 +35,7 @@ import { format, plural } from "@/i18n/define-messages";
 import { formatDate, formatDateTime } from "@/i18n/format";
 import domain from "@/i18n/messages/domain";
 import owners from "@/i18n/messages/owners";
-import type { ContractView, ListingView, OwnerDetailView } from "@/lib/data/views";
+import type { ContractView, ListingView, OwnerDetailView, VerificationQueueItem } from "@/lib/data/views";
 import { formatMoney, subtractMoney } from "@/lib/domain/money";
 import type { CommunicationChannel, ID } from "@/lib/domain/types";
 import { ContractStatusBadge, HolderConsentBadge, RestrictedBadge } from "./owner-badges";
@@ -333,14 +333,15 @@ export function ContractsSection({ locale, contracts }: { locale: Locale; contra
 
 export function OwnerVerificationSection({
   locale,
-  detail,
+  items,
   at,
   viewerId,
   performers,
   requestHref,
 }: {
   locale: Locale;
-  detail: OwnerDetailView;
+  /** From `ownerFacts`: the owner's listings and, for a co-owner, the contract's listing. */
+  items: VerificationQueueItem[];
   at: Date;
   viewerId: ID;
   performers: Record<ID, string>;
@@ -348,7 +349,6 @@ export function OwnerVerificationSection({
   requestHref?: string;
 }) {
   const t = owners[locale];
-  const items = detail.verification;
   return (
     <CrmSection
       id="verification"
