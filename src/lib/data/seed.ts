@@ -1,6 +1,10 @@
+import { orgAuditLog } from "./seed-audit";
+import { calls, communications } from "./seed-comms";
+import { contracts } from "./seed-contracts";
 import { leads, clients, requirements } from "./seed-crm";
 import { listings, properties } from "./seed-inventory";
 import { agents, organizations, owners, VIEWER_AGENT_ID } from "./seed-people";
+import { agentAvailability, routingRules, teams } from "./seed-team";
 import { telegramListings, telegramSources } from "./seed-telegram";
 import {
   cooperationRequests,
@@ -52,6 +56,14 @@ export const seed = deepFreeze({
   tasks,
   notifications,
   matchStatuses,
+  contracts,
+  calls,
+  communications,
+  teams,
+  agentAvailability,
+  routingRules,
+  /** Demo Realty's organization journal; deal histories stay on each deal. */
+  orgAuditLog,
 });
 
 export type Seed = typeof seed;

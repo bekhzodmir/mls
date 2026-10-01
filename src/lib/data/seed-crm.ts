@@ -12,6 +12,10 @@ import { day, minutesFromNow } from "./seed-time";
  * cl-15 / cl-16 and req-17 / req-18 belong to partner agents: they exist so
  * incoming cooperation requests have a real buyer request behind them, and
  * the repository never lists them in the viewer's CRM.
+ *
+ * lead-13…15 and cl-17 / cl-18 belong to the viewer's colleagues (agent-02,
+ * agent-03): they feed the team screen's workload and SLA metrics and the
+ * agency consent registry, never the viewer's own inbox or client list.
  */
 
 /* ----------------------------------------------------------------- leads */
@@ -169,6 +173,49 @@ export const leads: Lead[] = [
     slaDueAt: day(0, "11:20"),
     // A returning, previously lost client with a revoked contact consent.
     duplicateCandidateClientId: "cl-11",
+  },
+
+  // ---- Colleagues' leads (team metrics only, not in the viewer's inbox) --
+  {
+    id: "lead-13",
+    source: "whatsapp",
+    receivedAt: day(0, "09:25"),
+    name: "Shoira",
+    phone: "+998940000413",
+    message: "Mirzo Ulug‘bekda 2 xonali kvartira ijaraga kerak, 7 mln so‘mgacha, bolalar bilan.",
+    language: "uz",
+    status: "contacted",
+    assignedAgentId: "agent-02",
+    slaDueAt: day(0, "10:25"),
+    firstResponseAt: day(0, "09:40"),
+    nextAction: "Отправить 3 варианта у метро Буюк Ипак Йули",
+  },
+  {
+    id: "lead-14",
+    source: "telegram",
+    receivedAt: day(0, "10:05"),
+    name: "Алексей",
+    telegramUsername: "aleksey_demo",
+    message: "Нужна 3-комнатная в Юнусабаде, рассматриваю ипотеку. Когда можно посмотреть?",
+    language: "ru",
+    status: "assigned",
+    assignedAgentId: "agent-03",
+    // Assigned by the Telegram round-robin rule while Timur is away: breached.
+    slaDueAt: day(0, "10:35"),
+  },
+  {
+    id: "lead-15",
+    source: "phone",
+    receivedAt: day(-1, "16:10"),
+    name: "Лола",
+    phone: "+998940000415",
+    message: "Собственник: хочет сдать 2-комнатную в Чиланзаре-6 на длительный срок.",
+    language: "ru",
+    status: "qualified",
+    assignedAgentId: "agent-03",
+    slaDueAt: day(-1, "17:10"),
+    firstResponseAt: day(-1, "16:30"),
+    nextAction: "Встреча с собственником и осмотр квартиры",
   },
 ];
 
@@ -575,6 +622,44 @@ export const clients: Client[] = [
       },
     ],
     nextAction: { text: "Подписание у нотариуса завтра в 11:00", dueAt: day(1, "11:00") },
+  },
+
+  // ---- Colleagues' clients (agency consent registry and team metrics) ---
+  {
+    id: "cl-17",
+    name: "Gulnoza Rasulova",
+    phones: ["+998930000323"],
+    language: "uz",
+    status: "viewing",
+    responsibleAgentId: "agent-02",
+    source: "whatsapp",
+    household: [],
+    consents: [
+      consent("cl-17", "contact", "electronic", day(-8, "11:00")),
+      consent("cl-17", "share_with_partners", "electronic", day(-8, "11:05")),
+    ],
+    createdAt: day(-8, "11:10"),
+    lastContactAt: day(-1, "12:00"),
+    memory: [],
+    nextAction: { text: "Просмотр Карасу-4 завтра в 15:00", dueAt: day(1, "15:00") },
+  },
+  {
+    id: "cl-18",
+    name: "Руслан Мирзаев",
+    phones: ["+998930000324"],
+    language: "ru",
+    status: "selection",
+    responsibleAgentId: "agent-03",
+    source: "telegram",
+    household: [],
+    consents: [
+      consent("cl-18", "contact", "verbal_recorded", day(-5, "15:00")),
+      consent("cl-18", "marketing", "electronic", day(-5, "15:05"), day(-2, "10:00")),
+    ],
+    createdAt: day(-5, "15:10"),
+    lastContactAt: day(-2, "10:00"),
+    memory: [],
+    nextAction: { text: "Просмотр на Авиасозлар в пятницу", dueAt: day(2, "11:00") },
   },
 
   // ---- Partner agents' clients (not part of the viewer's CRM) -----------

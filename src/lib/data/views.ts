@@ -2,13 +2,25 @@ import type { MatchSort, RankedMatch } from "@/lib/domain/matching";
 import type { MlsReportState } from "@/lib/domain/lifecycle";
 import type {
   Agent,
+  AgentAvailability,
   AppNotification,
+  AuditEvent,
+  AvailabilityStatus,
+  Call,
   Client,
   ClientStatus,
+  CommunicationChannel,
+  Communication,
   ConfidenceBand,
+  Consent,
+  ConsentPurpose,
+  Contract,
+  ContractKind,
+  ContractStatus,
   CooperationRequest,
   Currency,
   Deal,
+  DealStage,
   DealType,
   DistrictId,
   Freshness,
@@ -25,6 +37,7 @@ import type {
   Money,
   NotificationCategory,
   Offer,
+  OfferStatus,
   OfferVersion,
   Organization,
   Owner,
@@ -34,12 +47,17 @@ import type {
   Requirement,
   RequirementCriterion,
   RequirementStatus,
+  RoutingRule,
   SourceKind,
   Task,
+  Team,
   TelegramListing,
   TelegramListingStatus,
   TelegramSource,
   TermsVersion,
+  VerificationItem,
+  VerificationStatus,
+  VerificationSubject,
   Viewing,
   ViewingStatus,
   DuplicateSignal,
@@ -84,6 +102,52 @@ export const AUDIT_ACTIONS = [
   "act.signed",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+/**
+ * `AuditEvent.action` codes of the organization journal (§17.6, §36.5,
+ * §38.6 item 7, §39.6). Separate from the deal codes above; the audit screen
+ * labels both sets. The log is append-only: nothing is edited or removed.
+ */
+export const ORG_AUDIT_ACTIONS = [
+  "contact_revealed",
+  "owner_contact_viewed",
+  "restricted_document_viewed",
+  "export_requested",
+  "permission_granted",
+  "permission_revoked",
+  "role_changed",
+  "responsible_changed",
+  "listing_status_changed",
+  "contract_signed",
+  "consent_revoked",
+  "cooperation_accepted",
+  "lead_assigned",
+  "records_merged",
+  "merge_undone",
+  "verification_requested",
+  "login_new_device",
+] as const;
+export type OrgAuditAction = (typeof ORG_AUDIT_ACTIONS)[number];
+
+/** `AuditEvent.target.kind` values used by the organization journal. */
+export const ORG_AUDIT_TARGET_KINDS = [
+  "lead",
+  "client",
+  "owner",
+  "listing",
+  "contract",
+  "document",
+  "agent",
+  "consent",
+  "cooperation",
+  "deal",
+  "export",
+  "session",
+] as const;
+export type OrgAuditTargetKind = (typeof ORG_AUDIT_TARGET_KINDS)[number];
+
+/** `AuditEvent.actorId` of automatic actions (expiry, scheduled jobs): not a person. */
+export const SYSTEM_ACTOR_ID = "system";
 
 /* ---------------------------------------------------------------- people */
 
@@ -395,12 +459,22 @@ export interface OfferView {
   listing: ListingView;
   client: Client;
   latest: OfferVersion;
+  /** The deal the offer belongs to, when the viewer runs it (`offer.dealId` is the raw link). */
+  deal?: { id: ID; stage: DealStage };
+  /**
+   * Whose answer the latest version waits for while the offer is open or
+   * countered: the other side of `latest.by`. Undefined once decided.
+   */
+  awaitingSide?: "buyer" | "owner";
+  /** The latest version's response deadline passed while still awaiting an answer. */
+  responseOverdue: boolean;
 }
 
 export interface OfferFilter {
   listingId?: ID;
   clientId?: ID;
   dealId?: ID;
+  status?: OfferStatus;
 }
 
 export interface DealView {
@@ -480,4 +554,419 @@ export interface SearchResults {
   listings: ListingView[];
   telegram: TelegramListingView[];
   deals: DealView[];
+}
+
+/* ---------------------------------------------------- shared access bits */
+
+/**
+ * Why a contact (phone, Telegram) is not in a view. Views omit the value —
+ * never blank or fake it — and say why, so the UI can explain the missing
+ * permission and the next step (§19).
+ */
+export type ContactHiddenReason =
+  /** Owner contacts are RESTRICTED (§34.2): the listing's own agent or agency management. */
+  | "owner_data_permission"
+  /** A partner's contacts open after an accepted cooperation with shared contacts (§18.2). */
+  | "no_accepted_cooperation"
+  /** Another agent's client or lead (§19 "Own/assigned"). */
+  | "not_responsible";
+
+/** Where a record sits relative to the viewer (§19 levels). */
+export type RecordScope = "own" | "agency";
+
+/** A person a call, communication, contract or consent is about, by name only. */
+export interface SubjectRef {
+  kind: "lead" | "client" | "owner";
+  id: ID;
+  /** Leads may have no name: Unknown is a value, never invented. */
+  name?: string;
+}
+
+/**
+ * A verification fact as the viewer may see it. "Result only" (§19
+ * "Verification: Result only") drops `source`, `note` and `performedById`:
+ * a source can name a contract and a note an ownership problem.
+ */
+export type VerificationResult = Omit<VerificationItem, "source" | "note" | "performedById"> &
+  Partial<Pick<VerificationItem, "source" | "note" | "performedById">>;
+
+/* ------------------------------------------------------------ contracts */
+
+/** A missing required clause of a service contract (§17.5, §38.5). */
+export type ContractClause = keyof Contract["clauses"];
+
+export interface ContractFilter {
+  /** `expiring` = active and ending within 14 Tashkent calendar days (today included). */
+  status?: ContractStatus | "expiring";
+  kind?: ContractKind;
+  /** Number, customer name, service, massif/landmark of the listing. */
+  q?: string;
+}
+
+/** The contract's customer: an owner, a buyer/tenant client or a partner agent. */
+export interface ContractPartyView {
+  kind: "owner" | "client" | "agent";
+  id: ID;
+  name: string;
+  /** Present only when the viewer may see this party's contact. */
+  phone?: string;
+  contactHidden?: ContactHiddenReason;
+}
+
+/** One right holder of the property (art. 37): consent of one is not consent of the others. */
+export interface RightHolderView {
+  ownerId: ID;
+  name: string;
+  status: "confirmed" | "missing";
+  /** The consent record behind a confirmed entry, when it is on file. */
+  consent?: Consent;
+  /** The contract's customer (vs. a co-owner or another right holder). */
+  isCustomer: boolean;
+}
+
+export interface ContractView {
+  contract: Contract;
+  /** `own` = the viewer is the contract's agent; `agency` = a colleague's. */
+  scope: RecordScope;
+  customer: ContractPartyView;
+  agent: Agent;
+  organization?: Organization;
+  /** The listing the contract serves, as the viewer may see it. */
+  listing?: ListingView;
+  rightHolders: RightHolderView[];
+  /** Active and ending within 14 Tashkent calendar days (today included). */
+  expiring: boolean;
+  /** Tashkent calendar days from today to `endsAt`: 0 = ends today, negative = ended. */
+  daysLeft: number;
+  /** Required clauses the text lacks (§38.5); empty when complete. */
+  missingClauses: ContractClause[];
+  /** Right holders whose consent is missing (art. 37). */
+  missingConsents: number;
+  /**
+   * Some signature is a simple electronic one: the UI must not present it as
+   * a qualified e-signature (§38.5) and shows the legal warning.
+   */
+  hasSimpleElectronicSignature: boolean;
+}
+
+export interface ContractDetailView extends ContractView {
+  deal?: DealView;
+  requirement?: Requirement;
+  /** The co-broking request behind a cooperation contract (matched by listing and partner). */
+  cooperation?: CooperationView;
+  /** Other visible contracts on the same listing (e.g. a renewal draft), newest first. */
+  related: ContractView[];
+}
+
+/* ------------------------------------------------------------- consents */
+
+export interface ConsentFilter {
+  subject?: "client" | "owner";
+  purpose?: ConsentPurpose;
+  state?: "active" | "revoked";
+}
+
+/** One row of the consent registry (§38.6 item 2): text version, channel, timestamp, revocation. */
+export interface ConsentRegistryItem {
+  subject: { kind: "client" | "owner"; id: ID; name: string };
+  consent: Consent;
+  state: "active" | "revoked";
+  /** The client's responsible agent, or the agent of the owner's listing/contract. */
+  responsibleAgent: Agent;
+  scope: RecordScope;
+}
+
+/* --------------------------------------------------------------- owners */
+
+export interface OwnerFilter {
+  /** Name, property massif/landmark, listing id; phone digits only where the contact is visible. */
+  q?: string;
+}
+
+/** An owner record without the phone unless the viewer may see it (§34.2). */
+export type OwnerRecordView = Omit<Owner, "phone"> & { phone?: string };
+
+export interface OwnerListItem {
+  owner: OwnerRecordView;
+  /** `own` = linked to the viewer's own listing or contract. */
+  scope: RecordScope;
+  contactVisible: boolean;
+  contactHidden?: "owner_data_permission";
+  responsibleAgent: Agent;
+  /** The viewer's organization's listings on the owner's properties. */
+  listingIds: ID[];
+  propertyIds: ID[];
+  /** Visible contracts where the owner is the customer or a right holder. */
+  contractIds: ID[];
+  /** Linked only as a co-owner / right holder on a contract, not as a property's owner. */
+  rightHolderOnly: boolean;
+  activeConsents: number;
+  /** Latest of the viewer's own calls and communications with the owner. */
+  lastContactAt?: ISODateTime;
+}
+
+export interface OwnerDetailView extends OwnerListItem {
+  properties: PropertyView[];
+  listings: ListingView[];
+  contracts: ContractView[];
+  /** The viewer's own timeline with the owner, newest first. */
+  communications: CommunicationView[];
+  /** The viewer's own calls with the owner, newest first. */
+  calls: CallView[];
+  /** Facts checked on the owner's listings. */
+  verification: VerificationQueueItem[];
+}
+
+/* -------------------------------------------------------- communications */
+
+export interface CallFilter {
+  direction?: Call["direction"];
+  outcome?: Call["outcome"];
+  /** `linked` = attached to a lead, client or owner; `unknown` = attached to nothing. */
+  linked?: "linked" | "unknown";
+}
+
+export interface CallView {
+  call: Call;
+  agent: Agent;
+  /** The lead, client or owner the call is attached to. */
+  linked?: SubjectRef;
+  /**
+   * For an unattached call: visible records with the same number. A
+   * suggestion only — never an automatic link (§14.1).
+   */
+  phoneMatches: SubjectRef[];
+  /** Attached to nothing and matching nothing: offer "create lead" (§14.7). */
+  unknownNumber: boolean;
+  listing?: ListingView;
+}
+
+export interface CallDetailView extends CallView {
+  lead?: LeadView;
+  client?: Client;
+  owner?: OwnerListItem;
+  /** The party's communications other than this call, newest first. */
+  communications: CommunicationView[];
+  /** The viewer's other calls with the same party, newest first. */
+  otherCalls: CallView[];
+}
+
+export interface CommunicationFilter {
+  clientId?: ID;
+  ownerId?: ID;
+  leadId?: ID;
+  channel?: CommunicationChannel;
+}
+
+export interface CommunicationView {
+  communication: Communication;
+  agent: Agent;
+  subject?: SubjectRef;
+  /** The call behind a `phone` touchpoint. */
+  call?: Call;
+}
+
+/* --------------------------------------------------------- verification */
+
+export type VerificationTargetKind = "listing" | "agent" | "organization";
+
+export interface VerificationQueueFilter {
+  status?: VerificationStatus;
+  subject?: VerificationSubject;
+  target?: VerificationTargetKind;
+}
+
+export type VerificationTarget =
+  | { kind: "listing"; view: ListingView }
+  | { kind: "agent"; agent: Agent }
+  | { kind: "organization"; organization: Organization };
+
+export interface VerificationQueueItem {
+  /** Stable key `${target kind}:${target id}:${item id}`. */
+  key: string;
+  /** Full fact when `detailed`, otherwise the result only (§19). */
+  item: VerificationResult;
+  /**
+   * Source and note are included: the viewer's own listing (or one they may
+   * see owner data on), their own profile or their organization.
+   */
+  detailed: boolean;
+  target: VerificationTarget;
+  /** `partner` = a partner's listing the viewer works on (deal or cooperation). */
+  scope: RecordScope | "partner";
+  /** Confirmed, and the evidence expires within 30 days. */
+  expiresSoon: boolean;
+  /** Confirmed once, but the evidence has expired: needs a new check. */
+  expired: boolean;
+}
+
+/* --------------------------------------------------------- team & routing */
+
+export interface TeamMemberMetrics {
+  /** Leads received today (Tashkent) and assigned to the member. */
+  newLeadsToday: number;
+  /** Assigned leads not converted or lost. */
+  openLeads: number;
+  /** Open leads past the first-response deadline. */
+  slaBreaches: number;
+  /** Clients in work (not lost or deferred). */
+  activeClients: number;
+  /** Listings between contract and closing (not draft, finished or expired). */
+  activeListings: number;
+  /** Viewings this Tashkent week (Mon–Sun) as agent or partner, not cancelled. */
+  viewingsThisWeek: number;
+  /** Deals as agent or listing-side partner, not archived. */
+  dealsInProgress: number;
+}
+
+export interface TeamMemberView {
+  agent: Agent;
+  isLead: boolean;
+  isViewer: boolean;
+  availability: AgentAvailability;
+  metrics: TeamMemberMetrics;
+  /** Daily lead capacity minus leads assigned today, never below 0. */
+  capacityLeft: number;
+}
+
+export interface MyTeamView {
+  team: Team;
+  organization?: Organization;
+  lead: Agent;
+  /** Lead first, then members by name. */
+  members: TeamMemberView[];
+  totals: TeamMemberMetrics;
+}
+
+export interface TeamMemberDetailView extends TeamMemberView {
+  team?: Team;
+  /** The member's active listings, as the viewer may see them. */
+  listings: ListingView[];
+  /** Routing rules that can assign leads to the member, by priority. */
+  routingRules: RoutingRule[];
+}
+
+export interface AgentWorkload {
+  agentId: ID;
+  status: AvailabilityStatus;
+  awayUntil?: ISODateTime;
+  assignedToday: number;
+  openLeads: number;
+  capacity: number;
+  /** `capacity - assignedToday`, never below 0. */
+  remaining: number;
+}
+
+/** Inputs for the routing simulator (§14.2, §36.5). */
+export interface RoutingContext {
+  generatedAt: ISODateTime;
+  organization?: Organization;
+  /** Active and inactive rules, lowest priority number first. */
+  rules: RoutingRule[];
+  /** The organization's agents by id. */
+  agents: Agent[];
+  availability: AgentAvailability[];
+  workloadToday: AgentWorkload[];
+  /** Open leads nobody is assigned to, earliest SLA deadline first. */
+  unassignedLeads: LeadView[];
+}
+
+/* ------------------------------------------------------------- partners */
+
+/**
+ * A professional outside the viewer's organization (§5.6, §15). Phone and
+ * Telegram are present only after an accepted cooperation with shared
+ * contacts; verification facts are result only.
+ */
+export type PartnerAgent = Omit<Agent, "phone" | "telegramUsername" | "verifications"> & {
+  phone?: string;
+  telegramUsername?: string;
+  verifications: VerificationResult[];
+};
+
+export type PartnerOrganization = Omit<Organization, "registry" | "insurance"> & {
+  registry?: VerificationResult;
+  insurance?: VerificationResult;
+};
+
+export interface CooperationStats {
+  total: number;
+  accepted: number;
+  declined: number;
+  /** Sent, viewed or in negotiation. */
+  inProgress: number;
+  /** Expired, cancelled, disputed or draft. */
+  other: number;
+}
+
+export interface PartnerFilter {
+  /** Name, organization, territory (district names in RU/UZ). */
+  q?: string;
+}
+
+export interface PartnerListItem {
+  agent: PartnerAgent;
+  organization?: PartnerOrganization;
+  /** An accepted cooperation with shared contacts exists between the viewer and the partner. */
+  contactsShared: boolean;
+  contactHidden?: "no_accepted_cooperation";
+  /** Requests between the viewer and this partner, either direction. */
+  cooperation: CooperationStats;
+  /** The partner's Active MLS listings the viewer can see. */
+  activeMlsListings: number;
+  /** Latest proposal, deal or past viewing involving both. */
+  lastInteractionAt?: ISODateTime;
+}
+
+/** A listing inside a partner view: the partner is the page's subject, so the agent objects are left out. */
+export type PartnerListingView = Omit<ListingView, "agent" | "organization">;
+
+export type PartnerCooperationView = Omit<
+  CooperationView,
+  "fromAgent" | "toAgent" | "counterpart" | "fromOrganization" | "toOrganization" | "listing"
+> & { listing: PartnerListingView };
+
+export interface PartnerDetailView extends PartnerListItem {
+  /** The partner's listings visible to the viewer (masked per the usual rules), newest first. */
+  listings: PartnerListingView[];
+  /** Cooperation requests with the viewer, most recent proposal first. */
+  cooperationHistory: PartnerCooperationView[];
+  /** The viewer's deals with the partner on the other side. */
+  deals: { id: ID; stage: DealStage; listingId: ID; createdAt: ISODateTime }[];
+}
+
+/* ---------------------------------------------------------------- audit */
+
+/**
+ * An event relative to the viewer, for the §19 audit levels:
+ * - `own` — the viewer acted, or the event concerns the viewer's own record;
+ * - `team` — a member of the viewer's team acted or owns the record;
+ * - `agency` — anything else in the organization journal.
+ */
+export type AuditScope = "own" | "team" | "agency";
+
+export interface AuditFilter {
+  actorId?: ID;
+  action?: AuditAction | OrgAuditAction;
+  targetKind?: string;
+  /** Reveals, views of restricted data, exports, permission/role and security events. */
+  sensitiveOnly?: boolean;
+}
+
+export interface AuditEventView {
+  event: AuditEvent;
+  /** The organization journal or a deal's own history. */
+  log: "organization" | "deal";
+  /** For deal-history events. */
+  dealId?: ID;
+  /** Undefined for automatic actions (`system`). */
+  actor?: Agent;
+  system: boolean;
+  /**
+   * A label safe to show in a list: names and massifs, never a phone, full
+   * address, cadastral number or document content. In the data's language.
+   */
+  target: { kind: string; id: ID; label: string; documentType?: Deal["documents"][number]["type"] };
+  sensitive: boolean;
+  scope: AuditScope;
 }

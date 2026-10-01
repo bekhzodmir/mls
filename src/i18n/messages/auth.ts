@@ -1,0 +1,160 @@
+import { defineMessages } from "../define-messages";
+
+/**
+ * Sign-in screens (§21.4 screens 2–4: Login, OTP, Telegram authentication)
+ * and the minimal `(auth)` layout. Telegram is the canonical entry (§6.1,
+ * §41 D11); the phone path is a demo until SMS is connected, and every screen
+ * says so plainly. Server error texts of `/api/telegram/auth` live in
+ * `telegram-auth.ts` and are shown as the server sends them.
+ */
+export default defineMessages({
+  ru: {
+    meta: {
+      title: "Вход в Binor",
+      description: "Вход для риэлторов и агентств недвижимости Ташкента: через Telegram или по номеру телефона.",
+    },
+    layout: {
+      home: "Binor — на главную сайта",
+      language: "Язык",
+      skipToContent: "Перейти к содержимому",
+      support: "Поддержка:",
+      phone: "{phone}, {from}–{to} по Ташкенту",
+      bot: "Telegram-бот @{bot}, 24/7",
+      newTab: "откроется в новой вкладке",
+    },
+    page: {
+      title: "Вход в Binor",
+      subtitle: "Рабочее место риэлтора: клиенты, объекты, совпадения и сделки.",
+      or: "или по номеру телефона",
+      moreTitle: "Другие варианты",
+      backToSite: "На сайт Binor",
+      demo: "Демо без входа",
+      demoNote: "Демо работает на вымышленных данных, действия в нём не сохраняются.",
+    },
+    telegram: {
+      title: "Вход через Telegram",
+      detecting: "Проверяем, открыт ли Binor внутри Telegram…",
+      outsideTitle: "Откройте Binor в Telegram",
+      outsideText:
+        "Основной вход — через бот @{bot}. Он откроет Binor как Mini App, и Telegram сам подтвердит ваш аккаунт: пароль не нужен.",
+      openBot: "Открыть @{bot}",
+      checking: "Проверяем данные Telegram на сервере…",
+      successTitle: "Здравствуйте, {name}!",
+      successText:
+        "Telegram подтвердил ваш аккаунт. В этой сборке вход ещё не подключён к сессиям: доступ к данным не выдаётся, и дальше вы продолжите в демо на вымышленных данных.",
+      continueDemo: "Продолжить в демо",
+      notConfiguredTitle: "Вход через Telegram пока недоступен",
+      invalidTitle: "Telegram не подтвердил вход",
+      reopen: "Открыть бота заново",
+      networkTitle: "Нет связи с сервером Binor",
+      networkText: "Проверьте интернет и повторите. Данные Telegram нигде не сохранялись.",
+      retry: "Повторить",
+      errorTitle: "Не удалось войти через Telegram",
+      fallbackMessage: "Сервер не смог обработать вход. Повторите попытку чуть позже.",
+      alternatives: "Пока можно войти по номеру телефона (демо) или открыть демо без входа.",
+    },
+    phone: {
+      title: "Вход по номеру телефона",
+      demoTitle: "SMS пока не подключены",
+      demoText:
+        "Это демо: код никуда не отправляется, номер нигде не сохраняется. На следующем шаге подойдут любые 6 цифр.",
+      label: "Номер телефона",
+      placeholder: "+998 90 123 45 67",
+      hint: "Номер в Узбекистане: +998 и 9 цифр. Код страны можно не вводить.",
+      incomplete: "Введите номер полностью: 9 цифр после +998.",
+      invalid: "Это не похоже на номер в Узбекистане. Проверьте цифры: +998 и 9 цифр.",
+      required: "Введите номер телефона.",
+      valid: "Номер распознан: {phone}",
+      getCode: "Получить код",
+    },
+    otp: {
+      title: "Введите код подтверждения",
+      demoText: "Демо: SMS на {phone} не отправлялось. Введите любые 6 цифр.",
+      changePhone: "Изменить номер",
+      label: "Код из 6 цифр",
+      hint: "Код можно вставить целиком, пробелы и дефисы уберутся сами.",
+      empty: "Введите код.",
+      incomplete: "В коде 6 цифр, а введено: {count}.",
+      submit: "Подтвердить",
+      resendIn: "Отправить ещё раз через {time}",
+      resend: "Отправить код ещё раз",
+      resent: "Демо: новый код не отправлялся — подойдут любые 6 цифр.",
+      accepted: "Код принят (демо). Открываем настройку профиля…",
+    },
+  },
+  uz: {
+    meta: {
+      title: "Binorga kirish",
+      description:
+        "Toshkentdagi rieltorlar va ko‘chmas mulk agentliklari uchun kirish: Telegram yoki telefon raqami orqali.",
+    },
+    layout: {
+      home: "Binor — sayt bosh sahifasiga",
+      language: "Til",
+      skipToContent: "Asosiy mazmunga o‘tish",
+      support: "Yordam:",
+      phone: "{phone}, Toshkent vaqti bilan {from}–{to}",
+      bot: "Telegram-bot @{bot}, 24/7",
+      newTab: "yangi varaqda ochiladi",
+    },
+    page: {
+      title: "Binorga kirish",
+      subtitle: "Rieltor ish joyi: mijozlar, ob’yektlar, mosliklar va bitimlar.",
+      or: "yoki telefon raqami orqali",
+      moreTitle: "Boshqa variantlar",
+      backToSite: "Binor saytiga",
+      demo: "Kirishsiz demo",
+      demoNote: "Demo o‘ylab topilgan ma’lumotlarda ishlaydi, undagi harakatlar saqlanmaydi.",
+    },
+    telegram: {
+      title: "Telegram orqali kirish",
+      detecting: "Binor Telegram ichida ochilganini tekshiryapmiz…",
+      outsideTitle: "Binorni Telegramda oching",
+      outsideText:
+        "Asosiy kirish — @{bot} boti orqali. U Binorni Mini App sifatida ochadi va Telegram akkauntingizni o‘zi tasdiqlaydi: parol kerak emas.",
+      openBot: "@{bot} botini ochish",
+      checking: "Telegram ma’lumotlarini serverda tekshiryapmiz…",
+      successTitle: "Assalomu alaykum, {name}!",
+      successText:
+        "Telegram akkauntingizni tasdiqladi. Bu versiyada kirish hali sessiyalarga ulanmagan: ma’lumotlarga kirish berilmaydi, keyin o‘ylab topilgan ma’lumotlardagi demoda davom etasiz.",
+      continueDemo: "Demoda davom etish",
+      notConfiguredTitle: "Telegram orqali kirish hozircha mavjud emas",
+      invalidTitle: "Telegram kirishni tasdiqlamadi",
+      reopen: "Botni qayta ochish",
+      networkTitle: "Binor serveri bilan aloqa yo‘q",
+      networkText: "Internetni tekshiring va qayta urinib ko‘ring. Telegram ma’lumotlari hech qayerda saqlanmadi.",
+      retry: "Qayta urinish",
+      errorTitle: "Telegram orqali kirib bo‘lmadi",
+      fallbackMessage: "Server kirishni qayta ishlay olmadi. Birozdan keyin qayta urinib ko‘ring.",
+      alternatives: "Hozircha telefon raqami orqali (demo) kirishingiz yoki kirishsiz demoni ochishingiz mumkin.",
+    },
+    phone: {
+      title: "Telefon raqami orqali kirish",
+      demoTitle: "SMS hali ulanmagan",
+      demoText:
+        "Bu demo: kod hech qayerga yuborilmaydi, raqam hech qayerda saqlanmaydi. Keyingi qadamda istalgan 6 ta raqam mos keladi.",
+      label: "Telefon raqami",
+      placeholder: "+998 90 123 45 67",
+      hint: "O‘zbekiston raqami: +998 va 9 ta raqam. Mamlakat kodini kiritmasangiz ham bo‘ladi.",
+      incomplete: "Raqamni to‘liq kiriting: +998 dan keyin 9 ta raqam.",
+      invalid: "Bu O‘zbekiston raqamiga o‘xshamaydi. Raqamlarni tekshiring: +998 va 9 ta raqam.",
+      required: "Telefon raqamini kiriting.",
+      valid: "Raqam aniqlandi: {phone}",
+      getCode: "Kodni olish",
+    },
+    otp: {
+      title: "Tasdiqlash kodini kiriting",
+      demoText: "Demo: {phone} raqamiga SMS yuborilmadi. Istalgan 6 ta raqamni kiriting.",
+      changePhone: "Raqamni o‘zgartirish",
+      label: "6 xonali kod",
+      hint: "Kodni to‘liq qo‘yishingiz mumkin, bo‘sh joy va chiziqchalar o‘zi olib tashlanadi.",
+      empty: "Kodni kiriting.",
+      incomplete: "Kodda 6 ta raqam bo‘ladi, kiritilgani: {count}.",
+      submit: "Tasdiqlash",
+      resendIn: "{time} dan keyin qayta yuborish",
+      resend: "Kodni qayta yuborish",
+      resent: "Demo: yangi kod yuborilmadi — istalgan 6 ta raqam mos keladi.",
+      accepted: "Kod qabul qilindi (demo). Profil sozlamalarini ochyapmiz…",
+    },
+  },
+});

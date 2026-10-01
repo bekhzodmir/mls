@@ -30,6 +30,7 @@ import { day, minutesFromNow } from "./seed-time";
  *   days before the demo "now", and the act details are not in the MLS yet —
  *   the 3-working-day deadline (§17.5, §38.5) ends on Thursday.
  * - vw-03 and vw-04 overlap on purpose to demonstrate schedule conflicts.
+ * - vw-14 / vw-15 are colleagues' viewings: they count in team metrics only.
  */
 
 /* ---------------------------------------------------------- cooperation */
@@ -350,6 +351,28 @@ export const viewings: Viewing[] = [
     confirmations: { client: true, ownerOrPartner: true },
     feedback: { rating: 5, text: "Квартира подходит, супруга согласна." },
     nextAction: "Сделать предложение $80 000",
+  },
+
+  // ---- Colleagues' viewings (team metrics only) ---------------------------
+  {
+    id: "vw-14",
+    listingId: "lst-12",
+    clientId: "cl-17",
+    agentId: "agent-02",
+    startsAt: day(1, "15:00"),
+    durationMinutes: 45,
+    status: "confirmed",
+    confirmations: { client: true, ownerOrPartner: true },
+  },
+  {
+    id: "vw-15",
+    listingId: "lst-34",
+    clientId: "cl-18",
+    agentId: "agent-03",
+    startsAt: day(2, "11:00"),
+    durationMinutes: 45,
+    status: "scheduled",
+    confirmations: { client: true, ownerOrPartner: false },
   },
 ];
 

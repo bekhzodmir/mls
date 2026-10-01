@@ -585,16 +585,26 @@ function viewingViews(at: Date, keep: (viewing: Viewing) => boolean = () => true
     .sort((a, b) => isoAsc(a.viewing.startsAt, b.viewing.startsAt) || byIdAsc(a.viewing, b.viewing));
 }
 
+const AWAITING_OFFER = new Set<Offer["status"]>(["open", "countered"]);
+
 function toOfferView(offer: Offer, at: Date): OfferView | undefined {
   const listing = listingViewById(offer.listingId, at);
   const client = visibleClient(offer.clientId);
   if (!listing || !client) return undefined;
-  return {
+  const latest = must(offer.versions[offer.versions.length - 1], `versions of ${offer.id}`);
+  const awaiting = AWAITING_OFFER.has(offer.status);
+  const view: OfferView = {
     offer,
     listing,
     client,
-    latest: must(offer.versions[offer.versions.length - 1], `versions of ${offer.id}`),
+    latest,
+    responseOverdue: Boolean(awaiting && latest.expiresAt && isBefore(latest.expiresAt, at)),
   };
+  // Only the viewer's own deals are visible (see `toDealView`).
+  const deal = offer.dealId ? dealsById.get(offer.dealId) : undefined;
+  if (deal && deal.agentId === viewer.id) view.deal = { id: deal.id, stage: deal.stage };
+  if (awaiting) view.awaitingSide = latest.by === "buyer" ? "owner" : "buyer";
+  return view;
 }
 
 function offerViews(at: Date, keep: (offer: Offer) => boolean = () => true): OfferView[] {
@@ -1123,7 +1133,11 @@ export async function getViewing(id: ID): Promise<ViewingView | undefined> {
   return viewing ? copy(toViewingView(viewing, now())) : undefined;
 }
 
-/** Offers on the viewer's clients' behalf, most recent version first. */
+/**
+ * Offers on the viewer's clients' behalf, most recent version first. Each
+ * view carries the listing, client, deal (id + stage), latest version and
+ * whose answer it waits for, so an offers list needs no further calls.
+ */
 export async function listOffers(filter: OfferFilter = {}): Promise<OfferView[]> {
   return copy(
     offerViews(
@@ -1131,7 +1145,8 @@ export async function listOffers(filter: OfferFilter = {}): Promise<OfferView[]>
       (offer) =>
         (!filter.listingId || offer.listingId === filter.listingId) &&
         (!filter.clientId || offer.clientId === filter.clientId) &&
-        (!filter.dealId || offer.dealId === filter.dealId),
+        (!filter.dealId || offer.dealId === filter.dealId) &&
+        (!filter.status || offer.status === filter.status),
     ),
   );
 }

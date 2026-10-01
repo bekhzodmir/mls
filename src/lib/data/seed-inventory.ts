@@ -85,8 +85,11 @@ function consentCheck(
   );
 }
 
-function ownershipCheck(listingId: ID, checkedAt: ISODateTime): VerificationItem {
-  return check(listingId, "ownership", "confirmed", "official_source", "Выписка из реестра прав (демо)", checkedAt);
+/** A registry extract is evidence as of its date; `expiresAt` marks when it must be re-ordered. */
+function ownershipCheck(listingId: ID, checkedAt: ISODateTime, expiresAt?: ISODateTime): VerificationItem {
+  const item = check(listingId, "ownership", "confirmed", "official_source", "Выписка из реестра прав (демо)", checkedAt);
+  if (expiresAt) item.expiresAt = expiresAt;
+  return item;
 }
 
 interface ListingSpec {
@@ -103,7 +106,10 @@ interface ListingSpec {
   source: SourceKind;
   exclusive?: boolean;
   cooperation?: CommissionTerms;
-  /** Service contract number (a document reference, not a seeded entity). */
+  /**
+   * Service contract number and end date. The Contract record itself lives in
+   * `seed-contracts.ts`: its `number` equals this number and its `endsAt` this date.
+   */
   contract?: { number: string; expiresAt: ISODateTime };
   verifications: VerificationItem[];
   description: string;
@@ -740,6 +746,27 @@ export const properties: Property[] = [
     ownerId: "owner-32",
     createdAt: day(-16, "13:00"),
   },
+  {
+    // Jointly owned by a married couple (owner-33 + co-owner owner-34): the
+    // draft listing waits for the co-owner's consent (art. 37, §38.5).
+    id: "prop-33",
+    propertyType: "apartment",
+    city: "tashkent",
+    district: "mirzo_ulugbek",
+    areaName: "Мирзо-Улугбек, ул. Феруза",
+    address: "ул. Феруза, дом 9, кв. 21",
+    landmark: "парк Мирзо Улугбека",
+    geo: { lat: 41.3352, lng: 69.3361, precision: "building" },
+    rooms: 3,
+    areaTotal: 78,
+    floor: 4,
+    floorsTotal: 9,
+    buildingKind: "secondary",
+    renovation: "renovated",
+    yearBuilt: 1986,
+    ownerId: "owner-33",
+    createdAt: day(-1, "14:00"),
+  },
 ];
 
 /* ------------------------------------------------------------- listings */
@@ -819,7 +846,8 @@ export const listings: Listing[] = [
     cooperation: split("50/50", 50, "USD"),
     contract: { number: "DR-2026-038", expiresAt: day(75, "23:59") },
     verifications: [
-      ownershipCheck("lst-03", day(-20, "15:00")),
+      // The extract is valid for 30 days: re-order it before the notary (Verification center).
+      ownershipCheck("lst-03", day(-20, "15:00"), day(10, "23:59")),
       contractCheck("lst-03", "DR-2026-038", day(-50, "10:00")),
       consentCheck("lst-03", "owner_statement", day(-50, "10:00")),
       check(
@@ -1002,6 +1030,40 @@ export const listings: Listing[] = [
     lastConfirmedAt: day(-6, "11:00"),
   }),
 
+  listing({
+    // A new listing still in draft: the service contract DR-2026-061 awaits
+    // signature because the co-owner's consent is missing (art. 37).
+    id: "lst-35",
+    propertyId: "prop-33",
+    agentId: "agent-01",
+    organizationId: "org-01",
+    dealType: "sale",
+    currency: "USD",
+    prices: [[day(-1, "15:00"), 98_000]],
+    status: "draft",
+    // Not shown to anyone outside Demo Realty until it is published.
+    confidentiality: "restricted",
+    source: "realtor_confirmed",
+    exclusive: true,
+    contract: { number: "DR-2026-061", expiresAt: day(182, "23:59") },
+    verifications: [
+      check(
+        "lst-35",
+        "owner_consent",
+        "pending",
+        "document_review",
+        "Согласие второго собственника (супруги) не получено",
+        undefined,
+        "Без согласия всех правообладателей договор не подписывается (ст. 37).",
+      ),
+    ],
+    description:
+      "3-комнатная на ул. Феруза у парка Мирзо Улугбека: 78 м², 4/9 этаж, ремонт 2023 года. Черновик — фото и описание в работе.",
+    photoCount: 0,
+    publishedAt: day(-1, "15:00"),
+    lastConfirmedAt: day(-1, "15:00"),
+  }),
+
   // ---- Colleagues at Demo Realty ---------------------------------------
   listing({
     id: "lst-10",
@@ -1046,7 +1108,7 @@ export const listings: Listing[] = [
     cooperation: split("50/50", 50, "USD"),
     contract: { number: "DR-2026-036", expiresAt: day(30, "23:59") },
     verifications: [
-      ownershipCheck("lst-11", day(-6, "12:00")),
+      ownershipCheck("lst-11", day(-6, "12:00"), day(24, "23:59")),
       check("lst-11", "encumbrance", "confirmed", "official_source", "Нотариальный реестр запретов (демо)", day(-6, "12:10")),
       contractCheck("lst-11", "DR-2026-036", day(-30, "11:00")),
       consentCheck("lst-11", "document_review", day(-30, "11:00")),

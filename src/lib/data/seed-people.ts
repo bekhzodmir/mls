@@ -248,13 +248,13 @@ function ownerConsent(ownerId: string, grantedDaysAgo: number): Consent {
 }
 
 /** Owner contacts are RESTRICTED (§34.2): only the listing side sees them. */
-function owner(id: string, name: string, phone: string, consentDaysAgo?: number): Owner {
+function owner(id: string, name: string, phone: string, consentDaysAgo?: number, extra: Consent[] = []): Owner {
   return {
     id,
     name,
     phone,
     confidentiality: "restricted",
-    consents: consentDaysAgo === undefined ? [] : [ownerConsent(id, consentDaysAgo)],
+    consents: [...(consentDaysAgo === undefined ? [] : [ownerConsent(id, consentDaysAgo)]), ...extra],
   };
 }
 
@@ -291,4 +291,18 @@ export const owners: Owner[] = [
   owner("owner-30", "Марат Галиев", "+998910000230"),
   owner("owner-31", "Nilufar Oripova", "+998910000231"),
   owner("owner-32", "Евгений Лим", "+998910000232", 16),
+  // prop-33 is jointly owned: the husband signed his consent, the wife's is not
+  // on file yet, so the service contract cannot be signed (art. 37, §38.5).
+  owner("owner-33", "Равшан Норматов", "+998910000233", 1, [
+    {
+      id: "cons-owner-33-contact",
+      purpose: "contact",
+      channel: "written",
+      grantedAt: day(-1, "12:00"),
+      textVersion: "owner-consent-v1-demo",
+    },
+  ]),
+  // Co-owner of prop-33 (spouse). No consent of any kind yet: consent of one
+  // right holder is never consent of the others.
+  owner("owner-34", "Дилноза Норматова", "+998910000234"),
 ];
