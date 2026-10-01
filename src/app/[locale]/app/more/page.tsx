@@ -5,12 +5,13 @@ import {
   ChevronRight,
   CircleHelp,
   Globe,
+  LogOut,
   MessageCircleQuestion,
   ShieldQuestion,
   UserRoundX,
   type LucideIcon,
 } from "lucide-react";
-import { sidebarNav } from "@/components/app/nav-config";
+import { sidebarGroups } from "@/components/app/nav-config";
 import { PageHeader } from "@/components/app/page-header";
 import { VerificationBadge } from "@/components/domain/badges";
 import { LocaleSwitch } from "@/components/locale-switch";
@@ -29,7 +30,7 @@ import { getViewer } from "@/lib/data/repository";
 import { formatUzPhone } from "@/lib/domain/phone";
 import { displayedProfessionalStatus } from "@/lib/domain/professional-status";
 import type { ProfessionalStatus, VerificationItem, VerificationSubject } from "@/lib/domain/types";
-import { appPath } from "@/lib/routes";
+import { appPath, authHref } from "@/lib/routes";
 import { publicContacts } from "@/lib/site";
 import { NotificationPreferences } from "./notification-preferences";
 
@@ -83,12 +84,21 @@ function FactRow({
   );
 }
 
+/** Section groups for the "All sections" grid; Today is the home tab and is left out. */
+const sectionGroups = sidebarGroups
+  .map((group) => ({
+    ...group,
+    items: group.items.flatMap((item) => (item.key === "today" ? [] : [{ ...item, key: item.key }])),
+  }))
+  .filter((group) => group.items.length > 0);
+
 /** "Ещё" (§9.1, §21.4 screens 100–102): profile, verified facts, sections, language, notifications. */
 export default async function MorePage() {
   const locale = await getLocale();
   const t = more[locale];
   const d = domain[locale];
   const nav = shell[locale].sidebar;
+  const groupTitles = shell[locale].sidebarGroups;
   const { agent, organization } = await getViewer();
   const professionalStatus = displayedProfessionalStatus(agent);
   const status = statusStyle[professionalStatus];
@@ -172,24 +182,35 @@ export default async function MorePage() {
         </div>
       </section>
 
-      <section aria-labelledby="more-sections" className="space-y-3">
+      <section aria-labelledby="more-sections" className="space-y-4">
         <SectionHeader id="more-sections" title={t.sections.title} />
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {sidebarNav
-            .filter((item) => item.key !== "today")
-            .map(({ key, href, icon: Icon }) => (
-              <li key={key}>
-                <Link
-                  href={appPath(locale, href)}
-                  className="flex min-h-14 items-center gap-3 rounded-lg border border-border bg-surface px-3 text-small font-medium text-fg transition-colors hover:border-primary hover:bg-primary-soft/40"
-                >
-                  <Icon aria-hidden className="size-5 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1">{nav[key]}</span>
-                  <ChevronRight aria-hidden className="size-4 shrink-0 text-fg-subtle" />
-                </Link>
-              </li>
-            ))}
-        </ul>
+        {sectionGroups.map((group) => {
+          const headingId = `more-sections-${group.key}`;
+          return (
+            <div key={group.key} className="space-y-2">
+              <h3 id={headingId} className="text-small font-semibold text-fg-muted">
+                {groupTitles[group.key]}
+              </h3>
+              <ul aria-labelledby={headingId} className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {group.items.map(({ key, href, icon: Icon }) => (
+                  <li key={key}>
+                    <Link
+                      href={appPath(locale, href)}
+                      className="flex min-h-14 items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-fg transition-colors hover:border-primary hover:bg-primary-soft/40"
+                    >
+                      <Icon aria-hidden className="size-5 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-small font-medium">{nav[key]}</span>
+                        <span className="block text-caption text-fg-muted">{t.sections.hints[key]}</span>
+                      </span>
+                      <ChevronRight aria-hidden className="size-4 shrink-0 text-fg-subtle" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </section>
 
       <section aria-labelledby="more-language" className="space-y-3">
@@ -209,6 +230,17 @@ export default async function MorePage() {
       <section id="notification-settings" aria-labelledby="more-notifications" className="scroll-mt-20 space-y-3">
         <SectionHeader id="more-notifications" title={t.notifications.title} />
         <NotificationPreferences locale={locale} />
+      </section>
+
+      <section aria-labelledby="more-account" className="space-y-3">
+        <SectionHeader id="more-account" title={t.account.title} />
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="min-w-0 flex-1 text-caption text-fg-muted">{t.account.text}</p>
+          <ButtonLink href={authHref(locale, "login")} variant="secondary">
+            <LogOut aria-hidden className="size-4" />
+            {t.account.switch}
+          </ButtonLink>
+        </Card>
       </section>
 
       <section aria-labelledby="more-help" className="grid grid-cols-1 gap-4 sm:grid-cols-2">

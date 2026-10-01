@@ -43,6 +43,7 @@ import {
   type ParsedField,
   type Property,
   type Requirement,
+  type RoutingRule,
   type Task,
   type TelegramListing,
   type TelegramSource,
@@ -53,7 +54,6 @@ import {
 import { tashkentDateKey } from "@/lib/domain/working-days";
 import { seed, VIEWER_AGENT_ID, type MatchStatusRecord } from "./seed";
 import {
-  CONTRACT_CLAUSES,
   SYSTEM_ACTOR_ID,
   type AgentWorkload,
   type AuditEventView,
@@ -85,7 +85,7 @@ import {
   type PartnerOrganization,
   type RecordScope,
   type RightHolderView,
-  type RoutingContext,
+  type RoutingContextView,
   type SubjectRef,
   type TeamMemberDetailView,
   type TeamMemberMetrics,
@@ -939,6 +939,17 @@ function isVisibleContract(contract: Contract): boolean {
 
 const visibleContracts = seed.contracts.filter(isVisibleContract);
 
+/** Required clauses in the order the law lists them (§38.5); same order as the domain's `CONTRACT_CLAUSES`. */
+const CLAUSE_ORDER: readonly (keyof Contract["clauses"])[] = [
+  "certificateDetails",
+  "membershipDetails",
+  "insuranceDetails",
+  "rightsAndObligations",
+  "liability",
+  "terminationAndRefund",
+  "confidentiality",
+];
+
 /* --------------------------------------------------------------- owners */
 
 interface OwnerLink {
@@ -1108,7 +1119,7 @@ function toContractView(contract: Contract, at: Date): ContractView {
     rightHolders: contract.rightHolderConsents.map((holder) => rightHolderView(contract, holder)),
     expiring: contract.status === "active" && daysLeft >= 0 && daysLeft <= EXPIRING_CONTRACT_DAYS,
     daysLeft,
-    missingClauses: CONTRACT_CLAUSES.filter((clause) => !contract.clauses[clause]),
+    missingClauses: CLAUSE_ORDER.filter((clause) => !contract.clauses[clause]),
     missingConsents: contract.rightHolderConsents.filter((holder) => holder.status === "missing").length,
     hasSimpleElectronicSignature: contract.signatures.some((signature) => signature.method === "simple_electronic"),
   };
@@ -1387,7 +1398,10 @@ function verificationRank(entry: VerificationQueueItem): number {
 
 /* --------------------------------------------------------- team & routing */
 
-const OPEN_LEAD = (lead: Lead) => !CLOSED_LEAD.has(lead.status);
+function isOpenLead(lead: Lead): boolean {
+  return !CLOSED_LEAD.has(lead.status);
+}
+
 const INACTIVE_CLIENT = new Set<Client["status"]>(["lost", "deferred"]);
 const ACTIVE_LISTING = new Set<ListingStatus>([
   "contract_signed",
@@ -1412,7 +1426,7 @@ function memberMetrics(agentId: ID, at: Date): TeamMemberMetrics {
   const leads = seed.leads.filter((lead) => lead.assignedAgentId === agentId);
   return {
     newLeadsToday: leads.filter((lead) => tashkentDateKey(lead.receivedAt) === today).length,
-    openLeads: leads.filter(OPEN_LEAD).length,
+    openLeads: leads.filter(isOpenLead).length,
     slaBreaches: leads.filter((lead) => leadSla(lead, at).state === "breached").length,
     activeClients: seed.clients.filter(
       (client) => client.responsibleAgentId === agentId && !INACTIVE_CLIENT.has(client.status),
@@ -1463,7 +1477,7 @@ function toWorkload(agentId: ID, at: Date): AgentWorkload {
   return workload;
 }
 
-function organizationRules() {
+function organizationRules(): RoutingRule[] {
   return seed.routingRules
     .filter((rule) => rule.organizationId === viewerOrganizationId)
     .sort((a, b) => a.priority - b.priority || byIdAsc(a, b));
@@ -2357,7 +2371,6 @@ export async function getOwner(id: ID): Promise<OwnerDetailView | undefined> {
   const link = ownerLinks.get(id);
   if (!link) return undefined;
   const at = now();
-  const listingIds = new Set(link.listings.map((listing) => listing.id));
   const properties = link.propertyIds.flatMap((propertyId) => {
     const property = must(propertiesById.get(propertyId), `property ${propertyId}`);
     // Mask the property as strictly as the viewer's best access to it requires.
@@ -2377,9 +2390,9 @@ export async function getOwner(id: ID): Promise<OwnerDetailView | undefined> {
     contracts: sortContractViews(link.contracts.map((contract) => toContractView(contract, at))),
     communications: communicationViews((item) => item.ownerId === id),
     calls: callViews(at, (call) => call.ownerId === id),
-    verification: listingQueueItems(link.listings, at)
-      .filter((item) => item.target.kind === "listing" && listingIds.has(item.target.view.listing.id))
-      .sort((a, b) => verificationRank(a) - verificationRank(b) || a.key.localeCompare(b.key)),
+    verification: listingQueueItems(link.listings, at).sort(
+      (a, b) => verificationRank(a) - verificationRank(b) || a.key.localeCompare(b.key),
+    ),
   };
   return copy(detail);
 }
@@ -2507,7 +2520,6 @@ export async function getMyTeam(): Promise<MyTeamView | undefined> {
   for (const member of members) {
     for (const key of Object.keys(totals) as (keyof TeamMemberMetrics)[]) totals[key] += member.metrics[key];
   }
-  // A viewing or deal shared by two members counts once per member, so totals can exceed distinct records.
   const view: MyTeamView = { team: viewerTeam, lead, members, totals };
   const organization = organizationsById.get(viewerTeam.organizationId);
   if (organization) view.organization = organization;
@@ -2538,17 +2550,19 @@ export async function getTeamMember(agentId: ID): Promise<TeamMemberDetailView |
  * rules by priority, its agents with availability and today's workload, and
  * the open leads nobody is assigned to.
  */
-export async function getRoutingContext(): Promise<RoutingContext> {
+export async function getRoutingContext(): Promise<RoutingContextView> {
   const at = now();
   const agents = organizationAgents();
-  const context: RoutingContext = {
+  const workload = agents.map((agent) => toWorkload(agent.id, at));
+  const context: RoutingContextView = {
     generatedAt: at.toISOString(),
     rules: organizationRules(),
     agents,
     availability: agents.map((agent) => availabilityOf(agent.id)),
-    workloadToday: agents.map((agent) => toWorkload(agent.id, at)),
+    workloadToday: Object.fromEntries(workload.map((entry) => [entry.agentId, entry.assignedToday])),
+    workload,
     unassignedLeads: seed.leads
-      .filter((lead) => lead.assignedAgentId === undefined && OPEN_LEAD(lead))
+      .filter((lead) => lead.assignedAgentId === undefined && isOpenLead(lead))
       .map((lead) => toLeadView(lead, at))
       .sort((a, b) => isoAsc(a.lead.slaDueAt, b.lead.slaDueAt) || byIdAsc(a.lead, b.lead)),
   };

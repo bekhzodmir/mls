@@ -592,20 +592,6 @@ export type VerificationResult = Omit<VerificationItem, "source" | "note" | "per
 
 /* ------------------------------------------------------------ contracts */
 
-/** A required clause of a service contract (§17.5, §38.5). */
-export type ContractClause = keyof Contract["clauses"];
-
-/** Required clauses in the order the law lists them (§38.5); the contracts screen labels each. */
-export const CONTRACT_CLAUSES = [
-  "certificateDetails",
-  "membershipDetails",
-  "insuranceDetails",
-  "rightsAndObligations",
-  "liability",
-  "terminationAndRefund",
-  "confidentiality",
-] as const satisfies readonly ContractClause[];
-
 export interface ContractFilter {
   /** `expiring` = active and ending within 14 Tashkent calendar days (today included). */
   status?: ContractStatus | "expiring";
@@ -649,8 +635,11 @@ export interface ContractView {
   expiring: boolean;
   /** Tashkent calendar days from today to `endsAt`: 0 = ends today, negative = ended. */
   daysLeft: number;
-  /** Required clauses the text lacks (§38.5); empty when complete. */
-  missingClauses: ContractClause[];
+  /**
+   * Required clauses the text lacks (§38.5), in `CONTRACT_CLAUSES` order from
+   * `@/lib/domain/contracts`; empty when complete.
+   */
+  missingClauses: (keyof Contract["clauses"])[];
   /** Right holders whose consent is missing (art. 37). */
   missingConsents: number;
   /**
@@ -846,6 +835,10 @@ export interface MyTeamView {
   lead: Agent;
   /** Lead first, then members by name. */
   members: TeamMemberView[];
+  /**
+   * Sum of the members' metrics. A viewing or deal shared by two members
+   * counts for each of them, so totals can exceed the distinct records.
+   */
   totals: TeamMemberMetrics;
 }
 
@@ -868,16 +861,24 @@ export interface AgentWorkload {
   remaining: number;
 }
 
-/** Inputs for the routing simulator (§14.2, §36.5). */
-export interface RoutingContext {
+/**
+ * Inputs for the routing simulator (§14.2, §36.5). `rules`, `availability`
+ * and `workloadToday` have the shapes `routeLead` in `@/lib/domain/routing`
+ * expects, so `{ rules, availability, workloadToday, now }` is its context.
+ */
+export interface RoutingContextView {
   generatedAt: ISODateTime;
   organization?: Organization;
   /** Active and inactive rules, lowest priority number first. */
   rules: RoutingRule[];
   /** The organization's agents by id. */
   agents: Agent[];
+  /** One entry per agent in `agents`, same order. */
   availability: AgentAvailability[];
-  workloadToday: AgentWorkload[];
+  /** New leads assigned today (Tashkent) per agent id. */
+  workloadToday: Record<ID, number>;
+  /** Per-agent status, capacity and today's load for display, same order as `agents`. */
+  workload: AgentWorkload[];
   /** Open leads nobody is assigned to, earliest SLA deadline first. */
   unassignedLeads: LeadView[];
 }

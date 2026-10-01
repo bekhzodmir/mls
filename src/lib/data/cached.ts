@@ -1,12 +1,18 @@
 import { cache } from "react";
 import {
+  getCall,
   getClient,
+  getContract,
   getCooperation,
   getDeal,
   getLead,
   getListing,
   getMatch,
+  getOffer,
+  getOwner,
+  getPartner,
   getRequirement,
+  getTeamMember,
   getTelegramListing,
   getViewing,
 } from "./repository";
@@ -30,3 +36,9 @@ export const loadTelegramListing = cache(getTelegramListing);
 export const loadCooperation = cache(getCooperation);
 export const loadViewing = cache(getViewing);
 export const loadDeal = cache(getDeal);
+export const loadOffer = cache(getOffer);
+export const loadContract = cache(getContract);
+export const loadOwner = cache(getOwner);
+export const loadCall = cache(getCall);
+export const loadPartner = cache(getPartner);
+export const loadTeamMember = cache(getTeamMember);

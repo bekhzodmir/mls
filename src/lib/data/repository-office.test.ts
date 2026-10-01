@@ -390,11 +390,12 @@ describe("team and routing", () => {
     const agentIds = context.agents.map((agent) => agent.id);
     expect(agentIds).toEqual(["agent-01", "agent-02", "agent-03", "agent-10"]);
     expect(context.availability.map((entry) => entry.agentId)).toEqual(agentIds);
-    expect(context.workloadToday.map((entry) => entry.agentId)).toEqual(agentIds);
-    for (const entry of context.workloadToday) {
+    expect(context.workload.map((entry) => entry.agentId)).toEqual(agentIds);
+    for (const entry of context.workload) {
       expect(entry.remaining).toBe(Math.max(0, entry.capacity - entry.assignedToday));
+      expect(context.workloadToday[entry.agentId]).toBe(entry.assignedToday);
     }
-    expect(context.workloadToday.find((entry) => entry.agentId === "agent-03")?.awayUntil).toBeDefined();
+    expect(context.workload.find((entry) => entry.agentId === "agent-03")?.awayUntil).toBeDefined();
     expect(context.unassignedLeads.map((view) => view.lead.id)).toEqual(["lead-04", "lead-06", "lead-01"]);
     expect(context.unassignedLeads.every((view) => !view.lead.assignedAgentId)).toBe(true);
   });
